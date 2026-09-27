@@ -1,0 +1,28 @@
+meta {
+  name: 05-refresh
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseURL}}/api/auth/refresh
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "refreshToken": "{{refresh_token}}"
+  }
+}
+
+vars:post-response {
+  rotated_access_token: res.body.data.accessToken
+  rotated_refresh_token: res.body.data.refreshToken
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.accessToken: isDefined
+  res.body.data.refreshToken: isDefined
+}

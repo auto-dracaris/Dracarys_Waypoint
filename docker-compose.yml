@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: waypoint_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-dracarys_waypoint}
+      POSTGRES_USER: ${DB_USER:-waypoint_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-waypoint_password}
+    # Host 5433 so this never collides with a Postgres already installed locally.
+    # api/.env's DB_PORT must match the host side of this mapping.
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-waypoint_user} -d ${DB_NAME:-dracarys_waypoint}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:

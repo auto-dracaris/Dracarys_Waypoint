@@ -1,0 +1,26 @@
+meta {
+  name: 06-refresh-replay-negative
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseURL}}/api/auth/refresh
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "refreshToken": "{{refresh_token}}"
+  }
+}
+
+docs {
+  The refresh token from 01-login was rotated by 05-refresh, which revoked its
+  session. Presenting it a second time must fail.
+}
+
+assert {
+  res.status: eq 401
+}
