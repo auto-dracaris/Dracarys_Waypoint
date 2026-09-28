@@ -14,8 +14,16 @@ export class UserAuthRepository {
     return this.repository.findOneBy({ email });
   }
 
+  findByPhone(phone: string): Promise<User | null> {
+    return this.repository.findOneBy({ phone });
+  }
+
   findById(id: number): Promise<User | null> {
     return this.repository.findOneBy({ id });
+  }
+
+  create(data: import('typeorm').DeepPartial<User>): User {
+    return this.repository.create(data);
   }
 
   save(user: User, manager?: EntityManager): Promise<User> {

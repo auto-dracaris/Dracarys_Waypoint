@@ -12,7 +12,7 @@ post {
 
 body:json {
   {
-    "email": "{{system_dispatcher_email}}",
+    "phone": "{{system_dispatcher_phone}}",
     "password": "{{system_dispatcher_password}}"
   }
 }
@@ -27,4 +27,5 @@ assert {
   res.body.data.accessToken: isDefined
   res.body.data.refreshToken: isDefined
   res.body.data.user.password: isUndefined
+  res.body.data.user.passwordHash: isUndefined
 }

@@ -17,6 +17,9 @@ export class UsersService extends BaseCrudService<User> {
 
   protected async beforeCreate(dto: DeepPartial<User>): Promise<void> {
     await this.assertEmailIsFree(dto.email as string);
+    if (dto.phone) {
+      await this.assertPhoneIsFree(dto.phone as string);
+    }
   }
 
   protected async beforeUpdate(
@@ -27,13 +30,17 @@ export class UsersService extends BaseCrudService<User> {
     if (dto.email && dto.email !== entity.email) {
       await this.assertEmailIsFree(dto.email);
     }
+    if (dto.phone && dto.phone !== entity.phone) {
+      await this.assertPhoneIsFree(dto.phone as string);
+    }
   }
 
-  async create(dto: DeepPartial<User>): Promise<ApiResponseDto> {
+  async create(dto: DeepPartial<User> & { password?: string }): Promise<ApiResponseDto> {
     await this.beforeCreate(dto);
+    const { password, ...rest } = dto;
     const user = this.usersRepository.create({
-      ...dto,
-      password: await bcrypt.hash(dto.password as string, BCRYPT_ROUNDS),
+      ...rest,
+      passwordHash: await bcrypt.hash(password as string, BCRYPT_ROUNDS),
     });
     const saved = await this.usersRepository.save(user);
 
@@ -104,8 +111,15 @@ export class UsersService extends BaseCrudService<User> {
     }
   }
 
+  private async assertPhoneIsFree(phone: string): Promise<void> {
+    const existing = await this.usersRepository.findByPhone(phone);
+    if (existing) {
+      throw new ConflictException('Phone number is already in use by another user');
+    }
+  }
+
   private toPublic(user: User) {
-    const { password: _password, ...result } = user;
+    const { passwordHash: _passwordHash, ...result } = user;
     return result;
   }
 }

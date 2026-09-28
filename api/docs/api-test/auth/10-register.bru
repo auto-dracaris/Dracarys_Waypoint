@@ -1,0 +1,34 @@
+meta {
+  name: 10-register
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseURL}}/api/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "firstName": "John",
+    "lastName": "Driver",
+    "phone": "0771234567",
+    "email": "driver.john@waypoint.local",
+    "password": "Password123!",
+    "role": "driver"
+  }
+}
+
+vars:post-response {
+  new_user_id: res.body.data.userId
+  new_otp_id: res.body.data.otpId
+  new_otp: res.body.data.otp
+}
+
+assert {
+  res.status: eq 201
+  res.body.data.userId: isDefined
+  res.body.data.otpId: isDefined
+}

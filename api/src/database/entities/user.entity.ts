@@ -9,13 +9,16 @@ export class User extends AutoIncBaseEntity {
   @Column({ length: 150 })
   email: string;
 
-  @Column({ length: 255 })
-  password: string;
+  @Column({ name: 'password_hash', type: 'text' })
+  passwordHash: string;
 
-  @Column({ length: 120 })
-  name: string;
+  @Column({ name: 'first_name', length: 100 })
+  firstName: string;
 
-  @Column({ length: 20, nullable: true })
+  @Column({ name: 'last_name', length: 100 })
+  lastName: string;
+
+  @Column({ length: 20, nullable: true, unique: true })
   phone: string;
 
   @Column({ type: 'text', nullable: true })
