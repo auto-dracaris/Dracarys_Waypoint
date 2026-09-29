@@ -1,0 +1,33 @@
+info:
+  name: Resend OTP
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/resend-otp"
+  body:
+    type: json
+    data: |-
+      {
+        "phone": "{{phone}}"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const data = res.body?.data;
+        if (data?.otpId) bru.setVar("otpId", data.otpId);
+        if (data?.otp) bru.setVar("otp", data.otp);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Issue a fresh OTP for a user who has not verified yet. Public.
+
+  Response `data`: `{ otpId, otp? }`, saved to runtime vars.

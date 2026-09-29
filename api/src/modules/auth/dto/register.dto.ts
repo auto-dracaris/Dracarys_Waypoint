@@ -1,12 +1,10 @@
 import {
   IsEmail,
-  IsEnum,
   IsNotEmpty,
   IsString,
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { UserRole } from '../../../common/enums/user-role.enum';
 
 export class RegisterDto {
   @IsNotEmpty({ message: 'First name is required' })
@@ -33,10 +31,4 @@ export class RegisterDto {
   @IsString({ message: 'Password must be a string' })
   @MinLength(6, { message: 'Password must be at least 6 characters long' })
   password: string;
-
-  @IsNotEmpty({ message: 'Role is required' })
-  @IsEnum(UserRole, {
-    message: `Role must be one of: ${Object.values(UserRole).join(', ')}`,
-  })
-  role: UserRole;
 }

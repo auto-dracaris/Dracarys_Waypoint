@@ -1,0 +1,8 @@
+name: local
+variables:
+  - name: baseUrl
+    value: http://localhost:5000/api
+  - name: phone
+    value: "0770000000"
+  - name: password
+    value: "111111"

@@ -11,6 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
+import { UserRole } from '../../common/enums/user-role.enum';
 import { UserStatus } from '../../common/enums/user-status.enum';
 import { PermissionResolutionService } from '../../common/services/permission-resolution.service';
 import { SmsService } from '../../common/services/sms.service';
@@ -94,7 +95,8 @@ export class AuthService {
         email: registerDto.email,
         phone: formattedPhone,
         passwordHash,
-        role: registerDto.role,
+        // Self-registration always creates a driver; other roles are assigned by a dispatcher.
+        role: UserRole.DRIVER,
         status: UserStatus.PENDING,
       });
       savedUser = await this.userAuthRepository.save(
