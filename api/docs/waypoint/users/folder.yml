@@ -1,0 +1,13 @@
+info:
+  name: users
+  type: folder
+  seq: 2
+
+request:
+  auth:
+    type: bearer
+    token: "{{dispatcherAccessToken}}"
+
+docs:
+  content: User management (`/api/users`), dispatcher only. Requests use Bearer `{{dispatcherAccessToken}}`, set by Auth → Login when a dispatcher logs in. `{{userId}}` (environment) is the target user.
+  type: text/markdown

@@ -1,0 +1,30 @@
+info:
+  name: Refresh Token
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/refresh"
+  body:
+    type: json
+    data: |-
+      {
+        "refreshToken": "{{refreshToken}}"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const data = res.body?.data;
+        if (data?.accessToken) bru.setEnvVar("accessToken", data.accessToken);
+        if (data?.refreshToken) bru.setEnvVar("refreshToken", data.refreshToken);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: Exchange a refresh token for a new access/refresh token pair. Public (token goes in the body).

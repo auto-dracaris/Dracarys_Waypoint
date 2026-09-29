@@ -1,0 +1,13 @@
+info:
+  name: auth
+  type: folder
+  seq: 1
+
+request:
+  auth:
+    type: bearer
+    token: "{{accessToken}}"
+
+docs:
+  content: Auth module (`/api/auth`). Protected requests inherit Bearer `{{accessToken}}` from this folder; run Login first to set it.
+  type: text/markdown

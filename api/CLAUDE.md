@@ -11,7 +11,7 @@ API and apply to every module. Reference implementations in this repo:
 - **All DB access goes through the repository layer.** Services never call
   `Repository<T>` or `DataSource.query` directly for entity CRUD — they call
   methods on a dedicated repo class per entity (e.g. `UserAuthRepository`,
-  `SettingsRepository`).
+  `UsersRepository`).
 - **Controllers are pure pass-through.** No business logic, no try/catch, no
   response shaping — just call the service and return its result:
   ```ts
@@ -54,15 +54,17 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
   like `PATCH /:id/status`, or a bespoke flow like `login`) stays hand-written in
   the concrete service, using the inherited `repository` and `findOrThrow(id)`.
 - Not every repository/service needs this. If a repository has no
-  `findById`/`findAndCount`/`create`/`save` worth sharing (e.g. `PermissionsRepository`,
-  two custom finders over a seeded catalog), leave it plain. If a service has no generic CRUD flow (e.g.
+  `findById`/`findAndCount`/`create`/`save` worth sharing (e.g. `UserAuthRepository`,
+  a handful of auth-specific finders), leave it plain. If a service has no generic CRUD flow (e.g.
   `AuthService`, all bespoke transactional flows), don't force it to extend
   `BaseCrudService`.
 - A base method name must never collide with an entity-specific method of a
   different shape — TypeScript rejects a subclass redeclaring `findById` with an
   incompatible signature. Give differently-shaped lookups a distinct name instead.
-- `UsersService` overrides the inherited `create`/`findAll`/`findOne`/`update` for
-  one reason only: to hash the password and strip it from the response. That is the
+- `UsersService` overrides the inherited `findAll`/`findOne`/`update` for one reason
+  only: to strip the password hash from the response. There is no `POST /users` —
+  accounts are created only by self-registration (`POST /api/auth/register`, always a
+  driver), so the inherited `create` is deliberately not exposed or overridden. That is the
   bar for an override — a cross-cutting rule the base can't know about, not a
   preference.
 
@@ -116,19 +118,20 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
   take effect before a token's natural expiry.
 - Refresh tokens are stored as bcrypt hashes and rotated on use — the old session is
   revoked, so a replayed refresh token fails.
-- Route protection is guard-based and declarative: `@UseGuards(JwtAuthGuard)`, or
-  `@UseGuards(JwtAuthGuard, PermissionsGuard)` with `@Permissions(...)` for
-  permission-gated routes. Never check `req.user` by hand to gate access.
+- Route protection is guard-based and declarative: `@UseGuards(JwtAuthGuard)` for any
+  logged-in user, or `@UseGuards(JwtAuthGuard, RolesGuard)` with `@Roles(...)`
+  (`src/common/decorators/roles.decorator.ts`) for role-gated routes. Never check
+  `req.user` by hand to gate access.
 - Shared guards live in `src/common/guards/` (not in the auth module) since they are
   consumed across all modules.
-- Permissions are granted **directly to a user** — no role defaults, no grant/deny
-  override. The only special case is `UserRole.DISPATCHER`, which bypasses the check
-  entirely (`PermissionResolutionService`): the dispatcher is this domain's privileged
-  operator, so there is no separate admin role above them. `@Permissions(A, B)` is
-  **OR**.
-- Every string in `PERMISSIONS` (`src/common/constants/permissions.constant.ts`) must
-  have a row in the `permissions` table, or the guard fails closed for every caller
-  that is not a dispatcher. Adding a permission means adding a seed migration for it.
+- **Access control is role-based** — there are no per-user permission grants.
+  `UserRole.DISPATCHER` is the admin: user management is
+  `@Roles(UserRole.DISPATCHER)`. Adding a protected route means choosing which roles
+  may call it. `@Roles(A, B)` is **OR**.
+- `JwtStrategy.validate` returns the role (and email) from the `users` row it loads,
+  not from the token payload, so a role change applies on the user's next request.
+  `PATCH /users/:id/role` and `/status` refuse to change the caller's own account, so a
+  dispatcher cannot lock themselves out.
 
 ## Database
 
@@ -145,11 +148,12 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
   since: a seed establishes a default, it does not reset one.
 - Migration naming: file `<timestamp>-<Name>.ts`, class `<Name><timestamp>`. Import
   app enums and constants into migrations (as `SeedSystemDispatcher` does with `UserRole`
-  and `UserStatus`) so the data and the code cannot drift. A superseded migration becomes
-  a documented no-op rather than being deleted — its row is already in the `migrations`
-  table on every deployed instance. That rule binds from the first commit onward; before
-  then, with no instance anywhere having recorded it, deleting is fine (which is how the
-  original `SeedRoles` went away when the `roles` table did).
+  and `UserStatus`) so the data and the code cannot drift.
+- **The project is dev-only for now**, so small schema changes just delete or edit the
+  entity and any seed that only served it — no drop-table migrations, no documented
+  no-op migrations (which is how `SeedPermissionsCatalog` went away with the permission
+  tables). `synchronize` never drops tables for removed entities; drop leftovers by hand.
+  Revisit this once there is a deployed environment whose `migrations` table matters.
 - **Roles are an enum column, not a table.** `UserRole` (`src/common/enums/`) is the
   only source of truth and is stored directly on `users.role` as a Postgres enum, the
   same way `users.status` stores `UserStatus`. There is no `Role` entity, no `roles`
@@ -200,7 +204,7 @@ src/
   (`configService.getOrThrow<string>('JWT_SECRET')`), **never** `process.env`, inside
   providers. The one exception is a migration, which runs outside the DI container.
 - `CommonModule` is `@Global()`: the entities and services every module needs (users,
-  permission catalog, activity log) are injectable anywhere without each feature
+  activity log) are injectable anywhere without each feature
   module re-registering them. Feature-specific entities are still registered
   by their own module's `TypeOrmModule.forFeature`.
 
@@ -209,6 +213,10 @@ src/
 - HTTP behaviour is covered by the Bruno collection in `docs/api-test/`, run with
   `npm run test:api`. Suites are ordered and build state on each other, negative
   cases included (replayed refresh token, access after logout).
+- `docs/waypoint/` is a separate, hand-run Bruno collection (OpenCollection YAML, one
+  folder per module, `local` environment) showing how each endpoint is called. Auth → Login stores the tokens
+  (`accessToken` plus `<role>AccessToken`, e.g. `dispatcherAccessToken`) in the
+  environment; the `users` folder authenticates with `dispatcherAccessToken`.
 - There is no Swagger setup and no `@nestjs/swagger` dependency — the Bruno
   collection is the API documentation.
 

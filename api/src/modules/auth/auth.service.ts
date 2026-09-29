@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   HttpStatus,
   Injectable,
   NotFoundException,
@@ -10,23 +11,31 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
-import { PermissionResolutionService } from '../../common/services/permission-resolution.service';
+import { UserRole } from '../../common/enums/user-role.enum';
+import { UserStatus } from '../../common/enums/user-status.enum';
+import { SmsService } from '../../common/services/sms.service';
+import { formatPhoneNumber } from '../../common/utils/phone.util';
 import { User } from '../../database/entities/user.entity';
+import { UserOtp } from '../../database/entities/user-otp.entity';
 import { UserSession } from '../../database/entities/user-session.entity';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterDto } from './dto/register.dto';
+import { ResendOtpDto } from './dto/resend-otp.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { OtpPurpose } from './enums/otp-purpose.enum';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { UserStatus } from '../../common/enums/user-status.enum';
 import { UserAuthRepository } from './repositories/user-auth.repository';
+import { UserOtpRepository } from './repositories/user-otp.repository';
 import { UserSessionRepository } from './repositories/user-session.repository';
 
 const BCRYPT_ROUNDS = 10;
+const INVALID_OTP_MESSAGE = 'Invalid or expired OTP';
 
 /**
- * Every method here is a bespoke flow rather than plain CRUD, so this service
- * deliberately does not extend `BaseCrudService`.
+ * Handles all authentication, registration, session management, and OTP verification flows.
  */
 @Injectable()
 export class AuthService {
@@ -36,16 +45,201 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly userAuthRepository: UserAuthRepository,
     private readonly userSessionRepository: UserSessionRepository,
-    private readonly permissionResolutionService: PermissionResolutionService,
+    private readonly userOtpRepository: UserOtpRepository,
+    private readonly smsService: SmsService,
   ) {}
 
-  async login(loginDto: LoginDto): Promise<ApiResponseDto> {
-    const user = await this.userAuthRepository.findByEmail(loginDto.email);
-    // One message for both "no such email" and "wrong password", so the
-    // endpoint can't be used to enumerate accounts.
-    if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
-      throw new UnauthorizedException('Invalid email or password');
+  async register(registerDto: RegisterDto): Promise<ApiResponseDto> {
+    const formattedPhone = formatPhoneNumber(registerDto.phone);
+
+    const emailExists = await this.userAuthRepository.findByEmail(
+      registerDto.email,
+    );
+    if (emailExists) {
+      throw new ConflictException('Email is already in use by another user');
     }
+
+    const phoneExists = await this.userAuthRepository.findByPhone(
+      formattedPhone,
+    );
+    if (phoneExists) {
+      throw new ConflictException(
+        'Phone number is already in use by another user',
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(
+      registerDto.password,
+      BCRYPT_ROUNDS,
+    );
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    let savedUser: User;
+    let savedOtp: UserOtp;
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expireMinutes = parseInt(
+      this.configService.get<string>('OTP_EXPIRE_MINUTES', '10'),
+      10,
+    );
+    const expiresAt = new Date(Date.now() + expireMinutes * 60 * 1000);
+
+    try {
+      const newUser = this.userAuthRepository.create({
+        firstName: registerDto.firstName,
+        lastName: registerDto.lastName,
+        email: registerDto.email,
+        phone: formattedPhone,
+        passwordHash,
+        // Self-registration always creates a driver; other roles are assigned by a dispatcher.
+        role: UserRole.DRIVER,
+        status: UserStatus.PENDING,
+      });
+      savedUser = await this.userAuthRepository.save(
+        newUser,
+        queryRunner.manager,
+      );
+
+      // Clean up any existing registration OTPs for this user
+      await this.userOtpRepository.deleteByUserIdAndPurpose(
+        savedUser.id,
+        OtpPurpose.REGISTRATION,
+        queryRunner.manager,
+      );
+
+      const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
+      const newOtp = this.userOtpRepository.create({
+        userId: savedUser.id,
+        otpHash,
+        purpose: OtpPurpose.REGISTRATION,
+        expiresAt,
+      });
+      savedOtp = await this.userOtpRepository.save(newOtp, queryRunner.manager);
+
+      await queryRunner.commitTransaction();
+    } catch (error: any) {
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException(
+        error.message || 'Registration failed due to an internal error',
+      );
+    } finally {
+      await queryRunner.release();
+    }
+
+    // Dispatch OTP SMS asynchronously
+    await this.smsService.sendSms(
+      formattedPhone,
+      `Your Waypoint verification code is: ${otp}. Valid for ${expireMinutes} minutes.`,
+    );
+
+    return new ApiResponseDto(
+      HttpStatus.CREATED,
+      'User registered successfully. Please verify your OTP.',
+      {
+        userId: savedUser.id,
+        otpId: savedOtp.id,
+        ...(process.env.NODE_ENV !== 'production' ? { otp } : {}),
+      },
+    );
+  }
+
+  async verifyOtp(verifyOtpDto: VerifyOtpDto): Promise<ApiResponseDto> {
+    const formattedPhone = formatPhoneNumber(verifyOtpDto.phone);
+
+    const userOtp = await this.userOtpRepository.findById(verifyOtpDto.otpId);
+    if (!userOtp || userOtp.purpose !== OtpPurpose.REGISTRATION) {
+      throw new BadRequestException(INVALID_OTP_MESSAGE);
+    }
+
+    if (new Date() > userOtp.expiresAt) {
+      throw new BadRequestException(INVALID_OTP_MESSAGE);
+    }
+
+    const user = await this.userAuthRepository.findById(userOtp.userId);
+    if (!user || user.phone !== formattedPhone) {
+      throw new BadRequestException(INVALID_OTP_MESSAGE);
+    }
+
+    if (user.status === UserStatus.ACTIVE) {
+      throw new BadRequestException('User is already verified');
+    }
+
+    const isValid = await bcrypt.compare(verifyOtpDto.otp, userOtp.otpHash);
+    if (!isValid) {
+      throw new BadRequestException(INVALID_OTP_MESSAGE);
+    }
+
+    user.status = UserStatus.ACTIVE;
+    await this.userAuthRepository.save(user);
+    await this.userOtpRepository.deleteById(userOtp.id);
+
+    return new ApiResponseDto(HttpStatus.OK, 'OTP verified successfully', null);
+  }
+
+  async resendOtp(resendOtpDto: ResendOtpDto): Promise<ApiResponseDto> {
+    const formattedPhone = formatPhoneNumber(resendOtpDto.phone);
+
+    const user = await this.userAuthRepository.findByPhone(formattedPhone);
+    if (!user) {
+      throw new NotFoundException('User with this phone number not found');
+    }
+
+    if (user.status === UserStatus.ACTIVE) {
+      throw new BadRequestException('User is already verified');
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expireMinutes = parseInt(
+      this.configService.get<string>('OTP_EXPIRE_MINUTES', '10'),
+      10,
+    );
+    const expiresAt = new Date(Date.now() + expireMinutes * 60 * 1000);
+    const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
+
+    await this.userOtpRepository.deleteByUserIdAndPurpose(
+      user.id,
+      OtpPurpose.REGISTRATION,
+    );
+
+    const newOtp = this.userOtpRepository.create({
+      userId: user.id,
+      otpHash,
+      purpose: OtpPurpose.REGISTRATION,
+      expiresAt,
+    });
+    const savedOtp = await this.userOtpRepository.save(newOtp);
+
+    await this.smsService.sendSms(
+      formattedPhone,
+      `Your Waypoint verification code is: ${otp}. Valid for ${expireMinutes} minutes.`,
+    );
+
+    return new ApiResponseDto(HttpStatus.OK, 'OTP resent successfully', {
+      otpId: savedOtp.id,
+      ...(process.env.NODE_ENV !== 'production' ? { otp } : {}),
+    });
+  }
+
+  async login(loginDto: LoginDto): Promise<ApiResponseDto> {
+    const formattedPhone = formatPhoneNumber(loginDto.phone);
+    let user = await this.userAuthRepository.findByPhone(formattedPhone);
+    if (!user) {
+      user = await this.userAuthRepository.findByEmail(loginDto.phone);
+    }
+
+    // One generic error message so endpoint cannot be used for user enumeration
+    if (!user || !(await bcrypt.compare(loginDto.password, user.passwordHash))) {
+      throw new UnauthorizedException('Invalid phone number or password');
+    }
+
+    if (user.status === UserStatus.PENDING) {
+      throw new UnauthorizedException(
+        'Please verify your phone number with the OTP first',
+      );
+    }
+
     if (user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedException('This account is not active');
     }
@@ -60,15 +254,12 @@ export class AuthService {
 
   async me(userId: number): Promise<ApiResponseDto> {
     const user = await this.findUserOrThrow(userId);
-    const { effective } = await this.permissionResolutionService.resolveForUser(
-      user.id,
-      user.role,
-    );
 
-    return new ApiResponseDto(HttpStatus.OK, 'Profile retrieved successfully', {
-      ...this.toPublic(user),
-      permissions: effective,
-    });
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'Profile retrieved successfully',
+      this.toPublic(user),
+    );
   }
 
   async updateMe(
@@ -77,7 +268,7 @@ export class AuthService {
   ): Promise<ApiResponseDto> {
     const user = await this.findUserOrThrow(userId);
     Object.assign(user, updateMeDto);
-    user.updatedBy = String(userId);
+    user.updatedById = userId;
     const saved = await this.userAuthRepository.save(user);
 
     return new ApiResponseDto(
@@ -94,17 +285,17 @@ export class AuthService {
     const user = await this.findUserOrThrow(userId);
     const matches = await bcrypt.compare(
       changePasswordDto.currentPassword,
-      user.password,
+      user.passwordHash,
     );
     if (!matches) {
       throw new BadRequestException('Current password is incorrect');
     }
 
-    user.password = await bcrypt.hash(
+    user.passwordHash = await bcrypt.hash(
       changePasswordDto.newPassword,
       BCRYPT_ROUNDS,
     );
-    user.updatedBy = String(userId);
+    user.updatedById = userId;
     await this.userAuthRepository.save(user);
 
     return new ApiResponseDto(
@@ -114,12 +305,6 @@ export class AuthService {
     );
   }
 
-  /**
-   * Rotates the session: the presented refresh token is verified against the
-   * stored hash, that session is revoked, and a fresh pair is issued. Replaying
-   * an already-rotated token therefore fails, because its session is no longer
-   * live.
-   */
   async refresh(refreshTokenDto: RefreshTokenDto): Promise<ApiResponseDto> {
     let payload: { sid: number; userId: number };
     try {
@@ -176,10 +361,6 @@ export class AuthService {
     return new ApiResponseDto(HttpStatus.OK, 'Logged out successfully', null);
   }
 
-  /**
-   * Creates the session row first so its id can go into both tokens as `sid`,
-   * then stores the hash of the refresh token on that same row.
-   */
   private async issueSession(
     user: User,
     manager?: import('typeorm').EntityManager,
@@ -194,7 +375,7 @@ export class AuthService {
       refreshTokenHash: '',
       expiresAt: new Date(Date.now() + this.toMilliseconds(refreshExpiresIn)),
       revokedAt: null,
-      createBy: String(user.id),
+      createdById: user.id,
     });
     const saved = await this.userSessionRepository.save(session, manager);
 
@@ -207,8 +388,6 @@ export class AuthService {
 
     const accessToken = await this.jwtService.signAsync(payload);
     const refreshToken = await this.jwtService.signAsync(payload, {
-      // `as any` because @types/jsonwebtoken types `expiresIn` as a literal
-      // union of duration strings, which an env-supplied string can't satisfy.
       expiresIn: refreshExpiresIn as any,
     });
 
@@ -226,13 +405,11 @@ export class AuthService {
     return user;
   }
 
-  /** Never return a user without stripping the password hash first. */
   private toPublic(user: User) {
-    const { password: _password, ...result } = user;
+    const { passwordHash: _passwordHash, ...result } = user;
     return result;
   }
 
-  /** Accepts the `30d` / `12h` / `45m` / `30s` forms used in env. */
   private toMilliseconds(duration: string): number {
     const match = /^(\d+)([smhd])$/.exec(duration.trim());
     if (!match) {

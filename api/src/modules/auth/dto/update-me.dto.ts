@@ -2,9 +2,14 @@ import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateMeDto {
   @IsOptional()
-  @IsString({ message: 'Name must be a string' })
-  @MaxLength(120, { message: 'Name must be at most 120 characters' })
-  name?: string;
+  @IsString({ message: 'First name must be a string' })
+  @MaxLength(100, { message: 'First name must be at most 100 characters' })
+  firstName?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Last name must be a string' })
+  @MaxLength(100, { message: 'Last name must be at most 100 characters' })
+  lastName?: string;
 
   @IsOptional()
   @IsString({ message: 'Phone must be a string' })

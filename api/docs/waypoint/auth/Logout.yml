@@ -1,0 +1,17 @@
+info:
+  name: Logout
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/logout"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: Revoke the current session. Requires Bearer access token.

@@ -2,3 +2,5 @@
 node_modules/
 dist/
 *.log
+
+api/docs/api-test/*
