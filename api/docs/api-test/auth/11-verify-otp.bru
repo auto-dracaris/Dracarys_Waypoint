@@ -1,0 +1,24 @@
+meta {
+  name: 11-verify-otp
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseURL}}/api/auth/verify-otp
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "phone": "0771234567",
+    "otp": "{{new_otp}}",
+    "otpId": {{new_otp_id}}
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.message: eq OTP verified successfully
+}

@@ -1,7 +1,7 @@
 meta {
-  name: 01-login
+  name: 12-login-verified-user
   type: http
-  seq: 1
+  seq: 12
 }
 
 post {
@@ -12,8 +12,8 @@ post {
 
 body:json {
   {
-    "phone": "{{system_dispatcher_phone}}",
-    "password": "{{system_dispatcher_password}}"
+    "phone": "0771234567",
+    "password": "Password123!"
   }
 }
 
@@ -26,6 +26,6 @@ assert {
   res.status: eq 200
   res.body.data.accessToken: isDefined
   res.body.data.refreshToken: isDefined
-  res.body.data.user.password: isUndefined
-  res.body.data.user.passwordHash: isUndefined
+  res.body.data.user.role: eq driver
+  res.body.data.user.status: eq active
 }

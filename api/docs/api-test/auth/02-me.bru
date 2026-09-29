@@ -19,4 +19,6 @@ assert {
   res.body.data.email: eq {{system_dispatcher_email}}
   res.body.data.role: eq dispatcher
   res.body.data.password: isUndefined
+  res.body.data.passwordHash: isUndefined
+  res.body.data.firstName: eq System
 }

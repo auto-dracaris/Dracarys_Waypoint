@@ -17,4 +17,8 @@ export class UsersRepository extends BaseRepository<User> {
   findByEmail(email: string): Promise<User | null> {
     return this.repository.findOneBy({ email });
   }
+
+  findByPhone(phone: string): Promise<User | null> {
+    return this.repository.findOneBy({ phone });
+  }
 }

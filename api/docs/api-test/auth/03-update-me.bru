@@ -16,11 +16,13 @@ headers {
 
 body:json {
   {
-    "name": "System Dispatcher (updated)"
+    "firstName": "System",
+    "lastName": "Dispatcher (updated)"
   }
 }
 
 assert {
   res.status: eq 200
-  res.body.data.name: eq System Dispatcher (updated)
+  res.body.data.firstName: eq System
+  res.body.data.lastName: eq Dispatcher (updated)
 }
