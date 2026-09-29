@@ -8,6 +8,7 @@ import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../core/widgets/online_status_pill.dart';
+import '../../../core/router/routes.dart';
 import '../data/trips_providers.dart';
 import '../domain/trip.dart';
 import '../domain/vehicle.dart';
@@ -55,6 +56,12 @@ class _Content extends ConsumerWidget {
   final Vehicle vehicle;
   final List<Trip> trips;
 
+  void _open(BuildContext context, Trip trip) {
+    final stop = trip.activeStop;
+    if (stop == null) return; // finished trip: nothing left to open
+    context.go(AppRoutes.stop(trip.id, stop.id));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final online = ref.watch(onlineProvider);
@@ -99,8 +106,7 @@ class _Content extends ConsumerWidget {
                 TripCard(
                   trip: trips[i],
                   highlighted: i == 0,
-                  // Trip details screen is built in the next plan.
-                  onViewTrip: () {},
+                  onViewTrip: () => _open(context, trips[i]),
                 ),
               ],
             ],

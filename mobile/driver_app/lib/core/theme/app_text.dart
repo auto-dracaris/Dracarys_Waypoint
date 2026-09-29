@@ -17,9 +17,11 @@ abstract final class AppText {
       );
 
   static final displaySm = _sans(30, 600, 38);
+  static final displaySmMedium = _sans(30, 500, 38);
   static final displayMd = _sans(36, 600, 44);
   static final displayXs = _sans(24, 500, 32);
   static final textLgSemibold = _sans(18, 600, 28);
+  static final textLgMedium = _sans(18, 500, 28);
   static final textMdMedium = _sans(16, 500, 24);
   static final textMdSemibold = _sans(16, 600, 24);
   static final textSmRegular = _sans(14, 400, 20);

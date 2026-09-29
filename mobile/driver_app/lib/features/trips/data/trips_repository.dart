@@ -8,7 +8,20 @@ abstract interface class TripsRepository {
   /// Throws [StateError] if [id] is unknown.
   Future<Trip> getTrip(String id);
 
-  /// Completes the next pending stop. No-op if none are pending.
+  /// Marks the trip as under way. Throws [StateError] if [tripId] is unknown.
+  Future<Trip> startTrip(String tripId);
+
+  /// Flags the active stop as arrived (recording the time). No-op if it has
+  /// already arrived or the trip has no stops left.
   /// Throws [StateError] if [tripId] is unknown.
   Future<Trip> markArrived(String tripId);
+
+  /// Completes an arrived stop, recording delivered quantities by order id.
+  /// No-op unless the stop has arrived. The trip completes with its last stop.
+  /// Throws [StateError] if [tripId] is unknown.
+  Future<Trip> completeStop(
+    String tripId,
+    String stopId, {
+    Map<String, int> deliveredCases = const {},
+  });
 }
