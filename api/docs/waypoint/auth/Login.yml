@@ -10,8 +10,8 @@ http:
     type: json
     data: |-
       {
-        "phone": "{{phone}}",
-        "password": "{{password}}"
+        "phone": "0770000000",
+        "password": "111111"
       }
 
 runtime:
@@ -19,8 +19,20 @@ runtime:
     - type: after-response
       code: |-
         const data = res.body?.data;
-        if (data?.accessToken) bru.setVar("accessToken", data.accessToken);
-        if (data?.refreshToken) bru.setVar("refreshToken", data.refreshToken);
+
+        // Current token, used by the protected requests via the auth folder.
+        if (data?.accessToken) {
+          bru.setEnvVar("accessToken", data.accessToken);
+          bru.setEnvVar("refreshToken", data.refreshToken);
+        }
+
+        // Per-role copy, e.g. driverAccessToken, storeManagerAccessToken.
+        const role = data?.user?.role;
+        if (data?.accessToken && role) {
+          const prefix = role.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+          bru.setEnvVar(`${prefix}AccessToken`, data.accessToken);
+          bru.setEnvVar(`${prefix}RefreshToken`, data.refreshToken);
+        }
 
 settings:
   encodeUrl: true
@@ -31,4 +43,7 @@ settings:
 docs: |-
   Log in with phone + password. Public. The account must be verified (active).
 
-  Response `data`: `{ accessToken, refreshToken, user }`. Tokens are saved to runtime vars and used by the protected requests.
+  Response `data`: `{ accessToken, refreshToken, user }`. Tokens are saved to the selected environment (session only, not written to disk):
+
+  - `accessToken` / `refreshToken`: the latest login, used by the protected requests.
+  - `<role>AccessToken` / `<role>RefreshToken` per role: `dispatcherAccessToken`, `storeManagerAccessToken`, `driverAccessToken`, `loaderAccessToken` (and the matching refresh tokens). Use e.g. `{{dispatcherAccessToken}}` in a request's Bearer auth to call as that role.

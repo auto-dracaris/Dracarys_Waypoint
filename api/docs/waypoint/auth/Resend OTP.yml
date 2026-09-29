@@ -18,8 +18,8 @@ runtime:
     - type: after-response
       code: |-
         const data = res.body?.data;
-        if (data?.otpId) bru.setVar("otpId", data.otpId);
-        if (data?.otp) bru.setVar("otp", data.otp);
+        if (data?.otpId) bru.setEnvVar("otpId", data.otpId);
+        if (data?.otp) bru.setEnvVar("otp", data.otp);
 
 settings:
   encodeUrl: true
@@ -30,4 +30,4 @@ settings:
 docs: |-
   Issue a fresh OTP for a user who has not verified yet. Public.
 
-  Response `data`: `{ otpId, otp? }`, saved to runtime vars.
+  Response `data`: `{ otpId, otp? }`, saved to the selected environment.
