@@ -93,7 +93,7 @@ class NavigationPreviewScreen extends ConsumerWidget {
                         stop: d.stop,
                         onStart: () => _unavailable(context),
                         // Full route details live on the trip overview.
-                        onDetails: () => _unavailable(context),
+                        onDetails: () => context.go(AppRoutes.trip(tripId)),
                       ),
                     ),
                   ],

@@ -33,13 +33,14 @@ abstract final class AppText {
   static final textXsSemibold = _sans(12, 600, 18);
 
   /// Figma's "font/family/title" (Outfit Medium) — back links, day headings.
-  static TextStyle outfit(double size, Color color, {double? lineHeight}) =>
+  static TextStyle outfit(double size, Color color,
+          {double? lineHeight, int weight = 500}) =>
       TextStyle(
         fontFamily: 'Outfit',
         fontSize: size,
         height: lineHeight == null ? null : lineHeight / size,
-        fontWeight: FontWeight.w500,
-        fontVariations: const [FontVariation('wght', 500)],
+        fontWeight: FontWeight.values[(weight ~/ 100) - 1],
+        fontVariations: [FontVariation('wght', weight.toDouble())],
         color: color,
       );
 
