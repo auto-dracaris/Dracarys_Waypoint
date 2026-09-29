@@ -11,6 +11,14 @@ Flutter app for delivery drivers (competition build, UI + mock data).
 Any email with a password of 6+ characters signs in as Nimal Silva (DRV021).
 Sign up creates an in-memory driver.
 
+## Design source
+Screens are built from the Figma file "WayPoint" (frame width 402). Tokens live in
+`lib/core/theme/` (`AppColors`, `AppText`), copied from the Figma variables.
+- Images/SVGs exported from Figma are in `assets/images/`.
+- Fonts (variable, SIL OFL) are bundled in `assets/fonts/`: Google Sans Flex for UI text,
+  Inter for status labels. Icons are Flutter's Material Icons (Round variants).
+- Screens done so far: My Trips, Updates (notifications). Trip and notification action buttons don't navigate yet (Trip Details is next).
+
 ## Architecture
 Feature-first, three layers per feature, dependencies point inward:
 

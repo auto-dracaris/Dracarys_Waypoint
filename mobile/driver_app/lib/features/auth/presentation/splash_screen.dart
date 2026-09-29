@@ -41,7 +41,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            WaypointLogo(size: 96),
+            WaypointLogo(height: 72),
             SizedBox(height: 16),
             Text('Waypoint',
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),

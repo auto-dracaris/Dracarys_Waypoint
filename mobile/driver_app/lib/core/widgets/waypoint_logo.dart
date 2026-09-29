@@ -1,32 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-import '../theme/app_colors.dart';
-
-/// Placeholder mark until the real logo asset is exported from Figma.
+/// The Waypoint logo mark (exported from Figma, 70 x 42).
 class WaypointLogo extends StatelessWidget {
-  const WaypointLogo({super.key, this.size = 72});
+  const WaypointLogo({super.key, this.height = 42});
 
-  final double size;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SvgPicture.asset(
+      'assets/images/logo_mark.svg',
       key: const Key('waypoint-logo'),
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(size * 0.22),
-      ),
-      child: Text(
-        'W',
-        style: TextStyle(
-          fontSize: size * 0.6,
-          fontWeight: FontWeight.w900,
-          color: AppColors.ink,
-        ),
-      ),
+      height: height,
+      width: height * 70 / 42,
     );
   }
 }
