@@ -1,17 +1,17 @@
-# driver_app
+# Waypoint Driver App
 
-A new Flutter project.
+Flutter app for delivery drivers (competition build, UI + mock data).
 
-## Getting Started
+## Run
+    flutter pub get
+    flutter run            # pick a device: Android emulator, Chrome, Windows...
 
-This project is a starting point for a Flutter application.
+## Structure
+- `lib/core/` theme, shared widgets, router
+- `lib/features/<name>/{domain,data,presentation}`
+- Data comes from `Mock...Repository` classes; to connect the API, change the
+  `...RepositoryProvider` in each feature's `data/*_providers.dart`.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Demo login
+Any email with a password of 6+ characters signs in as Nimal Silva (DRV021).
+Sign up creates an in-memory driver.
