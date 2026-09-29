@@ -30,6 +30,7 @@ abstract final class AppText {
   static final textSmSemibold = _sans(14, 600, 20);
   static final textXsRegular = _sans(12, 400, 18);
   static final textXsMedium = _sans(12, 500, 18);
+  static final textXsSemibold = _sans(12, 600, 18);
 
   /// Figma's "font/family/title" (Outfit Medium) — back links, day headings.
   static TextStyle outfit(double size, Color color, {double? lineHeight}) =>

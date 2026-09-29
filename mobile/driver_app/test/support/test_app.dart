@@ -4,6 +4,8 @@ import 'package:driver_app/core/theme/app_theme.dart';
 import 'package:driver_app/core/widgets/map_view.dart';
 import 'package:driver_app/features/auth/data/auth_providers.dart';
 import 'package:driver_app/features/auth/data/mock_auth_repository.dart';
+import 'package:driver_app/features/records/data/mock_records_repository.dart';
+import 'package:driver_app/features/records/data/records_providers.dart';
 import 'package:driver_app/features/trips/data/mock_trips_repository.dart';
 import 'package:driver_app/features/trips/data/trips_providers.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +32,7 @@ Future<void> pumpTripRoutes(
   WidgetTester tester, {
   required String location,
   MockTripsRepository? trips,
+  MockRecordsRepository? records,
   List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = const Size(402 * 3, 1700 * 3);
@@ -49,6 +52,8 @@ Future<void> pumpTripRoutes(
           .overrideWithValue(MockAuthRepository(latency: Duration.zero)),
       tripsRepositoryProvider
           .overrideWithValue(trips ?? testTripsRepository()),
+      recordsRepositoryProvider.overrideWithValue(
+          records ?? MockRecordsRepository(latency: Duration.zero)),
       mapTilesEnabledProvider.overrideWithValue(false),
       clockProvider.overrideWithValue(() => testNow),
       ...overrides,

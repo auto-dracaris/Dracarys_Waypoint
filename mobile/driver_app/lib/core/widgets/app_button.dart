@@ -18,6 +18,8 @@ class AppButton extends StatelessWidget {
     this.dense = false,
     this.bold = false,
     this.padding = 12,
+    this.radius = 4,
+    this.backgroundColor,
     this.isLoading = false,
   });
 
@@ -35,6 +37,10 @@ class AppButton extends StatelessWidget {
 
   /// Uniform padding when not [dense].
   final double padding;
+  final double radius;
+
+  /// Overrides the variant's background (e.g. the brand yellow of some CTAs).
+  final Color? backgroundColor;
   final bool isLoading;
 
   (Color bg, Color fg, Color? border) get _colors => switch (variant) {
@@ -50,15 +56,15 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final (bg, fg, border) = _colors;
     final enabled = onPressed != null && !isLoading;
-    final radius = BorderRadius.circular(4);
+    final borderRadius = BorderRadius.circular(radius);
     return Material(
-      color: bg,
+      color: backgroundColor ?? bg,
       shape: RoundedRectangleBorder(
-        borderRadius: radius,
+        borderRadius: borderRadius,
         side: border == null ? BorderSide.none : BorderSide(color: border),
       ),
       child: InkWell(
-        borderRadius: radius,
+        borderRadius: borderRadius,
         onTap: enabled ? onPressed : null,
         child: Padding(
           padding: dense
