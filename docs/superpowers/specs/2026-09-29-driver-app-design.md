@@ -35,7 +35,7 @@ full test suite.
 - **Data layer:** each feature has an abstract repository plus a `Mock…Repository` (only implementation for now,
   with a small artificial delay so loading states show). Riverpod providers expose repositories; connecting the
   existing `api/` later = adding an API implementation and changing one provider. No screen code changes.
-- **Models:** plain immutable Dart classes with `fromJson`, shaped like the likely API payloads. No codegen.
+- **Models:** plain immutable Dart classes, no codegen. `fromJson` is added per model when the API is connected (payload shapes are not known yet).
 - **State:** Riverpod `AsyncNotifier`s per screen.
 - **Routing:** `go_router` with `StatefulShellRoute` for the 3 tabs; trip details, navigation preview and
   turn-by-turn are pushed above the shell; splash/login/signup outside it with an auth redirect.
