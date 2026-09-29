@@ -23,6 +23,23 @@ abstract final class AppColors {
   static const divider = Color(0xFFEEEEEE);
   static const navBorder = Color(0xFFE3E3E3);
 
+  static const inkFaint = Color(0xFFA3A3A3); // text/quaternary
+  static const outfitInk = Color(0xFF10141E);
+  static const sectionLabel = Color(0xFF596070);
+
+  // Notification card palettes
+  static const red50 = Color(0xFFFEF2F2);
+  static const red100 = Color(0xFFFEE2E2);
+  static const red500 = Color(0xFFEF4444);
+  static const red700 = Color(0xFFB91C1C);
+  static const yellow50 = Color(0xFFFEFCE8);
+  static const yellow300 = Color(0xFFFDE047);
+  static const yellow600 = Color(0xFFCA8A04);
+  static const orange50 = Color(0xFFFFF7ED);
+  static const gray50 = Color(0xFFF9FAFB);
+  static const green50 = Color(0xFFF0FDF4);
+  static const green600 = Color(0xFF16A34A);
+
   // Status
   static const lime100 = Color(0xFFECFCCB);
   static const lime700 = Color(0xFF4D7C0F);
