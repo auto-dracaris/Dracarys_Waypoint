@@ -13,7 +13,6 @@ import { DataSource } from 'typeorm';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { UserStatus } from '../../common/enums/user-status.enum';
-import { PermissionResolutionService } from '../../common/services/permission-resolution.service';
 import { SmsService } from '../../common/services/sms.service';
 import { formatPhoneNumber } from '../../common/utils/phone.util';
 import { User } from '../../database/entities/user.entity';
@@ -47,7 +46,6 @@ export class AuthService {
     private readonly userAuthRepository: UserAuthRepository,
     private readonly userSessionRepository: UserSessionRepository,
     private readonly userOtpRepository: UserOtpRepository,
-    private readonly permissionResolutionService: PermissionResolutionService,
     private readonly smsService: SmsService,
   ) {}
 
@@ -256,15 +254,12 @@ export class AuthService {
 
   async me(userId: number): Promise<ApiResponseDto> {
     const user = await this.findUserOrThrow(userId);
-    const { effective } = await this.permissionResolutionService.resolveForUser(
-      user.id,
-      user.role,
-    );
 
-    return new ApiResponseDto(HttpStatus.OK, 'Profile retrieved successfully', {
-      ...this.toPublic(user),
-      permissions: effective,
-    });
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'Profile retrieved successfully',
+      this.toPublic(user),
+    );
   }
 
   async updateMe(
@@ -273,7 +268,7 @@ export class AuthService {
   ): Promise<ApiResponseDto> {
     const user = await this.findUserOrThrow(userId);
     Object.assign(user, updateMeDto);
-    user.updatedBy = String(userId);
+    user.updatedById = userId;
     const saved = await this.userAuthRepository.save(user);
 
     return new ApiResponseDto(
@@ -300,7 +295,7 @@ export class AuthService {
       changePasswordDto.newPassword,
       BCRYPT_ROUNDS,
     );
-    user.updatedBy = String(userId);
+    user.updatedById = userId;
     await this.userAuthRepository.save(user);
 
     return new ApiResponseDto(
@@ -380,7 +375,7 @@ export class AuthService {
       refreshTokenHash: '',
       expiresAt: new Date(Date.now() + this.toMilliseconds(refreshExpiresIn)),
       revokedAt: null,
-      createBy: String(user.id),
+      createdById: user.id,
     });
     const saved = await this.userSessionRepository.save(session, manager);
 

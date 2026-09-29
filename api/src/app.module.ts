@@ -7,8 +7,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { PermissionsModule } from './modules/permissions/permissions.module';
-import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -47,8 +45,6 @@ import { UsersModule } from './modules/users/users.module';
     CommonModule,
     AuthModule,
     UsersModule,
-    PermissionsModule,
-    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

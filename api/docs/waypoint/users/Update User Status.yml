@@ -1,0 +1,26 @@
+info:
+  name: Update User Status
+  type: http
+  seq: 5
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/users/{{userId}}/status"
+  body:
+    type: json
+    data: |-
+      {
+        "status": "blocked"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Change a user's status: pending | active | blocked | deleted. Dispatcher only (Bearer `{{dispatcherAccessToken}}` from the folder).
+
+  Blocked/deleted users are logged out on their next request. You cannot change your own status.

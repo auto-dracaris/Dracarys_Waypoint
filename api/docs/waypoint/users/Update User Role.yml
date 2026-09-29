@@ -1,0 +1,26 @@
+info:
+  name: Update User Role
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/users/{{userId}}/role"
+  body:
+    type: json
+    data: |-
+      {
+        "role": "loader"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Change a user's role: dispatcher | store_manager | driver | loader. Dispatcher only (Bearer `{{dispatcherAccessToken}}` from the folder).
+
+  Applies on the user's next request. You cannot change your own role.
