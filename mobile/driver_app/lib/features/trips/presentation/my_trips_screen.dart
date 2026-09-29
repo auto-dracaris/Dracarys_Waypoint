@@ -7,7 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/async_value_view.dart';
-import '../../../core/widgets/status_pill.dart';
+import '../../../core/widgets/online_status_pill.dart';
 import '../data/trips_providers.dart';
 import '../domain/trip.dart';
 import '../domain/vehicle.dart';
@@ -77,12 +77,7 @@ class _Content extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  StatusPill(
-                    label: online ? 'Online' : 'Offline',
-                    kind: online ? StatusKind.success : StatusKind.neutral,
-                    onLongPress: () =>
-                        ref.read(onlineProvider.notifier).toggle(),
-                  ),
+                  const OnlineStatusPill(),
                   if (online) ...[
                     const SizedBox(height: 4),
                     Text('Synced just now',

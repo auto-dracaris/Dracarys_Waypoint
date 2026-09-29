@@ -1,6 +1,7 @@
 import 'package:driver_app/core/theme/app_colors.dart';
 import 'package:driver_app/core/theme/app_theme.dart';
 import 'package:driver_app/core/widgets/app_bottom_nav.dart';
+import 'package:driver_app/core/widgets/segmented_control.dart';
 import 'package:driver_app/core/widgets/soft_light_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -52,5 +53,23 @@ void main() {
     ])));
     expect(find.byType(SoftLightOverlay), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('SegmentedControl shows counts and reports the tapped segment',
+      (tester) async {
+    int? selected;
+    await tester.pumpWidget(wrap(SegmentedControl(
+      segments: const [
+        Segment(label: 'All', count: 15),
+        Segment(label: 'Errors', count: 3),
+      ],
+      selectedIndex: 0,
+      onChanged: (i) => selected = i,
+    )));
+
+    expect(find.text('15'), findsOneWidget);
+    expect(find.text('3'), findsOneWidget);
+    await tester.tap(find.text('Errors'));
+    expect(selected, 1);
   });
 }
