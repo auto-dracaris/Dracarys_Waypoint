@@ -17,6 +17,11 @@ body:json {
   }
 }
 
+vars:post-response {
+  access_token: res.body.data.accessToken
+  refresh_token: res.body.data.refreshToken
+}
+
 assert {
   res.status: eq 200
   res.body.data.accessToken: isDefined
