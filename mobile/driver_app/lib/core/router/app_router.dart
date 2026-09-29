@@ -10,30 +10,22 @@ import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/notifications/presentation/updates_screen.dart';
 import '../../features/trips/presentation/my_trips_screen.dart';
 import 'app_shell.dart';
+import 'auth_redirect.dart';
 
 final splashDurationProvider =
     Provider<Duration>((ref) => const Duration(milliseconds: 1600));
 
-const _publicRoutes = {'/splash', '/login', '/signup'};
-
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.listen(authControllerProvider, (_, _) => refresh.value++);
-  ref.onDispose(refresh.dispose);
 
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: '/splash',
     refreshListenable: refresh,
-    redirect: (context, state) {
-      final auth = ref.read(authControllerProvider);
-      if (auth.isLoading) return null;
-      final loggedIn = auth.hasValue && auth.value != null;
-      final loc = state.matchedLocation;
-      if (loc == '/splash') return null;
-      if (!loggedIn && !_publicRoutes.contains(loc)) return '/login';
-      if (loggedIn && (loc == '/login' || loc == '/signup')) return '/trips';
-      return null;
-    },
+    redirect: (context, state) => authRedirect(
+      location: state.matchedLocation,
+      auth: ref.read(authControllerProvider),
+    ),
     routes: [
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
@@ -56,4 +48,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.onDispose(() {
+    router.dispose();
+    refresh.dispose();
+  });
+  return router;
 });

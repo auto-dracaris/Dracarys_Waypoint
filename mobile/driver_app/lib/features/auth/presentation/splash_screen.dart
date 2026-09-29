@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/widgets/waypoint_logo.dart';
+import '../domain/driver.dart';
 import 'auth_controller.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -22,7 +23,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   Future<void> _next() async {
     final minimum = Future<void>.delayed(ref.read(splashDurationProvider));
-    final driver = await ref.read(authControllerProvider.future);
+    Driver? driver;
+    try {
+      driver = await ref.read(authControllerProvider.future);
+    } catch (_) {
+      // Can't restore the session: fall back to the login screen.
+    }
     await minimum;
     if (!mounted) return;
     context.go(driver != null ? '/trips' : '/login');

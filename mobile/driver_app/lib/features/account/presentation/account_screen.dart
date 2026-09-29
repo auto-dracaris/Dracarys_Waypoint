@@ -22,6 +22,7 @@ class AccountScreen extends ConsumerWidget {
               subtitle: Text('Driver · ${d?.code ?? ''}'),
             ),
             TextButton(
+              key: const Key('sign-out'),
               onPressed: () =>
                   ref.read(authControllerProvider.notifier).logout(),
               child: const Text('Sign out'),

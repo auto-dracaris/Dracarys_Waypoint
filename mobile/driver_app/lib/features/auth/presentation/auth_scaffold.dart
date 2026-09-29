@@ -48,3 +48,19 @@ class AuthScaffold extends StatelessWidget {
     );
   }
 }
+
+/// Inline form-level error; renders nothing when there is no message.
+class FormError extends StatelessWidget {
+  const FormError(this.message, {super.key});
+
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    if (message == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Text(message!, style: const TextStyle(color: AppColors.danger)),
+    );
+  }
+}

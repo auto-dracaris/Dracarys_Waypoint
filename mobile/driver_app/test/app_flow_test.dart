@@ -9,6 +9,7 @@ import 'package:driver_app/features/trips/data/trips_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 Widget buildApp() => ProviderScope(
       overrides: [
@@ -26,7 +27,7 @@ Widget buildApp() => ProviderScope(
 Future<void> signIn(WidgetTester tester) async {
   await tester.enterText(find.byKey(const Key('email')), 'nimal@waypoint.lk');
   await tester.enterText(find.byKey(const Key('password')), 'secret1');
-  await tester.tap(find.text('Sign in').last);
+  await tester.tap(find.byKey(const Key('login-submit')));
   await tester.pumpAndSettle();
 }
 
@@ -44,7 +45,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('email')), '   ');
     await tester.enterText(find.byKey(const Key('password')), '123');
-    await tester.tap(find.text('Sign in').last);
+    await tester.tap(find.byKey(const Key('login-submit')));
     await tester.pumpAndSettle();
     expect(find.text('Enter a valid email'), findsOneWidget);
     expect(find.text('Password must be at least 6 characters'), findsOneWidget);
@@ -67,10 +68,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Nimal Silva'), findsOneWidget);
 
-    await tester.tap(find.text('Sign out'));
+    await tester.tap(find.byKey(const Key('sign-out')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('email')), findsOneWidget);
-    expect(find.text('Account'), findsNothing); // shell not reachable
+    expect(find.text('Account'), findsNothing);
+    expect(GoRouter.of(tester.element(find.byKey(const Key('email')))).canPop(),
+        isFalse); // no way back into the shell
   });
 
   testWidgets('sign up with a registered email shows an error and stays',
@@ -83,21 +86,21 @@ void main() {
       await tester.enterText(find.byKey(const Key('email')), 'k@y.lk');
       await tester.enterText(find.byKey(const Key('password')), 'secret1');
       await tester.enterText(find.byKey(const Key('confirm')), 'secret1');
-      await tester.tap(find.text('Create account').last);
+      await tester.tap(find.byKey(const Key('signup-submit')));
       await tester.pumpAndSettle();
     }
 
-    await tester.tap(find.text('Create account'));
+    await tester.tap(find.byKey(const Key('go-signup')));
     await tester.pumpAndSettle();
     await submitSignUp(); // first time succeeds -> shell
     expect(find.text('Trip 1'), findsOneWidget);
 
     await tester.tap(find.text('Account'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sign out'));
+    await tester.tap(find.byKey(const Key('sign-out')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Create account'));
+    await tester.tap(find.byKey(const Key('go-signup')));
     await tester.pumpAndSettle();
     await submitSignUp(); // duplicate
     expect(find.text('This email is already registered'), findsOneWidget);

@@ -20,6 +20,7 @@ class AsyncValueView<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return value.when(
+      skipLoadingOnRefresh: false, // show the spinner while "Try again" reloads
       data: (v) => (isEmpty?.call(v) ?? false)
           ? Center(child: Text(emptyMessage))
           : data(v),
