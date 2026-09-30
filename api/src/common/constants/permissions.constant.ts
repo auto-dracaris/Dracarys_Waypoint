@@ -21,6 +21,14 @@ export const PERMISSIONS = {
   SETTINGS: {
     MANAGE: 'settings.manage',
   },
+  OUTLETS: {
+    VIEW: 'outlet.view',
+    MANAGE: 'outlet.manage',
+  },
+  VEHICLES: {
+    VIEW: 'vehicle.view',
+    MANAGE: 'vehicle.manage',
+  },
 };
 
 /** Flat list of every permission string above, for seeding. */
