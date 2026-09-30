@@ -1,25 +1,23 @@
-import { ConflictException, HttpStatus, Injectable } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { DeepPartial } from 'typeorm';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { BaseCrudService } from '../../common/services/base-crud.service';
+import { formatPhoneNumber } from '../../common/utils/phone.util';
 import { User } from '../../database/entities/user.entity';
+import { PatchUserRoleDto } from './dto/patch-user-role.dto';
 import { PatchUserStatusDto } from './dto/patch-user-status.dto';
+import { UserListQueryDto } from './dto/user-list-query.dto';
 import { UsersRepository } from './repositories/users.repository';
-
-const BCRYPT_ROUNDS = 10;
 
 @Injectable()
 export class UsersService extends BaseCrudService<User> {
   constructor(private readonly usersRepository: UsersRepository) {
     super(usersRepository, 'User');
-  }
-
-  protected async beforeCreate(dto: DeepPartial<User>): Promise<void> {
-    await this.assertEmailIsFree(dto.email as string);
-    if (dto.phone) {
-      await this.assertPhoneIsFree(dto.phone as string);
-    }
   }
 
   protected async beforeUpdate(
@@ -31,28 +29,27 @@ export class UsersService extends BaseCrudService<User> {
       await this.assertEmailIsFree(dto.email);
     }
     if (dto.phone && dto.phone !== entity.phone) {
-      await this.assertPhoneIsFree(dto.phone as string);
+      await this.assertPhoneIsFree(dto.phone);
     }
-  }
-
-  async create(dto: DeepPartial<User> & { password?: string }): Promise<ApiResponseDto> {
-    await this.beforeCreate(dto);
-    const { password, ...rest } = dto;
-    const user = this.usersRepository.create({
-      ...rest,
-      passwordHash: await bcrypt.hash(password as string, BCRYPT_ROUNDS),
-    });
-    const saved = await this.usersRepository.save(user);
-
-    return new ApiResponseDto(
-      HttpStatus.CREATED,
-      'User created successfully',
-      this.toPublic(saved),
-    );
   }
 
   async findAll(page: number = 1, limit: number = 10): Promise<ApiResponseDto> {
     const [items, total] = await this.usersRepository.findAndCount(page, limit);
+
+    return new ApiResponseDto(HttpStatus.OK, 'Users retrieved successfully', {
+      items: items.map((user) => this.toPublic(user)),
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    });
+  }
+
+  /** `GET /users` — `findAll` plus optional role/status/search filters. */
+  async findAllFiltered(query: UserListQueryDto): Promise<ApiResponseDto> {
+    const { page = 1, limit = 10, role, status, search } = query;
+    const [items, total] = await this.usersRepository.findFiltered(
+      page,
+      limit,
+      { role, status, search },
+    );
 
     return new ApiResponseDto(HttpStatus.OK, 'Users retrieved successfully', {
       items: items.map((user) => this.toPublic(user)),
@@ -69,13 +66,19 @@ export class UsersService extends BaseCrudService<User> {
     );
   }
 
+  /** `actorId` is the dispatcher making the call, recorded as `updated_by`. */
   async update(
     id: string | number,
     dto: DeepPartial<User>,
+    actorId?: number,
   ): Promise<ApiResponseDto> {
+    this.normalisePhone(dto);
     const user = await this.findOrThrow(id);
     await this.beforeUpdate(id, dto, user);
     Object.assign(user, dto);
+    if (actorId) {
+      user.updatedById = actorId;
+    }
     const saved = await this.usersRepository.save(user);
 
     return new ApiResponseDto(
@@ -92,9 +95,12 @@ export class UsersService extends BaseCrudService<User> {
   async patchStatus(
     id: number,
     dto: PatchUserStatusDto,
+    actorId: number,
   ): Promise<ApiResponseDto> {
+    this.assertNotSelf(id, actorId, 'status');
     const user = await this.findOrThrow(id);
     user.status = dto.status;
+    user.updatedById = actorId;
     const saved = await this.usersRepository.save(user);
 
     return new ApiResponseDto(
@@ -102,6 +108,49 @@ export class UsersService extends BaseCrudService<User> {
       'User status updated successfully',
       this.toPublic(saved),
     );
+  }
+
+  /**
+   * Takes effect on the user's next request — `JwtStrategy` reads the role
+   * from the database, not from the token.
+   */
+  async patchRole(
+    id: number,
+    dto: PatchUserRoleDto,
+    actorId: number,
+  ): Promise<ApiResponseDto> {
+    this.assertNotSelf(id, actorId, 'role');
+    const user = await this.findOrThrow(id);
+    user.role = dto.role;
+    user.updatedById = actorId;
+    const saved = await this.usersRepository.save(user);
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'User role updated successfully',
+      this.toPublic(saved),
+    );
+  }
+
+  /**
+   * A dispatcher changing their own role or status could lock every admin out
+   * of the system, so those changes have to be made by another dispatcher.
+   */
+  private assertNotSelf(
+    id: number,
+    actorId: number,
+    field: 'role' | 'status',
+  ): void {
+    if (id === actorId) {
+      throw new BadRequestException(`You cannot change your own ${field}`);
+    }
+  }
+
+  /** Stored in the same format login looks phones up by. */
+  private normalisePhone(dto: DeepPartial<User>): void {
+    if (dto.phone) {
+      dto.phone = formatPhoneNumber(dto.phone);
+    }
   }
 
   private async assertEmailIsFree(email: string): Promise<void> {
@@ -114,7 +163,9 @@ export class UsersService extends BaseCrudService<User> {
   private async assertPhoneIsFree(phone: string): Promise<void> {
     const existing = await this.usersRepository.findByPhone(phone);
     if (existing) {
-      throw new ConflictException('Phone number is already in use by another user');
+      throw new ConflictException(
+        'Phone number is already in use by another user',
+      );
     }
   }
 

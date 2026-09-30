@@ -41,17 +41,6 @@ export class SeedSystemDispatcher1759000000002 implements MigrationInterface {
         UserStatus.ACTIVE,
       ],
     );
-
-    // Explicit grants as well as the DISPATCHER bypass, so the account still
-    // works if its role is ever changed and so `GET /api/auth/me` reports a
-    // real set.
-    await queryRunner.query(
-      `INSERT INTO user_permissions (user_id, permission_id)
-       SELECT u.id, p.id FROM users u CROSS JOIN permissions p
-       WHERE u.email = $1
-       ON CONFLICT (user_id, permission_id) DO NOTHING;`,
-      [email],
-    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -59,11 +48,6 @@ export class SeedSystemDispatcher1759000000002 implements MigrationInterface {
     if (!email) {
       return;
     }
-    await queryRunner.query(
-      `DELETE FROM user_permissions
-       WHERE user_id IN (SELECT id FROM users WHERE email = $1);`,
-      [email],
-    );
     await queryRunner.query(`DELETE FROM users WHERE email = $1;`, [email]);
   }
 }

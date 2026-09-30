@@ -118,7 +118,7 @@ class MockTripsRepository implements TripsRepository {
         name: 'Trip 2',
         subtitle: 'Fresh deliveries · Gampaha',
         departure: at(7, 0),
-        status: TripStatus.assigned,
+        status: TripStatus.loading,
         stops: [
           stop(1, 'Waypoint Fresh - Minuwangoda', '08:00-10:00', at(8, 30),
               7.1730, 79.9530, tripId: 'trip-2'),

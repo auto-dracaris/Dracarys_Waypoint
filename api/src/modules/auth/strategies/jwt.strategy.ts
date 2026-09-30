@@ -41,10 +41,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Session has been revoked');
     }
 
+    // Role and email come from the row just loaded, not the token, so a role
+    // change made by a dispatcher applies on the user's very next request.
     return {
-      userId: payload.userId,
-      email: payload.email,
-      role: payload.role,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
       sessionId: session.id,
     };
   }

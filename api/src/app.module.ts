@@ -53,6 +53,7 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
     SettingsModule,
     OutletsModule,
     VehiclesModule,
+
   ],
   controllers: [AppController],
   providers: [AppService],

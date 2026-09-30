@@ -29,12 +29,14 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  // only for registration
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   verifyOtp(@Body() verifyOtpDto: VerifyOtpDto): Promise<ApiResponseDto> {
     return this.authService.verifyOtp(verifyOtpDto);
   }
 
+  // only for registration
   @Post('resend-otp')
   @HttpCode(HttpStatus.OK)
   resendOtp(@Body() resendOtpDto: ResendOtpDto): Promise<ApiResponseDto> {
