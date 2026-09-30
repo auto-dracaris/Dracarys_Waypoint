@@ -29,7 +29,7 @@ class AuthScaffold extends StatelessWidget {
                 children: [
                   const Align(
                       alignment: Alignment.centerLeft,
-                      child: WaypointLogo(size: 56)),
+                      child: WaypointLogo(height: 48)),
                   const SizedBox(height: 24),
                   Text(title,
                       style: const TextStyle(

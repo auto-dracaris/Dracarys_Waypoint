@@ -7,7 +7,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { OutletsModule } from './modules/outlets/outlets.module';
 import { UsersModule } from './modules/users/users.module';
+import { VehiclesModule } from './modules/vehicles/vehicles.module';
 
 @Module({
   imports: [
@@ -45,6 +47,8 @@ import { UsersModule } from './modules/users/users.module';
     CommonModule,
     AuthModule,
     UsersModule,
+    OutletsModule,
+    VehiclesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

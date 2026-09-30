@@ -1,0 +1,27 @@
+meta {
+  name: 01-login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseURL}}/api/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "phone": "{{system_dispatcher_phone}}",
+    "password": "{{system_dispatcher_password}}"
+  }
+}
+
+vars:post-response {
+  access_token: res.body.data.accessToken
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.accessToken: isDefined
+}

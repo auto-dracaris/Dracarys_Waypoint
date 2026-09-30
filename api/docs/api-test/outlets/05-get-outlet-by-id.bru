@@ -1,0 +1,25 @@
+meta {
+  name: 05-get-outlet-by-id
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseURL}}/api/outlets/OUT001
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.outletId: eq OUT001
+  res.body.data.brand: eq Fresh
+  res.body.data.district: eq Colombo
+  res.body.data.depot: eq Peliyagoda
+  res.body.data.dockType: eq street
+  res.body.data.parkingConstraint: eq van_only
+}

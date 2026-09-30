@@ -16,6 +16,7 @@ abstract final class AppTheme {
     );
     return ThemeData(
       useMaterial3: true,
+      fontFamily: 'GoogleSansFlex',
       colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.background,
       appBarTheme: const AppBarTheme(
@@ -29,7 +30,7 @@ abstract final class AppTheme {
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.onPrimary,
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -39,10 +40,6 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.border),
         ),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.background,
-        indicatorColor: AppColors.warningBg,
       ),
     );
   }

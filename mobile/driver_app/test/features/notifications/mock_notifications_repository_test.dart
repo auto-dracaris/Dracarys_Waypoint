@@ -19,4 +19,15 @@ void main() {
       expect(list[i].createdAt.isBefore(list[i - 1].createdAt), isTrue);
     }
   });
+
+  test('each card has the kind that decides its icon', () async {
+    final repo = MockNotificationsRepository(latency: Duration.zero);
+    final list = await repo.getNotifications();
+    expect(list.map((n) => n.kind), [
+      NotificationKind.stopSequenceChanged,
+      NotificationKind.loadingStarted,
+      NotificationKind.tripAssigned,
+      NotificationKind.savedOffline,
+    ]);
+  });
 }
