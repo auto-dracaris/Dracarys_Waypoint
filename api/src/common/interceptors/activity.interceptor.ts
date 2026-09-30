@@ -24,6 +24,11 @@ export class ActivityInterceptor implements NestInterceptor {
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    // Also runs on RabbitMQ handlers (e.g. SmsConsumer), which have no HTTP request.
+    if (context.getType() !== 'http') {
+      return next.handle();
+    }
+
     const http = context.switchToHttp();
     const request = http.getRequest<Request & { user?: AuthenticatedUser }>();
     const response = http.getResponse<Response>();

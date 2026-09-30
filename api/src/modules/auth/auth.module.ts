@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { SmsService } from '../../common/services/sms.service';
+import { SmsModule } from '../../common/sms/sms.module';
 import { UserOtp } from '../../database/entities/user-otp.entity';
 import { UserSession } from '../../database/entities/user-session.entity';
 import { AuthController } from './auth.controller';
@@ -17,6 +17,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   imports: [
     TypeOrmModule.forFeature([UserSession, UserOtp]),
     PassportModule,
+    SmsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -36,8 +37,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     UserAuthRepository,
     UserSessionRepository,
     UserOtpRepository,
-    SmsService,
   ],
-  exports: [AuthService, UserSessionRepository, UserOtpRepository, SmsService],
+  exports: [AuthService, UserSessionRepository, UserOtpRepository],
 })
 export class AuthModule {}

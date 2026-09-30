@@ -1,9 +1,12 @@
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { MicroserviceOptions } from '@nestjs/microservices';
 import morgan from 'morgan';
 import { DataSource } from 'typeorm';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { buildSmsRmqConsumerOptions } from './common/sms/rmq.options';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -31,6 +34,11 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   app.enableCors();
+
+  app.connectMicroservice<MicroserviceOptions>(
+    buildSmsRmqConsumerOptions(app.get(ConfigService)),
+  );
+  await app.startAllMicroservices();
 
   await app.listen(process.env.PORT ?? 5000);
 }

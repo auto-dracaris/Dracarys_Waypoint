@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { formatPhoneNumber } from '../utils/phone.util';
 
 @Injectable()
-export class SmsService {
-  private readonly logger = new Logger(SmsService.name);
+export class SmsGatewayService {
+  private readonly logger = new Logger(SmsGatewayService.name);
 
   constructor(private readonly configService: ConfigService) {}
 

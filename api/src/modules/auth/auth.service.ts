@@ -13,7 +13,7 @@ import { DataSource } from 'typeorm';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { UserStatus } from '../../common/enums/user-status.enum';
-import { SmsService } from '../../common/services/sms.service';
+import { SmsService } from '../../common/sms/sms.service';
 import { formatPhoneNumber } from '../../common/utils/phone.util';
 import { User } from '../../database/entities/user.entity';
 import { UserOtp } from '../../database/entities/user-otp.entity';
@@ -128,7 +128,7 @@ export class AuthService {
       await queryRunner.release();
     }
 
-    // Dispatch OTP SMS asynchronously
+    // Queue the OTP SMS; delivery happens in SmsConsumer, off the request path
     await this.smsService.sendSms(
       formattedPhone,
       `Your Waypoint verification code is: ${otp}. Valid for ${expireMinutes} minutes.`,
