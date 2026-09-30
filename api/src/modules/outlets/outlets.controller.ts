@@ -5,17 +5,17 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
-import { PERMISSIONS } from '../../common/constants/permissions.constant';
+import { UserRole } from '../../common/enums/user-role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../../common/guards/permissions.guard';
-import { Permissions } from '../auth/decorators/permissions.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { QueryOutletDto } from './dto/query-outlet.dto';
 import { OutletsService } from './outlets.service';
 
 @Controller('outlets')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
-@Permissions(PERMISSIONS.OUTLETS.VIEW)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.DISPATCHER)
 export class OutletsController {
   constructor(private readonly outletsService: OutletsService) {}
 

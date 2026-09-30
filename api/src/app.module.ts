@@ -8,8 +8,6 @@ import { AppService } from './app.service';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { OutletsModule } from './modules/outlets/outlets.module';
-import { PermissionsModule } from './modules/permissions/permissions.module';
-import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
 
@@ -49,11 +47,8 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
     CommonModule,
     AuthModule,
     UsersModule,
-    PermissionsModule,
-    SettingsModule,
     OutletsModule,
     VehiclesModule,
-
   ],
   controllers: [AppController],
   providers: [AppService],

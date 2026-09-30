@@ -5,17 +5,17 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
-import { PERMISSIONS } from '../../common/constants/permissions.constant';
+import { UserRole } from '../../common/enums/user-role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../../common/guards/permissions.guard';
-import { Permissions } from '../auth/decorators/permissions.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { QueryVehicleDto } from './dto/query-vehicle.dto';
 import { VehiclesService } from './vehicles.service';
 
 @Controller('vehicles')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
-@Permissions(PERMISSIONS.VEHICLES.VIEW)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.DISPATCHER)
 export class VehiclesController {
   constructor(private readonly vehiclesService: VehiclesService) {}
 

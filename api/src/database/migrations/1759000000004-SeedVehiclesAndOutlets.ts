@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { MigrationInterface, QueryRunner } from 'typeorm';
-import { flattenPermissions } from '../../common/constants/permissions.constant';
 
 export class SeedVehiclesAndOutlets1759000000004 implements MigrationInterface {
   private findDataFile(filename: string): string {
@@ -21,30 +20,7 @@ export class SeedVehiclesAndOutlets1759000000004 implements MigrationInterface {
   }
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // 1. Seed any newly added permissions
-    const titles = flattenPermissions();
-    if (titles.length > 0) {
-      const values = titles.map((_t, index) => `($${index + 1})`).join(', ');
-      await queryRunner.query(
-        `INSERT INTO permissions (title) VALUES ${values}
-         ON CONFLICT (title) DO NOTHING;`,
-        titles,
-      );
-
-      // Ensure system dispatcher gets all permissions
-      const email = process.env.SYSTEM_DISPATCHER_EMAIL;
-      if (email) {
-        await queryRunner.query(
-          `INSERT INTO user_permissions (user_id, permission_id)
-           SELECT u.id, p.id FROM users u CROSS JOIN permissions p
-           WHERE u.email = $1
-           ON CONFLICT (user_id, permission_id) DO NOTHING;`,
-          [email],
-        );
-      }
-    }
-
-    // 2. Seed Vehicles
+    // 1. Seed Vehicles
     const vehiclesFile = this.findDataFile('vehicles.csv');
     const vehiclesContent = fs.readFileSync(vehiclesFile, 'utf8');
     const vehicleLines = vehiclesContent
