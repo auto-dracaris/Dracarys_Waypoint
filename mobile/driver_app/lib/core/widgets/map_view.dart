@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:maplibre/maplibre.dart' as ml;
 
 import '../theme/app_colors.dart';
+import 'map_style.dart';
 
-/// Whether to load OpenStreetMap tiles. Tests turn this off (no network).
+/// Whether to load the map (vector tiles). Tests turn this off (no network).
 final mapTilesEnabledProvider = Provider<bool>((ref) => true);
 
 class MapMarker {
@@ -22,8 +23,10 @@ class MapMarker {
   final double height;
 }
 
-/// OpenStreetMap-based map with optional markers and a route line.
-class MapView extends ConsumerWidget {
+ml.Geographic _geo(LatLng p) => ml.Geographic(lon: p.longitude, lat: p.latitude);
+
+/// MapLibre vector map with optional markers and a route line.
+class MapView extends ConsumerStatefulWidget {
   const MapView({
     super.key,
     required this.center,
@@ -46,50 +49,88 @@ class MapView extends ConsumerWidget {
   final EdgeInsets fitPadding;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MapView> createState() => _MapViewState();
+}
+
+class _MapViewState extends ConsumerState<MapView> {
+  ml.MapController? _controller;
+
+  void _fit() {
+    final c = _controller;
+    final pts = widget.fit;
+    if (c == null || pts.length < 2) return;
+    var west = pts.first.longitude, east = west;
+    var south = pts.first.latitude, north = south;
+    for (final p in pts) {
+      if (p.longitude < west) west = p.longitude;
+      if (p.longitude > east) east = p.longitude;
+      if (p.latitude < south) south = p.latitude;
+      if (p.latitude > north) north = p.latitude;
+    }
+    c.fitBounds(
+      bounds: ml.LngLatBounds(
+        longitudeWest: west,
+        longitudeEast: east,
+        latitudeSouth: south,
+        latitudeNorth: north,
+      ),
+      padding: widget.fitPadding,
+      nativeDuration: Duration.zero,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tiles = ref.watch(mapTilesEnabledProvider);
+    if (!tiles) return _placeholder();
     return ClipRect(
-      child: FlutterMap(
-        options: MapOptions(
-          initialCenter: center,
-          initialZoom: zoom,
-          initialCameraFit: fit.length > 1
-              ? CameraFit.coordinates(
-                  coordinates: fit, padding: fitPadding)
-              : null,
-          interactionOptions: const InteractionOptions(
-            flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-          ),
+      child: ml.MapLibreMap(
+        options: ml.MapOptions(
+          initCenter: _geo(widget.center),
+          initZoom: widget.zoom,
+          initStyle: kMapStyleUrl,
         ),
-        children: [
-          if (tiles)
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.dracarys.driver_app',
+        onMapCreated: (c) => _controller = c,
+        onStyleLoaded: (_) => _fit(),
+        layers: [
+          if (widget.route.length > 1)
+            ml.PolylineLayer(
+              polylines: [
+                ml.Feature(
+                  geometry: ml.LineString.from(
+                    [for (final p in widget.route) _geo(p)],
+                  ),
+                ),
+              ],
+              color: AppColors.mapRoute,
+              width: 6,
             ),
-          if (route.length > 1)
-            PolylineLayer(polylines: [
-              Polyline(
-                points: route,
-                strokeWidth: 6,
-                color: AppColors.mapRoute,
-              ),
-            ]),
-          MarkerLayer(markers: [
-            for (final m in markers)
-              Marker(
-                point: m.point,
-                width: m.width,
-                height: m.height,
+        ],
+        children: [
+          ml.WidgetLayer(markers: [
+            for (final m in widget.markers)
+              ml.Marker(
+                point: _geo(m.point),
+                size: Size(m.width, m.height),
                 child: m.child,
               ),
           ]),
-          if (tiles)
-            const SimpleAttributionWidget(
-              source: Text('OpenStreetMap contributors'),
-            ),
+          const ml.SourceAttribution(),
         ],
       ),
     );
   }
+
+  /// Tile-free stand-in (tests): same markers, no network.
+  Widget _placeholder() => Stack(
+        children: [
+          const Positioned.fill(
+            child: ColoredBox(
+                key: ValueKey('map-placeholder'), color: AppColors.card),
+          ),
+          for (final m in widget.markers)
+            Positioned(
+                left: 0, top: 0, width: m.width, height: m.height, child: m.child),
+        ],
+      );
 }
