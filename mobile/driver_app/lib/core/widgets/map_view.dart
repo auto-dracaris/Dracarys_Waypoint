@@ -7,6 +7,7 @@ import '../theme/app_colors.dart';
 import 'camera_target.dart';
 import 'map_mode.dart';
 import 'map_style.dart';
+import 'vehicle_box.dart';
 
 /// Whether to load the map (vector tiles). Tests turn this off (no network).
 final mapTilesEnabledProvider = Provider<bool>((ref) => true);
@@ -45,6 +46,7 @@ class MapView extends ConsumerStatefulWidget {
     this.mode = MapMode.flat,
     this.cameraTarget,
     this.onUserMoved,
+    this.vehicle3d,
   });
 
   final LatLng center;
@@ -68,6 +70,9 @@ class MapView extends ConsumerStatefulWidget {
   /// Called when the user drags/pinches the map themselves.
   final VoidCallback? onUserMoved;
 
+  /// A real 3D (extruded) van drawn on the map; null hides it.
+  final Vehicle3D? vehicle3d;
+
   @override
   ConsumerState<MapView> createState() => _MapViewState();
 }
@@ -76,6 +81,7 @@ class _MapViewState extends ConsumerState<MapView> {
   ml.MapController? _controller;
   Size _size = Size.zero;
   bool _fitted = false;
+  bool _vehicleReady = false;
 
   static const _tiltPitch = 60.0;
   static const _tiltBearing = 20.0;
@@ -172,6 +178,48 @@ class _MapViewState extends ConsumerState<MapView> {
     }
   }
 
+  Future<void> _installVehicle() async {
+    final style = _controller?.style;
+    if (style == null) return;
+    await style.addSource(
+      const ml.GeoJsonSource(
+        id: vehicleBoxSourceId,
+        data: emptyVehicleBoxGeoJson,
+      ),
+    );
+    await style.addLayer(
+      const ml.FillExtrusionStyleLayer(
+        id: vehicleBoxLayerId,
+        sourceId: vehicleBoxSourceId,
+        paint: {
+          'fill-extrusion-color': ['get', 'c'],
+          'fill-extrusion-height': ['get', 'h'],
+          'fill-extrusion-base': ['get', 'b'],
+          'fill-extrusion-opacity': 1,
+        },
+      ),
+    );
+    _vehicleReady = true;
+    await _updateVehicle();
+  }
+
+  Future<void> _updateVehicle() async {
+    final style = _controller?.style;
+    if (!_vehicleReady || style == null) return;
+    final v = widget.vehicle3d;
+    try {
+      await style.updateGeoJsonSource(
+        id: vehicleBoxSourceId,
+        data: v == null
+            ? emptyVehicleBoxGeoJson
+            : vehicleBoxGeoJson(v.point, v.heading),
+      );
+    } catch (_) {
+      // The style was replaced under us; the next style load re-adds it.
+      _vehicleReady = false;
+    }
+  }
+
   void _applyMode() {
     final c = _controller;
     if (c == null || widget.cameraTarget != null) return;
@@ -198,6 +246,7 @@ class _MapViewState extends ConsumerState<MapView> {
   @override
   void didUpdateWidget(MapView old) {
     super.didUpdateWidget(old);
+    if (old.vehicle3d != widget.vehicle3d) _updateVehicle();
     final t = widget.cameraTarget;
     if (t != null && t != old.cameraTarget) {
       _follow(t);
@@ -207,10 +256,16 @@ class _MapViewState extends ConsumerState<MapView> {
   }
 
   Future<void> _onStyleLoaded() async {
+    _vehicleReady = false; // a new style has none of our sources yet
     try {
       await _installBuildings();
     } catch (_) {
       // Another style may not have that layer; the map still works flat.
+    }
+    try {
+      await _installVehicle();
+    } catch (_) {
+      // The 2D marker still shows if the 3D van can't be added.
     }
     _fit();
     if (widget.mode == MapMode.tilted) _applyMode();
@@ -260,7 +315,7 @@ class _MapViewState extends ConsumerState<MapView> {
                 ml.Marker(
                   point: _geo(m.point),
                   size: Size(m.width, m.height),
-                flat: m.flat,
+                  flat: m.flat,
                   child: m.child,
                 ),
             ],

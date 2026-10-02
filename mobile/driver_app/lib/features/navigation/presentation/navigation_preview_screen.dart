@@ -16,6 +16,7 @@ import '../../../core/widgets/back_bar.dart';
 import '../../../core/widgets/camera_target.dart';
 import '../../../core/widgets/map_mode.dart';
 import '../../../core/widgets/map_view.dart';
+import '../../../core/widgets/vehicle_box.dart';
 import '../../trips/application/trip_actions.dart';
 import '../../trips/data/trips_providers.dart';
 import '../../trips/domain/stop.dart';
@@ -75,8 +76,8 @@ class _NavigationPreviewScreenState
 
   CameraTarget _targetFor(LatLng point, double heading, MapMode mode) =>
       mode == MapMode.tilted
-      ? CameraTarget(point: point, bearing: heading, zoom: 16.5, pitch: 60)
-      : CameraTarget(point: point, zoom: 16);
+      ? CameraTarget(point: point, bearing: heading, zoom: 18, pitch: 60)
+      : CameraTarget(point: point, zoom: 17.5);
 
   Future<void> _arrived() async {
     setState(() => _busy = true);
@@ -129,8 +130,10 @@ class _NavigationPreviewScreenState
                     pos?.heading ??
                     (_bearing.bearing(leg.first, leg.last) + 360) % 360;
 
+                // Keep following through arrival so the camera stays on the van; a stale
+                // locate target must not pull it back afterwards.
                 final CameraTarget? target =
-                    navigating && _following && pos != null
+                    nav.phase != NavPhase.idle && _following && pos != null
                     ? _targetFor(vehicle, heading, mode)
                     : _locate;
 
@@ -142,6 +145,9 @@ class _NavigationPreviewScreenState
                         fit: points,
                         mode: mode,
                         cameraTarget: target,
+                        vehicle3d: mode == MapMode.tilted
+                            ? Vehicle3D(point: vehicle, heading: heading)
+                            : null,
                         onUserMoved: () {
                           if (_following || _locate != null) {
                             setState(() {
@@ -168,13 +174,15 @@ class _NavigationPreviewScreenState
                                 completed: s.status == StopStatus.completed,
                               ),
                             ),
-                          MapMarker(
-                            point: vehicle,
-                            width: 44,
-                            height: 44,
-                            flat: mode == MapMode.tilted,
-                            child: VehicleMarker(heading: heading),
-                          ),
+                          // Tilted view draws the van as a real 3D box instead.
+                          if (mode == MapMode.flat)
+                            MapMarker(
+                              point: vehicle,
+                              width: 44,
+                              height: 44,
+                              flat: mode == MapMode.tilted,
+                              child: VehicleMarker(heading: heading),
+                            ),
                         ],
                       ),
                     ),
@@ -231,6 +239,7 @@ class _NavigationPreviewScreenState
                         busy: _busy,
                         onToggle: () {
                           if (navigating) {
+                            setState(() => _locate = null);
                             ref.read(navigationProvider.notifier).end();
                           } else {
                             setState(() {
