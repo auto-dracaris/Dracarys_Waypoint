@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Activity } from '../database/entities/activity.entity';
 import { User } from '../database/entities/user.entity';
 import { ActivityInterceptor } from './interceptors/activity.interceptor';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 /**
  * `@Global()` so the entities and services every module needs — users and
@@ -13,13 +14,13 @@ import { ActivityInterceptor } from './interceptors/activity.interceptor';
  */
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Activity])],
+  imports: [TypeOrmModule.forFeature([User, Activity]), CloudinaryModule],
   providers: [
     {
       provide: APP_INTERCEPTOR,
       useClass: ActivityInterceptor,
     },
   ],
-  exports: [TypeOrmModule],
+  exports: [TypeOrmModule, CloudinaryModule],
 })
 export class CommonModule {}

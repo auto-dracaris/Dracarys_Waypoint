@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { OutletsModule } from './modules/outlets/outlets.module';
 import { UsersModule } from './modules/users/users.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
+import { ImagesModule } from './modules/images/images.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
     UsersModule,
     OutletsModule,
     VehiclesModule,
+    ImagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
