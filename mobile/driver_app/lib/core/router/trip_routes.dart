@@ -2,6 +2,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/navigation/presentation/navigation_preview_screen.dart';
 import '../../features/stops/presentation/arrived_screen.dart';
+import '../../features/stops/presentation/proof_of_delivery_screen.dart';
+import '../../features/stops/presentation/report_issue_screen.dart';
 import '../../features/stops/presentation/stop_info_screen.dart';
 
 /// Child routes of `/trips` (My trips tab): the driver's trip flow. Kept apart
@@ -26,6 +28,21 @@ final tripRoutes = <RouteBase>[
         builder: (context, state) => ArrivedScreen(
           tripId: state.pathParameters['tripId']!,
           stopId: state.pathParameters['stopId']!,
+        ),
+      ),
+      GoRoute(
+        path: 'proof',
+        builder: (context, state) => ProofOfDeliveryScreen(
+          tripId: state.pathParameters['tripId']!,
+          stopId: state.pathParameters['stopId']!,
+        ),
+      ),
+      GoRoute(
+        path: 'issue/:orderId',
+        builder: (context, state) => ReportIssueScreen(
+          tripId: state.pathParameters['tripId']!,
+          stopId: state.pathParameters['stopId']!,
+          orderId: state.pathParameters['orderId']!,
         ),
       ),
     ],

@@ -27,9 +27,19 @@ class ArrivedScreen extends ConsumerWidget {
 
   StopRef get _ref => (tripId: tripId, stopId: stopId);
 
-  void _comingNext(BuildContext context, String what) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('$what is coming next')));
+  Future<void> _reportIssue(BuildContext context, List<Order> orders) async {
+    var orderId = orders.first.id;
+    if (orders.length > 1) {
+      final picked = await showModalBottomSheet<String>(
+        context: context,
+        backgroundColor: AppColors.card,
+        showDragHandle: true,
+        builder: (_) => _OrderPicker(orders: orders),
+      );
+      if (picked == null || !context.mounted) return;
+      orderId = picked;
+    }
+    context.go(AppRoutes.issue(tripId, stopId, orderId));
   }
 
   @override
@@ -94,18 +104,16 @@ class ArrivedScreen extends ConsumerWidget {
                             bold: true,
                             padding: 14,
                             trailingIcon: Icons.arrow_forward_rounded,
-                            // Proof of delivery is built in the next chunk.
                             onPressed: () =>
-                                _comingNext(context, 'Proof of delivery'),
+                                context.go(AppRoutes.proof(tripId, stopId)),
                           ),
                           const SizedBox(height: 12),
                           AppButton(
                             label: 'Report an issue',
                             variant: AppButtonVariant.dangerOutlined,
                             leadingIcon: Icons.error_outline_rounded,
-                            // The issue report is built in the next chunk.
                             onPressed: () =>
-                                _comingNext(context, 'Issue reporting'),
+                                _reportIssue(context, d.stop.orders),
                           ),
                         ],
                       ),
@@ -295,7 +303,8 @@ class _OrderCard extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(order.id, style: AppText.textSmBold),
-              TemperatureChip(order.temperature, delivery: true),
+              TemperatureChip(order.temperature,
+                  style: TemperatureChipStyle.delivery),
             ],
           ),
           const SizedBox(height: 12),
@@ -356,6 +365,45 @@ class _OrderCard extends ConsumerWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _OrderPicker extends StatelessWidget {
+  const _OrderPicker({required this.orders});
+
+  final List<Order> orders;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Which order has the issue?', style: AppText.textMdSemibold),
+            const SizedBox(height: 8),
+            for (final o in orders)
+              ListTile(
+                key: Key('issue-order-${o.id}'),
+                contentPadding: EdgeInsets.zero,
+                title: Row(
+                  children: [
+                    Text(o.id, style: AppText.textSmBold),
+                    const SizedBox(width: 8),
+                    TemperatureChip(o.temperature,
+                        style: TemperatureChipStyle.delivery),
+                  ],
+                ),
+                subtitle: Text('${o.cases} cases'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).pop(o.id),
+              ),
+          ],
+        ),
       ),
     );
   }

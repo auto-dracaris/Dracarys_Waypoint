@@ -9,4 +9,8 @@ abstract final class AppRoutes {
       '${stop(tripId, stopId)}/navigate';
   static String arrived(String tripId, String stopId) =>
       '${stop(tripId, stopId)}/arrived';
+  static String proof(String tripId, String stopId) =>
+      '${stop(tripId, stopId)}/proof';
+  static String issue(String tripId, String stopId, String orderId) =>
+      '${stop(tripId, stopId)}/issue/$orderId';
 }

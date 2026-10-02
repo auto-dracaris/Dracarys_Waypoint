@@ -8,6 +8,7 @@ class LabelChip extends StatelessWidget {
     required this.background,
     required this.foreground,
     this.icon,
+    this.large = false,
   });
 
   final String label;
@@ -15,27 +16,30 @@ class LabelChip extends StatelessWidget {
   final Color foreground;
   final IconData? icon;
 
+  /// The 28 px "M" size used on the issue form (default is the 20 px "XS").
+  final bool large;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 20,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      height: large ? 28 : 20,
+      padding: EdgeInsets.symmetric(horizontal: large ? 12 : 8),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(large ? 14 : 10),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 12, color: foreground),
-            const SizedBox(width: 4),
+            Icon(icon, size: large ? 16 : 12, color: foreground),
+            SizedBox(width: large ? 6 : 4),
           ],
           Text(
             label,
             style: TextStyle(
               fontFamily: 'Inter',
-              fontSize: 10,
+              fontSize: large ? 12 : 10,
               fontWeight: FontWeight.w500,
               color: foreground,
             ),
