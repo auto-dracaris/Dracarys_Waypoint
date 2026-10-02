@@ -122,6 +122,22 @@ void main() {
       expect(find.byKey(const Key('marker-check-4')), findsNothing);
     });
 
+    testWidgets('the 2D/3D toggle switches the map mode', (tester) async {
+      await pumpTripRoutes(tester, location: stop3);
+      await tester.tap(find.text('Get Directions'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('3D'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('map-mode-toggle')));
+      await tester.pumpAndSettle();
+      expect(find.text('2D'), findsOneWidget);
+      expect(find.text('3D'), findsNothing);
+
+      await tester.tap(find.byKey(const Key('map-mode-toggle')));
+      await tester.pumpAndSettle();
+      expect(find.text('3D'), findsOneWidget);
+    });
+
     testWidgets('Start navigation explains that turn-by-turn is not built',
         (tester) async {
       await pumpTripRoutes(tester, location: stop3);
