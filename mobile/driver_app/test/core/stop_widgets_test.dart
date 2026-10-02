@@ -235,6 +235,7 @@ void main() {
       overrides: [mapTilesEnabledProvider.overrideWithValue(false)],
     ));
     await tester.pump();
+    expect(find.byKey(const ValueKey('map-placeholder')), findsOneWidget);
     expect(find.byIcon(Icons.location_on), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
