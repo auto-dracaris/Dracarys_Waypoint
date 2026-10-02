@@ -1,12 +1,28 @@
-import { DeferOrderDialog } from "./components/defer-order-dialog";
-import { NotificationDialog } from "./components/notification-dialog";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import LoginPage from "./pages/login"; // Path based on your structure[cite: 8]
+import { DashboardLayout } from "./layouts/store-manager/dashboard-layout";
+import { DashboardOverviewPage } from "./pages/store-manager/dashboard-overview"; // Your main dashboard view
+import { DeliveryTrackingPage } from "./pages/store-manager/delivery-tracking"; // Path based on your structure[cite: 8]
+import { PlaceOrderPage } from "./pages/store-manager/place-order";
 
-function App() {
+export function App() {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center">
-      <NotificationDialog />
-      <DeferOrderDialog />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        {/* Public Route */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* Private Layout Routes */}
+        <Route path="/" element={<DashboardLayout />}>
+          {/* Index renders the My Deliveries overview */}
+          <Route index element={<DashboardOverviewPage />} />
+
+          {/* Dynamic route for specific deliveries */}
+          <Route path="delivery/:id" element={<DeliveryTrackingPage />} />
+          <Route path="orders/create" element={<PlaceOrderPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
