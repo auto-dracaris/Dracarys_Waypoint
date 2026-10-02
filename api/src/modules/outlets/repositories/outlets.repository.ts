@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { FindOptionsRelations, FindOptionsWhere, Repository } from 'typeorm';
 import { BaseRepository } from '../../../common/repositories/base.repository';
 import { Outlet } from '../../../database/entities/outlet.entity';
 import { QueryOutletDto } from '../dto/query-outlet.dto';
+
+// Ids are numeric, so responses carry the related rows for their names.
+const OUTLET_RELATIONS: FindOptionsRelations<Outlet> = {
+  district: true,
+  depot: true,
+};
 
 @Injectable()
 export class OutletsRepository extends BaseRepository<Outlet> {
@@ -14,8 +20,11 @@ export class OutletsRepository extends BaseRepository<Outlet> {
     super(repository);
   }
 
-  findByOutletId(outletId: string): Promise<Outlet | null> {
-    return this.repository.findOneBy({ outletId, isActive: true });
+  findByOutletId(outletId: number): Promise<Outlet | null> {
+    return this.repository.findOne({
+      where: { id: outletId, isActive: true },
+      relations: OUTLET_RELATIONS,
+    });
   }
 
   findWithFilters(query: QueryOutletDto): Promise<[Outlet[], number]> {
@@ -24,14 +33,17 @@ export class OutletsRepository extends BaseRepository<Outlet> {
 
     const where: FindOptionsWhere<Outlet> = { isActive: true };
 
+    if (query.uniqueId) {
+      where.uniqueId = query.uniqueId;
+    }
     if (query.brand) {
       where.brand = query.brand;
     }
     if (query.district) {
-      where.district = query.district;
+      where.district = { name: query.district };
     }
     if (query.depot) {
-      where.depot = query.depot;
+      where.depot = { name: query.depot };
     }
     if (query.dockType) {
       where.dockType = query.dockType;
@@ -42,9 +54,10 @@ export class OutletsRepository extends BaseRepository<Outlet> {
 
     return this.repository.findAndCount({
       where,
+      relations: OUTLET_RELATIONS,
       skip: (page - 1) * limit,
       take: limit,
-      order: { outletId: 'ASC' },
+      order: { id: 'ASC' },
     });
   }
 }

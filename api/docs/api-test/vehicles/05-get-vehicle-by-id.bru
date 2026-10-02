@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseURL}}/api/vehicles/VEH001
+  url: {{baseURL}}/api/vehicles/1
   body: none
   auth: none
 }
@@ -16,9 +16,10 @@ headers {
 
 assert {
   res.status: eq 200
-  res.body.data.vehicleId: eq VEH001
-  res.body.data.depot: eq Peliyagoda
+  res.body.data.id: eq 1
+  res.body.data.uniqueId: eq VEH001
+  res.body.data.depot.name: eq Peliyagoda
   res.body.data.type: eq truck
-  res.body.data.temp: eq reefer
+  res.body.data.isRefrigerated: eq true
   res.body.data.weightCapKg: eq 5510
 }

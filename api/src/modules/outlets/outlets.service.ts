@@ -23,7 +23,7 @@ export class OutletsService {
     });
   }
 
-  async findOne(outletId: string): Promise<ApiResponseDto> {
+  async findOne(outletId: number): Promise<ApiResponseDto> {
     const outlet = await this.outletsRepository.findByOutletId(outletId);
     if (!outlet) {
       throw new NotFoundException(`Outlet with ID "${outletId}" not found`);

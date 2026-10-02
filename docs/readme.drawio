@@ -687,7 +687,7 @@
     </mxGraphModel>
   </diagram>
   <diagram name="db" id="waypoint-db">
-    <mxGraphModel dx="1542" dy="898" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+    <mxGraphModel dx="2643" dy="1540" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -959,7 +959,7 @@
           <mxGeometry height="20" width="250" y="208" as="geometry" />
         </mxCell>
         <mxCell id="t_trips" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=28;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;fontSize=13;swimlaneFillColor=#ffffff;" value="trips" vertex="1">
-          <mxGeometry height="228" width="250" x="1994" y="581" as="geometry" />
+          <mxGeometry height="268" width="250" x="1994" y="581" as="geometry" />
         </mxCell>
         <mxCell id="r_trips_0" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="&lt;b style=&quot;color:#666666&quot;&gt;PK&lt;/b&gt;&amp;nbsp;&lt;u&gt;id&lt;/u&gt;&lt;span style=&quot;float:right;color:#888888&quot;&gt;uuid&lt;/span&gt;" vertex="1">
           <mxGeometry height="20" width="250" y="28" as="geometry" />
@@ -970,26 +970,32 @@
         <mxCell id="r_trips_3" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="&lt;b style=&quot;color:#666666&quot;&gt;FK&lt;/b&gt;&amp;nbsp;vehicle_id&lt;span style=&quot;float:right;color:#888888&quot;&gt;varchar&lt;/span&gt;" vertex="1">
           <mxGeometry height="20" width="250" y="68" as="geometry" />
         </mxCell>
-        <mxCell id="r_trips_9" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="planned_depart_at&lt;span style=&quot;float:right;color:#888888&quot;&gt;timestamptz&lt;/span&gt;" vertex="1">
+        <mxCell id="l8PGbWSK_4fqJkV8yM1W-1" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="brand enum" vertex="1">
           <mxGeometry height="20" width="250" y="88" as="geometry" />
         </mxCell>
-        <mxCell id="r_trips_10" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="planned_minutes&lt;span style=&quot;float:right;color:#888888&quot;&gt;int&lt;/span&gt;" vertex="1">
+        <mxCell id="l8PGbWSK_4fqJkV8yM1W-2" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="district_id" vertex="1">
           <mxGeometry height="20" width="250" y="108" as="geometry" />
         </mxCell>
-        <mxCell id="r_trips_11" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="planned_km&lt;span style=&quot;float:right;color:#888888&quot;&gt;decimal&lt;/span&gt;" vertex="1">
+        <mxCell id="r_trips_9" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="planned_depart_at&lt;span style=&quot;float:right;color:#888888&quot;&gt;timestamptz&lt;/span&gt;" vertex="1">
           <mxGeometry height="20" width="250" y="128" as="geometry" />
         </mxCell>
-        <mxCell id="r_trips_12" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="planned_fuel_l&lt;span style=&quot;float:right;color:#888888&quot;&gt;decimal&lt;/span&gt;" vertex="1">
+        <mxCell id="r_trips_10" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="planned_minutes&lt;span style=&quot;float:right;color:#888888&quot;&gt;int&lt;/span&gt;" vertex="1">
           <mxGeometry height="20" width="250" y="148" as="geometry" />
         </mxCell>
-        <mxCell id="r_trips_13" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="total_weight_kg&lt;span style=&quot;float:right;color:#888888&quot;&gt;decimal&lt;/span&gt;" vertex="1">
+        <mxCell id="r_trips_11" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="planned_km&lt;span style=&quot;float:right;color:#888888&quot;&gt;decimal&lt;/span&gt;" vertex="1">
           <mxGeometry height="20" width="250" y="168" as="geometry" />
         </mxCell>
-        <mxCell id="r_trips_14" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="total_volume_m3&lt;span style=&quot;float:right;color:#888888&quot;&gt;decimal&lt;/span&gt;" vertex="1">
+        <mxCell id="r_trips_12" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="planned_fuel_l&lt;span style=&quot;float:right;color:#888888&quot;&gt;decimal&lt;/span&gt;" vertex="1">
           <mxGeometry height="20" width="250" y="188" as="geometry" />
         </mxCell>
-        <mxCell id="r_trips_15" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="status&lt;span style=&quot;float:right;color:#888888&quot;&gt;enum&lt;/span&gt;" vertex="1">
+        <mxCell id="r_trips_13" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="total_weight_kg&lt;span style=&quot;float:right;color:#888888&quot;&gt;decimal&lt;/span&gt;" vertex="1">
           <mxGeometry height="20" width="250" y="208" as="geometry" />
+        </mxCell>
+        <mxCell id="r_trips_14" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="total_volume_m3&lt;span style=&quot;float:right;color:#888888&quot;&gt;decimal&lt;/span&gt;" vertex="1">
+          <mxGeometry height="20" width="250" y="228" as="geometry" />
+        </mxCell>
+        <mxCell id="r_trips_15" parent="t_trips" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;whiteSpace=wrap;" value="status&lt;span style=&quot;float:right;color:#888888&quot;&gt;enum&lt;/span&gt;" vertex="1">
+          <mxGeometry height="20" width="250" y="248" as="geometry" />
         </mxCell>
         <mxCell id="t_calendar" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=28;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;fontSize=13;swimlaneFillColor=#ffffff;" value="calendar" vertex="1">
           <mxGeometry height="228" width="250" x="1521" y="250" as="geometry" />
