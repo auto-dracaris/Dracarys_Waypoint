@@ -1,3 +1,5 @@
+import { demoMapLocations, type DeliveryMapLocations } from './map-data'
+
 export type RouteFilter = 'All' | 'Errors' | 'Success' | 'Info'
 export interface RoutePreview {
   id: string
@@ -10,6 +12,7 @@ export interface RoutePreview {
   window: string
   arrival: string
   updated: string
+  map: DeliveryMapLocations
 }
 
 // Local previews for screen interactions; replace with the route API later.
@@ -24,6 +27,7 @@ export const routes: RoutePreview[] = Array.from({ length: 15 }, (_, index) => (
   window: '07:00–08:00',
   arrival: '07:35',
   updated: '2 minutes ago',
+  map: demoMapLocations(index),
 }))
 
 export const planningTotals = { confirmed: 114, allocated: 102, decisions: 12, deferred: 0 }

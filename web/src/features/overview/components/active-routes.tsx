@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import { Button } from '@/components/ui/button'
@@ -6,6 +6,7 @@ import { routes, type RouteFilter } from '../data'
 import { VehiclePanel } from './vehicle-panel'
 
 const filters: RouteFilter[] = ['All', 'Errors', 'Success', 'Info']
+const DeliveryMap = lazy(() => import('./delivery-map').then(module => ({ default: module.DeliveryMap })))
 
 export function ActiveRoutes({ onNavigate }: { onNavigate: (title: string) => void }) {
   const [filter, setFilter] = useState<RouteFilter>('All')
@@ -28,7 +29,7 @@ export function ActiveRoutes({ onNavigate }: { onNavigate: (title: string) => vo
         <div className="route-search"><SearchRounded fontSize="inherit" /><input ref={search} value={query} onChange={event => setQuery(event.target.value)} aria-label="Search routes by vehicle or outlet" placeholder="Search" className="type-text-sm-regular" /><kbd className="type-text-xs-medium">⌘K</kbd></div>
       </div>
       <div className="route-content">
-        <div className="map-placeholder" aria-label="Map area reserved for future integration" />
+        <div className="overview-map">{selected ? <Suspense fallback={<div className="delivery-map-empty type-text-sm-regular" role="status">Loading map…</div>}><DeliveryMap {...selected.map} vehicleId={selected.id} vehicleStatus={selected.status} /></Suspense> : <div className="delivery-map-empty type-text-sm-regular" role="status">No matching route to display on the map.</div>}</div>
         {selected ? <VehiclePanel route={selected} onView={() => onNavigate(`Route ${selected.id}`)} /> : <div className="route-empty"><h3 className="type-text-lg-semibold">No matching routes</h3><p className="type-text-sm-regular">Try another vehicle, outlet, or filter.</p><Button onClick={() => { setQuery(''); setFilter('All') }}>Clear filters</Button></div>}
       </div>
     </section>

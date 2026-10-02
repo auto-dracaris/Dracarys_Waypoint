@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { OverviewPage } from '@/pages/overview-page'
+import { LoginPage } from '@/pages/login-page'
 import { VehiclesPage } from '@/pages/vehicles-page'
 import { OutletsPage } from '@/pages/outlets-page'
 import { TeamPage } from '@/pages/team-page'
@@ -14,14 +15,17 @@ import { Sidebar } from '@/components/layout/sidebar'
 import { StageNotice } from '@/components/ui/stage-notice'
 import { NotificationsPanel } from '@/features/notifications/components/notifications-panel'
 import { initialNotifications, markNotificationsRead, type NotificationItem } from '@/features/notifications/data'
+import { loadSidebarCollapsed, saveSidebarCollapsed } from '@/lib/sidebar-preferences'
 import '@/styles/overview.css'
 
 function App() {
   const [path, setPath] = useState(window.location.pathname)
   const [navigationOpen, setNavigationOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(loadSidebarCollapsed)
   const [notice, setNotice] = useState<string | null>(null)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [notifications, setNotifications] = useState(initialNotifications)
+  const isLogin = path === '/login'
   const isVehicles = path === '/vehicles'
   const isOutlets = path === '/outlets'
   const isTeam = path === '/team'
@@ -36,12 +40,13 @@ function App() {
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
-  useEffect(() => { document.title = `WayPoint — ${isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isOrders ? 'Confirmed Orders' : isPlanning ? 'Final Plan Review' : isPublished ? 'Plan Published' : isOperations ? 'Loading Exception Review' : 'Delivery Overview'}` }, [isVehicles, isOutlets, isTeam, isOrders, isPlanning, isPublished, isOperations])
+  useEffect(() => { document.title = `WayPoint — ${isLogin ? 'Admin Sign In' : isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isOrders ? 'Confirmed Orders' : isPlanning ? 'Final Plan Review' : isPublished ? 'Plan Published' : isOperations ? 'Loading Exception Review' : 'Delivery Overview'}` }, [isLogin, isVehicles, isOutlets, isTeam, isOrders, isPlanning, isPublished, isOperations])
+  useEffect(() => { saveSidebarCollapsed(sidebarCollapsed) }, [sidebarCollapsed])
   function navigate(page: string, recordId?: string) {
     setNavigationOpen(false)
     if (page === 'Order notifications' || page === 'Notifications') { setNotice(null); setNotificationsOpen(true); return }
     setNotificationsOpen(false)
-    const routes: Record<string, string> = { Overview: '/', Home: '/', Dashboard: '/', Vehicles: '/vehicles', Outlets: '/outlets', Team: '/team', Orders: '/orders', Planning: '/planning', 'Delivery planning': '/planning', 'Publish plan confirmation': '/planning/published', Operations: '/operations/loading-exception', 'Loading exception review': '/operations/loading-exception' }
+    const routes: Record<string, string> = { 'Log out': '/login', 'Sign in': '/login', Overview: '/', Home: '/', Dashboard: '/', Vehicles: '/vehicles', Outlets: '/outlets', Team: '/team', Orders: '/orders', Planning: '/planning', 'Delivery planning': '/planning', 'Publish plan confirmation': '/planning/published', Operations: '/operations/loading-exception', 'Loading exception review': '/operations/loading-exception' }
     const route = routes[page]
     const queryKey = page === 'Vehicles' ? 'vehicle' : page === 'Orders' ? 'order' : null
     const target = route && queryKey && recordId ? `${route}?${queryKey}=${encodeURIComponent(recordId)}` : route
@@ -75,9 +80,13 @@ function App() {
     readNotifications(item.id)
     navigate(item.target.page, item.target.orderId)
   }
+  if (isLogin) return <>
+    <LoginPage onNotice={setNotice} />
+    <StageNotice title={notice} onClose={() => setNotice(null)} returnLabel="Back to sign in" />
+  </>
   const pageProps = { onNavigate: navigate, onOpenNavigation: () => setNavigationOpen(true), navigationOpen }
   return <div className="overview-shell">
-    <Sidebar open={navigationOpen} onClose={() => setNavigationOpen(false)} onNavigate={navigate} activePage={isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isOrders ? 'Orders' : isPlanning || isPublished ? 'Planning' : isOperations ? 'Operations' : 'Overview'} />
+    <Sidebar open={navigationOpen} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed(previous => !previous)} onClose={() => setNavigationOpen(false)} onNavigate={navigate} activePage={isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isOrders ? 'Orders' : isPlanning || isPublished ? 'Planning' : isOperations ? 'Operations' : 'Overview'} />
     <main className="overview-main">{isVehicles ? <VehiclesPage {...pageProps} /> : isOutlets ? <OutletsPage {...pageProps} /> : isTeam ? <TeamPage {...pageProps} onViewVehicle={vehicleId => navigate('Vehicles', vehicleId)} /> : isOrders ? <OrdersPage {...pageProps} /> : isPlanning ? <FinalPlanReviewPage {...pageProps} onPublish={publish} published={!!publication} /> : isPublished && publication ? <PublishPlanConfirmationPage {...pageProps} publication={publication} onResend={resend} /> : isOperations ? <LoadingExceptionReviewPage key={loadingException.id} {...pageProps} exception={loadingException} onConfirm={confirmLoading} /> : <OverviewPage {...pageProps} />}</main>
     <StageNotice title={notice} onClose={() => setNotice(null)} returnLabel={isPlanning || isPublished ? 'Back to plan' : isOperations ? 'Back to loading review' : undefined} />
     {notificationsOpen && <NotificationsPanel items={notifications} onRead={readNotifications} onAction={openNotification} onClose={() => setNotificationsOpen(false)} />}
