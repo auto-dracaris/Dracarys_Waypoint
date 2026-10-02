@@ -23,7 +23,7 @@ export class VehiclesService {
     });
   }
 
-  async findOne(vehicleId: string): Promise<ApiResponseDto> {
+  async findOne(vehicleId: number): Promise<ApiResponseDto> {
     const vehicle = await this.vehiclesRepository.findByVehicleId(vehicleId);
     if (!vehicle) {
       throw new NotFoundException(`Vehicle with ID "${vehicleId}" not found`);

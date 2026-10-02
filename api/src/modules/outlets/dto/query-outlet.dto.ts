@@ -7,6 +7,11 @@ import { DockType } from '../../../common/enums/dock-type.enum';
 import { ParkingConstraint } from '../../../common/enums/parking-constraint.enum';
 
 export class QueryOutletDto extends PaginationQueryDto {
+  // The dataset identifier, e.g. OUT001.
+  @IsOptional()
+  @IsString()
+  uniqueId?: string;
+
   @IsOptional()
   @IsEnum(Brand)
   brand?: Brand;

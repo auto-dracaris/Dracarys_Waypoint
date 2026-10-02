@@ -1,109 +1,67 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import { MigrationInterface, QueryRunner } from 'typeorm';
+import { readCsvRows } from '../seed-data.util';
 
+// `vehicles.csv` spells refrigeration as `temp`: reefer or ambient.
+const REEFER = 'reefer';
+
+/**
+ * The dataset's own identifiers (VEH001, OUT001) go into `unique_id`; the
+ * primary keys are generated. Depots and districts are linked by name.
+ */
 export class SeedVehiclesAndOutlets1759000000004 implements MigrationInterface {
-  private findDataFile(filename: string): string {
-    const candidates = [
-      path.join(process.cwd(), 'data', filename),
-      path.join(process.cwd(), 'api', 'data', filename),
-      path.resolve(__dirname, '../../../../data', filename),
-      path.resolve(__dirname, '../../../data', filename),
-    ];
-
-    for (const candidate of candidates) {
-      if (fs.existsSync(candidate)) {
-        return candidate;
-      }
-    }
-    throw new Error(`Cannot find seed data file: ${filename}`);
-  }
-
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // 1. Seed Vehicles
-    const vehiclesFile = this.findDataFile('vehicles.csv');
-    const vehiclesContent = fs.readFileSync(vehiclesFile, 'utf8');
-    const vehicleLines = vehiclesContent
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
-
-    // Skip header: vehicle_id,type,temp,weight_cap_kg,volume_cap_m3,fuel_type,km_per_l,weekly_fuel_quota_l,depot
-    for (let i = 1; i < vehicleLines.length; i++) {
-      const cols = vehicleLines[i].split(',').map((c) => c.trim());
-      if (cols.length < 9) continue;
-      const [
-        vehicleId,
-        type,
-        temp,
-        weightCapKg,
-        volumeCapM3,
-        fuelType,
-        kmPerL,
-        weeklyFuelQuotaL,
-        depot,
-      ] = cols;
-
+    for (const row of readCsvRows('vehicles.csv')) {
       await queryRunner.query(
         `INSERT INTO vehicles (
-          vehicle_id, type, temp, weight_cap_kg, volume_cap_m3,
-          fuel_type, km_per_l, weekly_fuel_quota_l, depot
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        ON CONFLICT (vehicle_id) DO NOTHING;`,
+          unique_id, type, is_refrigerated, weight_cap_kg, volume_cap_m3,
+          fuel_type, km_per_l, weekly_fuel_quota_l, depot_id
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8,
+          (SELECT id FROM depots WHERE name = $9)
+        )
+        ON CONFLICT (unique_id) DO NOTHING;`,
         [
-          vehicleId,
-          type,
-          temp,
-          parseInt(weightCapKg, 10),
-          parseFloat(volumeCapM3),
-          fuelType,
-          parseFloat(kmPerL),
-          parseInt(weeklyFuelQuotaL, 10),
-          depot,
+          row.vehicle_id,
+          row.type,
+          row.temp === REEFER,
+          parseFloat(row.weight_cap_kg),
+          parseFloat(row.volume_cap_m3),
+          row.fuel_type,
+          parseFloat(row.km_per_l),
+          parseFloat(row.weekly_fuel_quota_l),
+          row.depot,
         ],
       );
     }
 
-    // 3. Seed Outlets
-    const outletsFile = this.findDataFile('outlets.csv');
-    const outletsContent = fs.readFileSync(outletsFile, 'utf8');
-    const outletLines = outletsContent
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
-
-    // Skip header: outlet_id,brand,district,depot,dock_type,parking_constraint,mall_window,window_open_time,window_close_time
-    for (let i = 1; i < outletLines.length; i++) {
-      const cols = outletLines[i].split(',').map((c) => c.trim());
-      if (cols.length < 9) continue;
-      const [
-        outletId,
-        brand,
-        district,
-        depot,
-        dockType,
-        parkingConstraint,
-        mallWindow,
-        windowOpenTime,
-        windowCloseTime,
-      ] = cols;
+    for (const row of readCsvRows('outlets.csv')) {
+      // `mall_window` is "HH:MM-HH:MM", blank for outlets outside malls.
+      const [mallWindowOpen, mallWindowClose] = row.mall_window
+        ? row.mall_window.split('-').map((time) => time.trim())
+        : [null, null];
 
       await queryRunner.query(
         `INSERT INTO outlets (
-          outlet_id, brand, district, depot, dock_type,
-          parking_constraint, mall_window, window_open_time, window_close_time
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        ON CONFLICT (outlet_id) DO NOTHING;`,
+          unique_id, brand, district_id, depot_id, dock_type, parking_constraint,
+          mall_window_open, mall_window_close, window_open_time, window_close_time
+        ) VALUES (
+          $1, $2,
+          (SELECT id FROM districts WHERE name = $3),
+          (SELECT id FROM depots WHERE name = $4),
+          $5, $6, $7, $8, $9, $10
+        )
+        ON CONFLICT (unique_id) DO NOTHING;`,
         [
-          outletId,
-          brand,
-          district,
-          depot,
-          dockType,
-          parkingConstraint,
-          mallWindow || null,
-          windowOpenTime,
-          windowCloseTime,
+          row.outlet_id,
+          row.brand,
+          row.district,
+          row.depot,
+          row.dock_type,
+          row.parking_constraint,
+          mallWindowOpen,
+          mallWindowClose,
+          row.window_open_time,
+          row.window_close_time,
         ],
       );
     }

@@ -1,7 +1,10 @@
-import { Column, Entity, Unique } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, Unique } from 'typeorm';
+import type { Relation } from 'typeorm';
 import { AutoIncBaseEntity } from '../../common/entities/autoinc-base.entity';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { UserStatus } from '../../common/enums/user-status.enum';
+import { Depot } from './depot.entity';
+import { Outlet } from './outlet.entity';
 
 @Entity('users')
 @Unique(['email'])
@@ -11,6 +14,11 @@ export class User extends AutoIncBaseEntity {
 
   @Column({ name: 'password_hash', type: 'text' })
   passwordHash: string;
+
+  // Never selected by default, so it cannot leak into a response; ask for it
+  // explicitly (`addSelect`) where a PIN is being checked.
+  @Column({ name: 'pin_hash', type: 'text', nullable: true, select: false })
+  pinHash: string | null;
 
   @Column({ name: 'first_name', length: 100 })
   firstName: string;
@@ -33,4 +41,20 @@ export class User extends AutoIncBaseEntity {
     default: UserStatus.ACTIVE,
   })
   status: UserStatus;
+
+  // Where a dispatcher, loader or driver works.
+  @Column({ name: 'depot_id', type: 'int', nullable: true })
+  depotId: number | null;
+
+  @ManyToOne(() => Depot, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'depot_id' })
+  depot?: Relation<Depot> | null;
+
+  // The outlet a store manager orders for.
+  @Column({ name: 'outlet_id', type: 'int', nullable: true })
+  outletId: number | null;
+
+  @ManyToOne(() => Outlet, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'outlet_id' })
+  outlet?: Relation<Outlet> | null;
 }

@@ -164,6 +164,11 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
 - Entities extend `AutoIncBaseEntity` (the default) or `UuidBaseEntity`
   (`src/common/entities/`), both of which carry the audit columns from
   `BaseBaseEntity`.
+- **A string is never the primary key.** Identifiers that come from the dataset
+  (`OUT001`, `VEH001`) live in a unique `unique_id` column next to a generated `id`;
+  depots and districts are identified by a unique `name`. Seeds link rows by those
+  columns, not by assumed ids. The two exceptions are `calendar` (keyed by its date) and
+  `service_allowance` (keyed by brand + dock type).
 - TS properties are camelCase; every DB column is explicitly snake_cased via
   `@Column({ name: 'foo_bar' })`. Table names are explicit snake_case plurals.
 - Rows are retired by a status column, not deleted, so the audit trail and historical
@@ -176,7 +181,10 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
 - Placeholders in raw SQL are `$1, $2, …`, not `?`.
 - Quote `"key"`, `"value"`, `"type"` and friends in raw SQL. Keep identifiers
   snake_case so unquoted case-folding is never an issue.
-- Timestamps are `type: 'timestamp'`.
+- Timestamps on the auth tables are `type: 'timestamp'`. The delivery tables
+  (orders, trips, trip stops, vehicle locations, issues) use `timestamptz`, because
+  driver handsets send device times with an offset and those must not shift on
+  storage.
 
 ## Structure
 
