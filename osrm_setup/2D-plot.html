@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sri Lanka Multi-Profile Routing</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+      }
+      #map {
+        height: 100vh;
+        width: 100vw;
+      }
+
+      #controls {
+        position: absolute;
+        top: 20px;
+        left: 50px;
+        z-index: 1000;
+        background: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        width: 320px;
+      }
+
+      h3 {
+        margin: 0 0 10px 0;
+        font-size: 16px;
+      }
+
+      .selector {
+        margin-bottom: 15px;
+      }
+      select,
+      button {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      button:hover {
+        background: #0056b3;
+      }
+
+      #info {
+        margin-top: 15px;
+        padding-top: 10px;
+        border-top: 1px solid #eee;
+        font-size: 14px;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <h3>Vehicle Routing</h3>
+      <div class="selector">
+        <label for="vehicle">Select Vehicle Type:</label>
+        <select id="vehicle">
+          <option value="van">Van</option>
+          <option value="truck">15-Ton Truck</option>
+        </select>
+      </div>
+      <button id="clearBtn">Clear Map</button>
+      <div id="info">Click two points on the map to calculate a route.</div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const OSRM_BASE_URL = "http://localhost:8081/route/v1";
+
+      const map = L.map("map").setView([7.8731, 80.7718], 8);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap contributors",
+      }).addTo(map);
+
+      let waypoints = [];
+      let routeLayer = null;
+
+      const vehicleSelect = document.getElementById("vehicle");
+      const infoPanel = document.getElementById("info");
+
+      // Handle map clicks
+      map.on("click", (e) => {
+        if (waypoints.length >= 2) return; // Prevent adding more than 2 points
+
+        const marker = L.marker(e.latlng).addTo(map);
+        waypoints.push(marker);
+
+        if (waypoints.length === 2) {
+          fetchRoute();
+        }
+      });
+
+      // Re-calculate route if the vehicle type is changed
+      vehicleSelect.addEventListener("change", () => {
+        if (waypoints.length === 2) {
+          fetchRoute();
+        }
+      });
+
+      // Clear map button
+      document.getElementById("clearBtn").addEventListener("click", () => {
+        waypoints.forEach((marker) => map.removeLayer(marker));
+        if (routeLayer) map.removeLayer(routeLayer);
+        waypoints = [];
+        infoPanel.innerText =
+          "Click two points on the map to calculate a route.";
+      });
+
+      async function fetchRoute() {
+        infoPanel.innerText = "Calculating...";
+
+        const start = waypoints[0].getLatLng();
+        const end = waypoints[1].getLatLng();
+        const vehicle = vehicleSelect.value;
+
+        // OSRM requires coordinates in longitude,latitude format
+        const coords = `${start.lng},${start.lat};${end.lng},${end.lat}`;
+        const url = `${OSRM_BASE_URL}/${vehicle}/${coords}?overview=full&geometries=geojson`;
+
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+
+          if (data.code !== "Ok" || !data.routes || data.routes.length === 0) {
+            infoPanel.innerText = "No route found between these points.";
+            return;
+          }
+
+          const route = data.routes[0];
+          const distanceKm = (route.distance / 1000).toFixed(2);
+
+          // Calculate hours and minutes
+          const totalMinutes = Math.round(route.duration / 60);
+          const hours = Math.floor(totalMinutes / 60);
+          const minutes = totalMinutes % 60;
+          const timeString =
+            hours > 0 ? `${hours} hr ${minutes} min` : `${minutes} min`;
+
+          infoPanel.innerHTML = `
+          <strong>Distance:</strong> ${distanceKm} km <br>
+          <strong>ETA:</strong> ${timeString}
+        `;
+
+          // Draw the route on the map
+          if (routeLayer) map.removeLayer(routeLayer);
+
+          // Use a different color based on vehicle
+          const routeColor = vehicle === "truck" ? "#d9534f" : "#0275d8";
+
+          routeLayer = L.geoJSON(route.geometry, {
+            style: { color: routeColor, weight: 6, opacity: 0.8 },
+          }).addTo(map);
+
+          // Auto-zoom map to fit the route
+          map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+        } catch (err) {
+          console.error(err);
+          infoPanel.innerText = "Error connecting to routing service.";
+        }
+      }
+    </script>
+  </body>
+</html>
