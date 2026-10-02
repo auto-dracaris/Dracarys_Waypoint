@@ -1,3 +1,5 @@
+import 'package:driver_app/features/navigation/application/navigation_controller.dart';
+import 'package:driver_app/features/navigation/data/simulated_location_source.dart';
 import 'package:driver_app/features/stops/presentation/delivered_quantities.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -138,15 +140,84 @@ void main() {
       expect(find.text('3D'), findsOneWidget);
     });
 
-    testWidgets('Start navigation explains that turn-by-turn is not built',
-        (tester) async {
-      await pumpTripRoutes(tester, location: stop3);
-      await tester.tap(find.text('Get Directions'));
-      await tester.pumpAndSettle();
+    group('live navigation', () {
+      const quick = SimulatedLocationSource(
+          demoDuration: Duration(milliseconds: 200),
+          tick: Duration(milliseconds: 20));
 
-      await tester.tap(find.text('Start navigation'));
-      await tester.pump();
-      expect(find.byType(SnackBar), findsOneWidget);
+      Future<void> openDirections(WidgetTester tester) async {
+        await pumpTripRoutes(tester,
+            location: stop3,
+            overrides: [locationSourceProvider.overrideWithValue(quick)]);
+        await tester.tap(find.text('Get Directions'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('the vehicle sits on the map before navigation starts',
+          (tester) async {
+        await openDirections(tester);
+        expect(find.byKey(const Key('vehicle-marker')), findsOneWidget);
+        expect(find.byKey(const Key('live-dot')), findsNothing);
+        expect(find.byKey(const Key('locate-button')), findsOneWidget);
+      });
+
+      testWidgets('Start drives to arrival and offers the arrived action',
+          (tester) async {
+        await openDirections(tester);
+
+        await tester.tap(find.text('Start navigation'));
+        await tester.pump(const Duration(milliseconds: 60));
+        expect(find.text('End navigation'), findsOneWidget);
+        expect(find.byKey(const Key('live-dot')), findsOneWidget);
+        expect(find.byKey(const Key('vehicle-marker')), findsOneWidget);
+
+        await tester.pumpAndSettle();
+        expect(find.text('You have arrived'), findsOneWidget);
+        expect(find.text("I've arrived"), findsOneWidget);
+
+        await tester.tap(find.text("I've arrived"));
+        await tester.pumpAndSettle();
+        expect(find.text('ARRIVED · STOP 3 OF 4'), findsOneWidget);
+      });
+
+      testWidgets('End navigation returns to idle', (tester) async {
+        await openDirections(tester);
+        await tester.tap(find.text('Start navigation'));
+        await tester.pump(const Duration(milliseconds: 60));
+
+        await tester.tap(find.text('End navigation'));
+        await tester.pumpAndSettle();
+        expect(find.text('Start navigation'), findsOneWidget);
+        expect(find.byKey(const Key('live-dot')), findsNothing);
+      });
+
+      testWidgets('swap flips the callout when idle, not while navigating',
+          (tester) async {
+        await openDirections(tester);
+        double dy(String t) => tester.getTopLeft(find.text(t)).dy;
+        const dest = 'Waypoint Fresh — Ja-Ela';
+        expect(dy('Your Location'), lessThan(dy(dest)));
+
+        await tester.tap(find.byKey(const Key('swap-button')));
+        await tester.pumpAndSettle();
+        expect(dy(dest), lessThan(dy('Your Location')));
+
+        await tester.tap(find.byKey(const Key('swap-button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Start navigation'));
+        await tester.pump(const Duration(milliseconds: 60));
+        await tester.tap(find.byKey(const Key('swap-button')));
+        await tester.pump();
+        expect(dy('Your Location'), lessThan(dy(dest)));
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('the locate button can be tapped', (tester) async {
+        await openDirections(tester);
+        await tester.tap(find.byKey(const Key('locate-button')));
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      });
     });
 
     testWidgets('the back link returns to the stop', (tester) async {
