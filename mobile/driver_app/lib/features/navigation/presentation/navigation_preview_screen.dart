@@ -13,6 +13,7 @@ import '../../../core/widgets/async_value_view.dart';
 import '../../../core/widgets/back_bar.dart';
 import '../../../core/widgets/map_view.dart';
 import '../../trips/data/trips_providers.dart';
+import '../application/route_providers.dart';
 import '../../trips/domain/stop.dart';
 import 'widgets/route_marker.dart';
 
@@ -66,7 +67,8 @@ class NavigationPreviewScreen extends ConsumerWidget {
                         // Keep every stop clear of the callout and the sheet.
                         fitPadding:
                             const EdgeInsets.fromLTRB(40, 170, 40, 260),
-                        route: points,
+                        route: ref.watch(roadRouteProvider(RouteRequest(points))).value ??
+                            points,
                         markers: [
                           for (final s in stops)
                             MapMarker(

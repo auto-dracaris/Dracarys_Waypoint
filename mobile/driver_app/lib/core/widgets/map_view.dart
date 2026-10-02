@@ -54,11 +54,27 @@ class MapView extends ConsumerStatefulWidget {
 
 class _MapViewState extends ConsumerState<MapView> {
   ml.MapController? _controller;
+  Size _size = Size.zero;
+  bool _fitted = false;
+
+  /// Keeps [widget.fitPadding] from swallowing a small map: at most 30% of the
+  /// height and 20% of the width on each side.
+  EdgeInsets _padding() {
+    final p = widget.fitPadding;
+    final v = _size.height * 0.3, h = _size.width * 0.2;
+    return EdgeInsets.fromLTRB(
+      p.left.clamp(0, h).toDouble(),
+      p.top.clamp(0, v).toDouble(),
+      p.right.clamp(0, h).toDouble(),
+      p.bottom.clamp(0, v).toDouble(),
+    );
+  }
 
   void _fit() {
     final c = _controller;
     final pts = widget.fit;
-    if (c == null || pts.length < 2) return;
+    if (c == null || pts.length < 2 || _fitted || _size.isEmpty) return;
+    _fitted = true;
     var west = pts.first.longitude, east = west;
     var south = pts.first.latitude, north = south;
     for (final p in pts) {
@@ -74,8 +90,9 @@ class _MapViewState extends ConsumerState<MapView> {
         latitudeSouth: south,
         latitudeNorth: north,
       ),
-      padding: widget.fitPadding,
-      nativeDuration: Duration.zero,
+      padding: _padding(),
+      // MapLibre rejects a zero duration; 1 ms is effectively instant.
+      nativeDuration: const Duration(milliseconds: 1),
     );
   }
 
@@ -83,6 +100,13 @@ class _MapViewState extends ConsumerState<MapView> {
   Widget build(BuildContext context) {
     final tiles = ref.watch(mapTilesEnabledProvider);
     if (!tiles) return _placeholder();
+    return LayoutBuilder(builder: (context, box) {
+      _size = box.biggest;
+      return _map();
+    });
+  }
+
+  Widget _map() {
     return ClipRect(
       child: ml.MapLibreMap(
         options: ml.MapOptions(
