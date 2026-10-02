@@ -13,18 +13,23 @@ const emptyVehicleBoxGeoJson = '{"type":"FeatureCollection","features":[]}';
 const _cargoColor = '#FACC15'; // AppColors.primary
 const _cabColor = '#2B2422'; // AppColors.ink
 
+/// How long the van should be, in metres, so it measures about [pixels] on
+/// screen at [zoom] (clamped so it never vanishes or balloons).
+double vehicleLengthFor(double zoom, double latitude, {double pixels = 22}) {
+  final metersPerPixel =
+      78271.517 * math.cos(latitude * math.pi / 180) / math.pow(2, zoom);
+  return (pixels * metersPerPixel).clamp(2.5, 60.0).toDouble();
+}
+
 /// A delivery van as two extruded boxes (a tall cargo box behind a lower cab)
 /// centred on [center] and pointing along [heading] (compass degrees).
 ///
-/// Drawn about 2-3x real size so it reads at street zoom. Each feature carries
+/// Proportions follow [length]; size it with [vehicleLengthFor]. Each feature
+/// carries
 /// `h` (top, metres), `b` (base, metres) and `c` (colour) for a data-driven
 /// fill-extrusion layer.
-String vehicleBoxGeoJson(
-  LatLng center,
-  double heading, {
-  double length = 13,
-  double width = 5.5,
-}) {
+String vehicleBoxGeoJson(LatLng center, double heading, {double length = 4.8}) {
+  final width = length * 0.42;
   final h = heading * math.pi / 180;
   final fx = math.sin(h), fy = math.cos(h); // forward: east, north
   final rx = math.cos(h), ry = -math.sin(h); // right: east, north
@@ -71,8 +76,22 @@ String vehicleBoxGeoJson(
   return jsonEncode({
     'type': 'FeatureCollection',
     'features': [
-      box(back, front - cabLength, width / 2, 3.6, 0.6, _cargoColor),
-      box(front - cabLength, front, width / 2 * 0.92, 2.4, 0.6, _cabColor),
+      box(
+        back,
+        front - cabLength,
+        width / 2,
+        length * 0.6,
+        length * 0.1,
+        _cargoColor,
+      ),
+      box(
+        front - cabLength,
+        front,
+        width / 2 * 0.92,
+        length * 0.44,
+        length * 0.1,
+        _cabColor,
+      ),
     ],
   });
 }

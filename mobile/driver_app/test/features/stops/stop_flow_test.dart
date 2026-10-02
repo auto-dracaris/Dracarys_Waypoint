@@ -142,8 +142,7 @@ void main() {
 
     group('live navigation', () {
       const quick = SimulatedLocationSource(
-          demoDuration: Duration(milliseconds: 200),
-          tick: Duration(milliseconds: 20));
+          speedKmh: 2.0e5, tick: Duration(milliseconds: 20));
 
       Future<void> openDirections(WidgetTester tester) async {
         await pumpTripRoutes(tester,

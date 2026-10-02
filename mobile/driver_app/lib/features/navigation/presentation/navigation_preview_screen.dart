@@ -23,7 +23,6 @@ import '../../trips/domain/stop.dart';
 import '../application/navigation_controller.dart';
 import '../application/route_providers.dart';
 import 'widgets/route_marker.dart';
-import 'widgets/vehicle_marker.dart';
 
 /// Where the driver starts, until real location services exist (Peliyagoda depot).
 const _depot = LatLng(6.9645, 79.8880);
@@ -76,8 +75,8 @@ class _NavigationPreviewScreenState
 
   CameraTarget _targetFor(LatLng point, double heading, MapMode mode) =>
       mode == MapMode.tilted
-      ? CameraTarget(point: point, bearing: heading, zoom: 18, pitch: 60)
-      : CameraTarget(point: point, zoom: 17.5);
+      ? CameraTarget(point: point, bearing: heading, zoom: 20, pitch: 76)
+      : CameraTarget(point: point, zoom: 18.5);
 
   Future<void> _arrived() async {
     setState(() => _busy = true);
@@ -145,9 +144,7 @@ class _NavigationPreviewScreenState
                         fit: points,
                         mode: mode,
                         cameraTarget: target,
-                        vehicle3d: mode == MapMode.tilted
-                            ? Vehicle3D(point: vehicle, heading: heading)
-                            : null,
+                        vehicle3d: Vehicle3D(point: vehicle, heading: heading),
                         onUserMoved: () {
                           if (_following || _locate != null) {
                             setState(() {
@@ -173,15 +170,6 @@ class _NavigationPreviewScreenState
                                 number: s.sequence,
                                 completed: s.status == StopStatus.completed,
                               ),
-                            ),
-                          // Tilted view draws the van as a real 3D box instead.
-                          if (mode == MapMode.flat)
-                            MapMarker(
-                              point: vehicle,
-                              width: 44,
-                              height: 44,
-                              flat: mode == MapMode.tilted,
-                              child: VehicleMarker(heading: heading),
                             ),
                         ],
                       ),

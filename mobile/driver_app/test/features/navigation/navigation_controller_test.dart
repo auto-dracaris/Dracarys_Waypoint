@@ -15,8 +15,7 @@ class _Counting implements LocationSource {
   Stream<VehiclePosition> follow(List<LatLng> route) {
     calls++;
     return const SimulatedLocationSource(
-            demoDuration: Duration(milliseconds: 40),
-            tick: Duration(milliseconds: 4))
+            speedKmh: 3.6e7, tick: Duration(milliseconds: 4))
         .follow(route);
   }
 }
@@ -29,17 +28,24 @@ ProviderContainer _container(LocationSource src) {
   return c;
 }
 
+/// Real timers drive the simulator; poll instead of guessing a fixed delay.
+Future<void> _untilArrived(ProviderContainer c) async {
+  for (var i = 0; i < 200; i++) {
+    if (c.read(navigationProvider).phase == NavPhase.arrived) return;
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+}
+
 void main() {
   const fast = SimulatedLocationSource(
-      demoDuration: Duration(milliseconds: 20),
-      tick: Duration(milliseconds: 2));
+      speedKmh: 3.6e7, tick: Duration(milliseconds: 2));
 
   test('start navigates, then arrives at the last route point', () async {
     final c = _container(fast);
     c.read(navigationProvider.notifier).start(const [_a, _b, _c]);
     expect(c.read(navigationProvider).phase, NavPhase.navigating);
 
-    await Future<void>.delayed(const Duration(milliseconds: 100));
+    await _untilArrived(c);
     final s = c.read(navigationProvider);
     expect(s.phase, NavPhase.arrived);
     expect(s.position!.point, _c);
@@ -48,8 +54,7 @@ void main() {
 
   test('end mid-drive resets to idle and stops emitting', () async {
     final c = _container(const SimulatedLocationSource(
-        demoDuration: Duration(milliseconds: 200),
-        tick: Duration(milliseconds: 5)));
+        speedKmh: 3.6e6, tick: Duration(milliseconds: 5)));
     final n = c.read(navigationProvider.notifier)..start(const [_a, _b, _c]);
     await Future<void>.delayed(const Duration(milliseconds: 30));
     n.end();
@@ -72,7 +77,7 @@ void main() {
   test('a one-point route arrives straight away', () async {
     final c = _container(fast);
     c.read(navigationProvider.notifier).start(const [_a]);
-    await Future<void>.delayed(const Duration(milliseconds: 30));
+    await _untilArrived(c);
     expect(c.read(navigationProvider).phase, NavPhase.arrived);
   });
 }

@@ -14,6 +14,17 @@ void main() {
     expect(w.at(w.totalMeters - 10).heading, closeTo(90, 1));
   });
 
+  test('heading turns gradually through a corner instead of snapping', () {
+    final w = PolylineWalker(const [a, b, c]);
+    final corner = w.totalMeters / 2;
+    final before = w.at(corner - 60).heading;
+    final at = w.at(corner).heading;
+    final after = w.at(corner + 60).heading;
+    expect(before, closeTo(0, 1));
+    expect(at, inInclusiveRange(20, 70));
+    expect(after, closeTo(90, 1));
+  });
+
   test('walker clamps to the ends and reports remaining distance', () {
     final w = PolylineWalker(const [a, b, c]);
     expect(w.at(-5).remainingMeters, closeTo(w.totalMeters, 0.001));
@@ -28,8 +39,7 @@ void main() {
 
   test('a route with fewer than two points yields one position', () async {
     const src = SimulatedLocationSource(
-        demoDuration: Duration(milliseconds: 10),
-        tick: Duration(milliseconds: 1));
+        speedKmh: 3.6e7, tick: Duration(milliseconds: 1));
     final out = await src.follow(const [a]).toList();
     expect(out, hasLength(1));
     expect(out.single.remainingMeters, 0);
@@ -38,8 +48,7 @@ void main() {
   test('source runs from start to end with decreasing remaining distance',
       () async {
     const src = SimulatedLocationSource(
-        demoDuration: Duration(milliseconds: 20),
-        tick: Duration(milliseconds: 2));
+        speedKmh: 3.6e7, tick: Duration(milliseconds: 2));
     final out = await src.follow(const [a, b, c]).toList();
     expect(out.first.point, a);
     expect(out.last.point, c);

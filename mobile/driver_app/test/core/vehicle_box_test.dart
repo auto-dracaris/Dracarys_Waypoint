@@ -55,4 +55,19 @@ void main() {
     expect(j['type'], 'FeatureCollection');
     expect(j['features'], isEmpty);
   });
+
+  test('vehicle length shrinks as you zoom in and is clamped', () {
+    final far = vehicleLengthFor(15, 7);
+    final near = vehicleLengthFor(19, 7);
+    expect(far, greaterThan(near));
+    expect(vehicleLengthFor(30, 7), 2.5); // never smaller than a small van
+    expect(vehicleLengthFor(1, 7), 60); // never absurdly large
+  });
+
+  test('proportions follow the length', () {
+    final f = (jsonDecode(vehicleBoxGeoJson(at, 0, length: 10))['features']
+            as List)
+        .cast<Map<String, dynamic>>();
+    expect(f[0]['properties']['h'], closeTo(5 + 1, 0.001)); // 0.5L cargo + 0.1L base
+  });
 }

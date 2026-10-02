@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:latlong2/latlong.dart';
 
 import 'location_source.dart';
@@ -24,16 +26,13 @@ class PolylineWalker {
   final _cum = <double>[];
   late final double totalMeters;
 
-  VehiclePosition at(double meters) {
-    if (_pts.length < 2) {
-      return VehiclePosition(
-        point: _pts.isEmpty ? const LatLng(0, 0) : _pts.first,
-        heading: 0,
-        speedKmh: 0,
-        remainingMeters: 0,
-      );
-    }
-    final m = meters.clamp(0.0, totalMeters).toDouble();
+  /// Heading is measured between points this far behind and ahead of the
+  /// vehicle, so turns blend in over a few metres instead of snapping at each
+  /// polyline vertex.
+  static const _headingWindowMeters = 12.5;
+
+  /// Point at [m] metres along the route, and the heading of its segment.
+  (LatLng, double) _locate(double m) {
     var i = 1;
     while (i < _cum.length - 1 && _cum[i] < m) {
       i++;
@@ -45,50 +44,68 @@ class PolylineWalker {
       from.latitude + (to.latitude - from.latitude) * t,
       from.longitude + (to.longitude - from.longitude) * t,
     );
+    return (point, (_dist.bearing(from, to) + 360) % 360);
+  }
+
+  VehiclePosition at(double meters) {
+    if (_pts.length < 2) {
+      return VehiclePosition(
+        point: _pts.isEmpty ? const LatLng(0, 0) : _pts.first,
+        heading: 0,
+        speedKmh: 0,
+        remainingMeters: 0,
+      );
+    }
+    final m = meters.clamp(0.0, totalMeters).toDouble();
+    final (point, segmentHeading) = _locate(m);
+    final (behind, _) = _locate(math.max(m - _headingWindowMeters, 0));
+    final (ahead, _) = _locate(math.min(m + _headingWindowMeters, totalMeters));
+    final heading = _dist(behind, ahead) < 1
+        ? segmentHeading
+        : (_dist.bearing(behind, ahead) + 360) % 360;
     return VehiclePosition(
       point: m >= totalMeters ? _pts.last : point,
-      heading: (_dist.bearing(from, to) + 360) % 360,
+      heading: heading,
       speedKmh: 0,
       remainingMeters: totalMeters - m,
     );
   }
 }
 
-/// Drives the route in [demoDuration] regardless of its length, so a demo
-/// doesn't take as long as the real trip would.
+/// Drives the route at a steady [speedKmh], advancing by speed x [tick] each
+/// step so the pace is constant and testable under a fake clock.
 class SimulatedLocationSource implements LocationSource {
   const SimulatedLocationSource({
-    this.demoDuration = const Duration(seconds: 90),
-    this.tick = const Duration(milliseconds: 500),
-    this.displaySpeedKmh = 40,
+    this.speedKmh = 45,
+    this.tick = const Duration(milliseconds: 33),
   });
 
-  final Duration demoDuration;
+  final double speedKmh;
   final Duration tick;
-  final double displaySpeedKmh;
 
   @override
   Stream<VehiclePosition> follow(List<LatLng> route) async* {
     final walker = PolylineWalker(route);
-    final steps = (demoDuration.inMicroseconds / tick.inMicroseconds)
-        .ceil()
-        .clamp(1, 1 << 20);
 
     VehiclePosition at(double m) {
       final p = walker.at(m);
       return VehiclePosition(
         point: p.point,
         heading: p.heading,
-        speedKmh: p.remainingMeters == 0 ? 0 : displaySpeedKmh,
+        speedKmh: p.remainingMeters == 0 ? 0 : speedKmh,
         remainingMeters: p.remainingMeters,
       );
     }
 
     yield at(0);
     if (walker.totalMeters == 0) return;
-    for (var i = 1; i <= steps; i++) {
+    final metersPerSecond = speedKmh / 3.6;
+    final stepMeters = metersPerSecond * tick.inMicroseconds / 1e6;
+    var m = 0.0;
+    while (m < walker.totalMeters) {
       await Future<void>.delayed(tick);
-      yield at(walker.totalMeters * i / steps);
+      m = math.min(walker.totalMeters, m + stepMeters);
+      yield at(m);
     }
   }
 }
