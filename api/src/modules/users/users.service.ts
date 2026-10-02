@@ -25,9 +25,6 @@ export class UsersService extends BaseCrudService<User> {
     dto: DeepPartial<User>,
     entity: User,
   ): Promise<void> {
-    if (dto.email && dto.email !== entity.email) {
-      await this.assertEmailIsFree(dto.email);
-    }
     if (dto.phone && dto.phone !== entity.phone) {
       await this.assertPhoneIsFree(dto.phone);
     }
@@ -150,13 +147,6 @@ export class UsersService extends BaseCrudService<User> {
   private normalisePhone(dto: DeepPartial<User>): void {
     if (dto.phone) {
       dto.phone = formatPhoneNumber(dto.phone);
-    }
-  }
-
-  private async assertEmailIsFree(email: string): Promise<void> {
-    const existing = await this.usersRepository.findByEmail(email);
-    if (existing) {
-      throw new ConflictException('Email is already in use by another user');
     }
   }
 

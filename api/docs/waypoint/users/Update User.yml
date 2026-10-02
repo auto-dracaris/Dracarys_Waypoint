@@ -12,7 +12,6 @@ http:
       {
         "firstName": "Jane",
         "lastName": "Silva",
-        "email": "jane.silva@example.com",
         "phone": "0712345678"
       }
   auth: inherit
@@ -24,6 +23,6 @@ settings:
   maxRedirects: 5
 
 docs: |-
-  Update a user's profile fields (firstName, lastName, email, phone, avatar — all optional). Dispatcher only (Bearer `{{dispatcherAccessToken}}` from the folder).
+  Update a user's profile fields (firstName, lastName, phone, avatar — all optional). Dispatcher only (Bearer `{{dispatcherAccessToken}}` from the folder).
 
   Role and status have their own endpoints; password changes via Auth → Change Password.

@@ -16,7 +16,7 @@ export class UserListQueryDto extends PaginationQueryDto {
   })
   status?: UserStatus;
 
-  /** Case-insensitive match on first name, last name, email or phone. */
+  /** Case-insensitive match on first name, last name or phone. */
   @IsOptional()
   @IsString({ message: 'Search must be a string' })
   @MaxLength(100, { message: 'Search must be at most 100 characters' })

@@ -40,6 +40,6 @@ docs: |-
   - `page` (default 1), `limit` (default 10, max 100)
   - `role`: dispatcher | store_manager | driver | loader
   - `status`: pending | active | blocked | deleted
-  - `search`: matches first name, last name, email or phone
+  - `search`: matches first name, last name or phone
 
   Response `data`: `{ items, meta: { total, page, limit, totalPages } }`.

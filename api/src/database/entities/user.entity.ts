@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, Unique } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import type { Relation } from 'typeorm';
 import { AutoIncBaseEntity } from '../../common/entities/autoinc-base.entity';
 import { UserRole } from '../../common/enums/user-role.enum';
@@ -7,11 +7,7 @@ import { Depot } from './depot.entity';
 import { Outlet } from './outlet.entity';
 
 @Entity('users')
-@Unique(['email'])
 export class User extends AutoIncBaseEntity {
-  @Column({ length: 150 })
-  email: string;
-
   @Column({ name: 'password_hash', type: 'text' })
   passwordHash: string;
 

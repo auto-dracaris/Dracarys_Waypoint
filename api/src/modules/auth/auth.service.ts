@@ -52,13 +52,6 @@ export class AuthService {
   async register(registerDto: RegisterDto): Promise<ApiResponseDto> {
     const formattedPhone = formatPhoneNumber(registerDto.phone);
 
-    const emailExists = await this.userAuthRepository.findByEmail(
-      registerDto.email,
-    );
-    if (emailExists) {
-      throw new ConflictException('Email is already in use by another user');
-    }
-
     const phoneExists = await this.userAuthRepository.findByPhone(
       formattedPhone,
     );
@@ -90,7 +83,6 @@ export class AuthService {
       const newUser = this.userAuthRepository.create({
         firstName: registerDto.firstName,
         lastName: registerDto.lastName,
-        email: registerDto.email,
         phone: formattedPhone,
         passwordHash,
         // Self-registration always creates a driver; other roles are assigned by a dispatcher.
@@ -224,10 +216,7 @@ export class AuthService {
 
   async login(loginDto: LoginDto): Promise<ApiResponseDto> {
     const formattedPhone = formatPhoneNumber(loginDto.phone);
-    let user = await this.userAuthRepository.findByPhone(formattedPhone);
-    if (!user) {
-      user = await this.userAuthRepository.findByEmail(loginDto.phone);
-    }
+    const user = await this.userAuthRepository.findByPhone(formattedPhone);
 
     // One generic error message so endpoint cannot be used for user enumeration
     if (!user || !(await bcrypt.compare(loginDto.password, user.passwordHash))) {
@@ -381,7 +370,6 @@ export class AuthService {
 
     const payload: JwtPayload = {
       userId: user.id,
-      email: user.email,
       role: user.role,
       sid: saved.id,
     };

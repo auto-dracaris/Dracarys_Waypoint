@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 /**
  * Profile fields only, all optional. Password changes through
@@ -7,11 +7,6 @@ import { IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
  * `PATCH /api/users/:id/status`.
  */
 export class UpdateUserDto {
-  @IsOptional()
-  @IsEmail({}, { message: 'Email must be a valid email address' })
-  @MaxLength(150, { message: 'Email must be at most 150 characters' })
-  email?: string;
-
   @IsOptional()
   @IsString({ message: 'First name must be a string' })
   @MaxLength(100, { message: 'First name must be at most 100 characters' })
