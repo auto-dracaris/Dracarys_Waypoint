@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:maplibre/maplibre.dart' as ml;
 
 import '../theme/app_colors.dart';
+import 'camera_target.dart';
 import 'map_mode.dart';
 import 'map_style.dart';
 
@@ -16,12 +17,16 @@ class MapMarker {
     required this.child,
     this.width = 40,
     this.height = 40,
+    this.flat = false,
   });
 
   final LatLng point;
   final Widget child;
   final double width;
   final double height;
+
+  /// Lie flat on the ground when the camera is tilted (e.g. a vehicle).
+  final bool flat;
 }
 
 ml.Geographic _geo(LatLng p) =>
@@ -38,6 +43,8 @@ class MapView extends ConsumerStatefulWidget {
     this.fit = const [],
     this.fitPadding = const EdgeInsets.all(56),
     this.mode = MapMode.flat,
+    this.cameraTarget,
+    this.onUserMoved,
   });
 
   final LatLng center;
@@ -53,6 +60,13 @@ class MapView extends ConsumerStatefulWidget {
 
   /// [MapMode.tilted] tips the camera over [center] so buildings show in 3D.
   final MapMode mode;
+
+  /// When set (and changed), the camera animates to it; it already carries its
+  /// own pitch and bearing, so [mode] camera moves are skipped meanwhile.
+  final CameraTarget? cameraTarget;
+
+  /// Called when the user drags/pinches the map themselves.
+  final VoidCallback? onUserMoved;
 
   @override
   ConsumerState<MapView> createState() => _MapViewState();
@@ -141,9 +155,26 @@ class _MapViewState extends ConsumerState<MapView> {
     await style.removeLayer('building-3d');
   }
 
+  void _follow(CameraTarget t) {
+    _controller?.animateCamera(
+      center: _geo(t.point),
+      bearing: t.bearing,
+      pitch: t.pitch,
+      zoom: t.zoom,
+      nativeDuration: const Duration(milliseconds: 500),
+    );
+  }
+
+  void _onEvent(ml.MapEvent e) {
+    if (e is ml.MapEventStartMoveCamera &&
+        e.reason == ml.CameraChangeReason.apiGesture) {
+      widget.onUserMoved?.call();
+    }
+  }
+
   void _applyMode() {
     final c = _controller;
-    if (c == null) return;
+    if (c == null || widget.cameraTarget != null) return;
     if (widget.mode == MapMode.tilted) {
       final zoom = c.getCamera().zoom;
       c.animateCamera(
@@ -167,7 +198,12 @@ class _MapViewState extends ConsumerState<MapView> {
   @override
   void didUpdateWidget(MapView old) {
     super.didUpdateWidget(old);
-    if (old.mode != widget.mode) _applyMode();
+    final t = widget.cameraTarget;
+    if (t != null && t != old.cameraTarget) {
+      _follow(t);
+    } else if (old.mode != widget.mode) {
+      _applyMode();
+    }
   }
 
   Future<void> _onStyleLoaded() async {
@@ -202,6 +238,7 @@ class _MapViewState extends ConsumerState<MapView> {
         ),
         onMapCreated: (c) => _controller = c,
         onStyleLoaded: (_) => _onStyleLoaded(),
+        onEvent: _onEvent,
         layers: [
           if (widget.route.length > 1)
             ml.PolylineLayer(
@@ -223,6 +260,7 @@ class _MapViewState extends ConsumerState<MapView> {
                 ml.Marker(
                   point: _geo(m.point),
                   size: Size(m.width, m.height),
+                flat: m.flat,
                   child: m.child,
                 ),
             ],
