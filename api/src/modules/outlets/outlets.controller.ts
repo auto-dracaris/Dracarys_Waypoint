@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseIntPipe,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -25,7 +26,7 @@ export class OutletsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<ApiResponseDto> {
+  findOne(@Param('id', ParseIntPipe) id: number): Promise<ApiResponseDto> {
     return this.outletsService.findOne(id);
   }
 }

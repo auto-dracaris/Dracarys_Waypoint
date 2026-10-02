@@ -4,18 +4,16 @@ import {
   DialogContent,
   DialogTrigger,
   DialogClose,
-  DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import ErrorRounded from "@mui/icons-material/ErrorRounded";
-import WarningRounded from "@mui/icons-material/WarningRounded";
-import CheckCircleRounded from "@mui/icons-material/CheckCircleRounded";
-import InfoRounded from "@mui/icons-material/InfoRounded";
-import ArrowForwardRounded from "@mui/icons-material/ArrowForwardRounded";
-import CloseRounded from "@mui/icons-material/CloseRounded";
-import FiberManualRecordRounded from "@mui/icons-material/FiberManualRecordRounded";
-import { cn } from "@/lib/utils";
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  ArrowRight,
+  X,
+} from "lucide-react";
 
 type NotificationType = "error" | "warning" | "success" | "info";
 
@@ -86,203 +84,221 @@ const initialNotifications: NotificationItem[] = [
   },
 ];
 
-
-const statusStyles = {
-  error: {
-    card: "bg-wp-red-50 outline-wp-red-100",
-    iconSurface: "bg-wp-red-50",
-    foreground: "text-wp-red-700",
-    icon: ErrorRounded,
-  },
-  warning: {
-    card: "bg-wp-yellow-50 outline-wp-yellow-300",
-    iconSurface: "bg-wp-yellow-100",
-    foreground: "text-wp-yellow-600",
-    icon: WarningRounded,
-  },
-  success: {
-    card: "bg-wp-lime-50 outline-wp-lime-200",
-    iconSurface: "bg-wp-lime-100",
-    foreground: "text-wp-text-success-primary",
-    icon: CheckCircleRounded,
-  },
-  info: {
-    card: "bg-wp-blue-50 outline-wp-blue-200",
-    iconSurface: "bg-wp-blue-100",
-    foreground: "text-wp-blue-500",
-    icon: InfoRounded,
-  },
-};
-
-function UnreadIndicator({ unread }: { unread: boolean }) {
-  if (!unread) return null;
-
-  return (
-    <FiberManualRecordRounded
-      aria-label="Unread notification"
-      titleAccess="Unread notification"
-      fontSize="inherit"
-      viewBox="4 4 16 16"
-      className="size-wp-space-sm shrink-0 text-wp-blue-500"
-    />
-  );
-}
-
-function NotificationCard({ item }: { item: NotificationItem }) {
-  const styles = statusStyles[item.type];
-  const StatusIcon = styles.icon;
-
-  return (
-    <article
-      className={cn(
-        "w-full shrink-0 overflow-hidden outline outline-1 -outline-offset-1",
-        item.details ? "rounded-wp-radius-xl" : "rounded-wp-radius-md",
-        styles.card,
-      )}
-    >
-      {item.details ? (
-        <>
-          <div className="flex items-start gap-wp-space-lg px-wp-space-lg pt-wp-space-lg pb-wp-space-md">
-            <StatusIcon fontSize="inherit" className={cn("size-wp-space-3xl shrink-0", styles.foreground)} />
-            <div className="flex min-w-0 flex-1 flex-col gap-wp-space-sm">
-              <h3 className="text-wp-text-primary type-text-sm-bold">{item.title}</h3>
-              <div className="flex flex-wrap items-center gap-wp-space-sm type-text-xs-regular">
-                {item.actionNeeded && (
-                  <span className="text-wp-text-error-primary type-text-xs-semibold">Action needed</span>
-                )}
-                <span className="text-wp-text-tertiary">{item.actionNeeded && "· "}{item.time}</span>
-              </div>
-            </div>
-            <UnreadIndicator unread={item.unread} />
-          </div>
-          <div className="px-wp-space-md pb-wp-space-md">
-            <div className="flex flex-col gap-wp-space-3xl rounded-wp-radius-md bg-wp-neutral-50 p-wp-space-lg outline outline-1 -outline-offset-1 outline-wp-red-200">
-              <p className="text-wp-text-secondary type-text-sm-regular">{item.description}</p>
-              <div className="flex flex-col gap-wp-space-lg">
-                <dl className="grid grid-cols-2 gap-x-wp-space-md gap-y-wp-space-md type-text-xs-regular">
-                  {[
-                    ["Order", item.details.order],
-                    ["Reported by", item.details.reportedBy],
-                    ["Run", item.details.run],
-                    ["Status", item.details.status],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex min-w-0 flex-col gap-wp-space-sm">
-                      <dt className="text-wp-text-tertiary type-text-xs-medium">{label}</dt>
-                      <dd className="text-wp-text-primary type-text-xs-semibold">{value}</dd>
-                    </div>
-                  ))}
-                </dl>
-                {item.actionText && (
-                  <Button
-                    className="h-wp-space-5xl w-full gap-wp-space-md rounded-wp-radius-xs bg-wp-red-500 px-wp-space-lg text-wp-text-white hover:bg-wp-red-600 type-text-md-semibold"
-                  >
-                    {item.actionText}
-                    <ArrowForwardRounded fontSize="inherit" className="size-wp-space-2xl" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="flex items-start gap-wp-space-md p-wp-space-lg">
-            <div className={cn("flex size-wp-space-4xl shrink-0 items-center justify-center rounded-wp-radius-2xl", styles.iconSurface)}>
-              <StatusIcon fontSize="inherit" className={cn("size-wp-space-2xl", styles.foreground)} />
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-wp-space-xs">
-              <h3 className="text-wp-text-primary type-text-sm-bold">{item.title}</h3>
-              <p className="text-wp-text-secondary type-text-sm-regular">{item.description}</p>
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-wp-space-sm">
-              <span className="text-wp-text-tertiary type-text-xs-regular">{item.time}</span>
-              <UnreadIndicator unread={item.unread} />
-            </div>
-          </div>
-          {item.actionText && (
-            <div className="flex justify-end">
-              <button
-                type="button"
-                className={cn(
-                  "flex items-center gap-wp-space-md rounded-wp-radius-xs p-wp-space-lg hover:bg-wp-neutral-50 focus-visible:outline-2 focus-visible:outline-wp-yellow-500 type-text-sm-semibold",
-                  item.type === "warning" ? "text-wp-yellow-600" : styles.foreground,
-                )}
-              >
-                <span className="underline decoration-from-font [text-underline-position:from-font]">{item.actionText}</span>
-                <ArrowForwardRounded fontSize="inherit" className="size-wp-space-2xl" />
-              </button>
-            </div>
-          )}
-        </>
-      )}
-    </article>
-  );
-}
-
 export function NotificationDialog() {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
-  const [activeTab, setActiveTab] = useState<"All" | "Errors" | "Success" | "Info">("All");
+  const [notifications, setNotifications] =
+    useState<NotificationItem[]>(initialNotifications);
+  const [activeTab, setActiveTab] = useState<
+    "All" | "Errors" | "Success" | "Info"
+  >("All");
 
   const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((item) => ({ ...item, unread: false })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
   };
 
-  const filteredNotifications = notifications.filter((item) => {
-    if (activeTab === "Errors") return item.type === "error" || item.type === "warning";
-    if (activeTab === "Success") return item.type === "success";
-    if (activeTab === "Info") return item.type === "info";
+  const filteredNotifications = notifications.filter((n) => {
+    if (activeTab === "Errors")
+      return n.type === "error" || n.type === "warning";
+    if (activeTab === "Success") return n.type === "success";
+    if (activeTab === "Info") return n.type === "info";
     return true;
   });
 
-  const tabs = [
-    { label: "All", count: notifications.length },
-    { label: "Errors", count: notifications.filter((item) => item.type === "error" || item.type === "warning").length },
-    { label: "Success", count: notifications.filter((item) => item.type === "success").length },
-    { label: "Info", count: notifications.filter((item) => item.type === "info").length },
-  ] as const;
+  const errorCount = notifications.filter(
+    (n) => n.type === "error" || n.type === "warning",
+  ).length;
+  const successCount = notifications.filter((n) => n.type === "success").length;
+  const infoCount = notifications.filter((n) => n.type === "info").length;
 
   return (
     <Dialog>
-      <DialogTrigger render={<Button variant="outline" className="h-wp-space-4xl gap-wp-space-sm rounded-wp-radius-lg px-wp-space-lg type-text-sm-medium" />}>
-        Open Notifications
+      <DialogTrigger>
+        <Button variant="outline">Open Notifications</Button>
       </DialogTrigger>
-      <DialogContent
-        showCloseButton={false}
-        className="flex w-wp-spacing-120 max-w-[calc(100%-var(--wp-space-4xl))] max-h-[calc(100dvh-var(--wp-space-4xl))] flex-col gap-wp-space-none overflow-hidden rounded-wp-radius-2xl border-0 bg-wp-neutral-50 p-wp-space-none shadow-none ring-0 sm:max-w-[calc(100%-var(--wp-space-4xl))]"
-      >
-        <div className="flex h-wp-space-6xl shrink-0 items-center justify-between border-b border-wp-neutral-200 bg-wp-neutral-50 px-wp-space-lg">
-          <DialogTitle className="shrink-0 whitespace-nowrap text-wp-text-primary type-text-sm-medium">Notification</DialogTitle>
-          <div className="flex shrink-0 items-center gap-wp-space-lg">
-            <button type="button" onClick={markAllAsRead} className="whitespace-nowrap rounded-wp-radius-xs p-wp-space-lg text-wp-blue-600 underline decoration-from-font [text-underline-position:from-font] hover:text-wp-blue-700 focus-visible:outline-2 focus-visible:outline-wp-yellow-500 type-text-sm-semibold">
+
+      {/* Expanded max-w-2xl width so elements don't feel squished */}
+      <DialogContent className="w-full sm:max-w-2xl max-h-[85vh] overflow-y-auto p-0 bg-neutral-50 rounded-2xl border-0 shadow-xl [&>button]:hidden">
+        {/* Top Header */}
+        <div className="self-stretch h-11 px-4 bg-white border-b border-gray-200 flex justify-between items-center">
+          <div className="text-gray-800 text-sm font-medium">Notification</div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={markAllAsRead}
+              className="p-1 text-blue-600 text-sm font-semibold underline hover:text-blue-700 transition-colors"
+            >
               Mark All Read
             </button>
-            <DialogClose aria-label="Close notifications" className="flex size-wp-space-4xl items-center justify-center rounded-wp-radius-sm border border-wp-neutral-400 text-wp-neutral-600 hover:bg-wp-neutral-100 type-text-lg-medium">
-              <CloseRounded fontSize="inherit" className="size-wp-space-2xl" />
+            <DialogClose className="p-1 rounded-md border border-neutral-300 text-neutral-600 hover:bg-neutral-100 transition-colors">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
             </DialogClose>
           </div>
         </div>
-        <DialogDescription className="sr-only">Delivery alerts and updates. Filter notifications or mark them all as read.</DialogDescription>
-        <div className="flex h-wp-space-7xl shrink-0 items-center px-wp-space-lg py-wp-space-md">
-          <div role="group" aria-label="Filter notifications" className="flex w-full items-center justify-between rounded-wp-radius-lg bg-wp-neutral-100 p-wp-space-xs">
-            {tabs.map(({ label, count }) => (
-              <button
-                key={label}
-                type="button"
-                aria-pressed={activeTab === label}
-                onClick={() => setActiveTab(label)}
-                className={cn(
-                  "flex items-center justify-center gap-wp-space-sm rounded-wp-radius-md px-wp-space-lg py-wp-space-md focus-visible:outline-2 focus-visible:outline-wp-yellow-500 max-sm:px-wp-space-sm",
-                  activeTab === label ? "bg-wp-neutral-50" : "hover:bg-wp-neutral-50",
-                )}
-              >
-                <span className={cn(activeTab === label ? "text-wp-text-primary type-text-sm-medium" : "text-wp-text-secondary type-text-sm-regular")}>{label}</span>
-                <span className="text-wp-text-quaternary type-text-sm-regular">{count}</span>
-              </button>
-            ))}
+
+        {/* Filter Tabs Container */}
+        <div className="px-4 py-3 bg-neutral-50">
+          <div className="p-1 bg-neutral-200/70 rounded-[10px] flex justify-between items-center">
+            <button
+              onClick={() => setActiveTab("All")}
+              className={`flex-1 px-3 py-2 rounded-lg flex justify-center items-center gap-1.5 transition-all ${activeTab === "All" ? "bg-white shadow-sm" : ""}`}
+            >
+              <span className="text-sm font-medium text-slate-900">All</span>
+              <span className="text-sm text-neutral-400">
+                {notifications.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab("Errors")}
+              className={`flex-1 px-3 py-2 rounded-lg flex justify-center items-center gap-1.5 transition-all ${activeTab === "Errors" ? "bg-white shadow-sm" : ""}`}
+            >
+              <span className="text-sm font-normal text-neutral-600">
+                Errors
+              </span>
+              <span className="text-sm text-neutral-400">{errorCount}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("Success")}
+              className={`flex-1 px-3 py-2 rounded-lg flex justify-center items-center gap-1.5 transition-all ${activeTab === "Success" ? "bg-white shadow-sm" : ""}`}
+            >
+              <span className="text-sm font-normal text-neutral-600">
+                Success
+              </span>
+              <span className="text-sm text-neutral-400">{successCount}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("Info")}
+              className={`flex-1 px-3 py-2 rounded-lg flex justify-center items-center gap-1.5 transition-all ${activeTab === "Info" ? "bg-white shadow-sm" : ""}`}
+            >
+              <span className="text-sm font-normal text-neutral-600">Info</span>
+              <span className="text-sm text-neutral-400">{infoCount}</span>
+            </button>
           </div>
         </div>
-        <div className="flex min-h-0 flex-col gap-wp-space-md overflow-y-auto px-wp-space-lg pb-wp-space-sm">
-          {filteredNotifications.map((item) => <NotificationCard key={item.id} item={item} />)}
+
+        {/* Notifications List */}
+        <div className="px-4 pb-4 flex flex-col gap-3">
+          {filteredNotifications.map((item) => {
+            // Map token styling matching your exact Figma definitions
+            const containerStyles = {
+              error: "bg-red-50 outline-red-100",
+              warning: "bg-yellow-50 outline-yellow-300",
+              success: "bg-emerald-50 outline-lime-200",
+              info: "bg-indigo-50 outline-lime-200",
+            }[item.type];
+
+            return (
+              <div
+                key={item.id}
+                className={`w-full rounded-xl outline outline-1 outline-offset-[-1px] ${containerStyles} flex flex-col justify-start overflow-hidden`}
+              >
+                {/* Notification Main Content Row */}
+                <div className="p-3 flex justify-between items-start gap-3 relative">
+                  {/* Icon Representation */}
+                  {item.type === "error" && (
+                    <AlertCircle className="h-6 w-6 text-red-700 shrink-0 mt-0.5" />
+                  )}
+                  {item.type === "warning" && (
+                    <div className="h-8 w-8 bg-orange-50 rounded-2xl flex justify-center items-center shrink-0">
+                      <AlertTriangle className="h-5 w-5 text-amber-600" />
+                    </div>
+                  )}
+                  {item.type === "success" && (
+                    <div className="h-8 w-8 bg-green-100 rounded-2xl flex justify-center items-center shrink-0">
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    </div>
+                  )}
+                  {item.type === "info" && (
+                    <div className="h-8 w-8 bg-blue-100 rounded-2xl flex justify-center items-center shrink-0">
+                      <Info className="h-5 w-5 text-blue-500" />
+                    </div>
+                  )}
+
+                  {/* Text Header & Body */}
+                  <div className="flex-1 flex flex-col gap-1">
+                    <div className="text-slate-900 text-sm font-bold leading-5">
+                      {item.title}
+                    </div>
+
+                    {item.actionNeeded && (
+                      <div className="text-red-600 text-xs font-semibold">
+                        Action needed
+                      </div>
+                    )}
+
+                    <div className="text-neutral-600 text-sm font-normal leading-5">
+                      {item.description}
+                    </div>
+                  </div>
+
+                  {/* Time & Unread Blue Dot */}
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <span className="text-neutral-400 text-xs">
+                      {item.time}
+                    </span>
+                    {item.unread && (
+                      <div className="h-1.5 w-1.5 bg-blue-500 rounded-full" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Complex Card Sub-box (e.g. DEMO-103 view) */}
+                {item.details && (
+                  <div className="px-2 pb-2">
+                    <div className="p-3 bg-neutral-50 rounded-lg outline outline-1 outline-offset-[-1px] outline-red-200 flex flex-col gap-4">
+                      <div className="grid grid-cols-2 gap-y-3 text-xs">
+                        <div>
+                          <span className="text-neutral-400 block font-medium">
+                            Order
+                          </span>
+                          <span className="font-semibold text-slate-900">
+                            {item.details.order}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-neutral-400 block font-medium">
+                            Reported by
+                          </span>
+                          <span className="font-semibold text-slate-900">
+                            {item.details.reportedBy}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-neutral-400 block font-medium">
+                            Run
+                          </span>
+                          <span className="font-semibold text-slate-900">
+                            {item.details.run}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-neutral-400 block font-medium">
+                            Status
+                          </span>
+                          <span className="font-semibold text-slate-900">
+                            {item.details.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      <Button className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold h-9 rounded-sm">
+                        {item.actionText}{" "}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Standard Link Action Button for Warnings/Success/Info */}
+                {item.actionText && !item.details && (
+                  <div className="p-3 pt-0 flex justify-end">
+                    <button className="flex items-center gap-2 text-sm font-semibold underline text-amber-600 hover:text-amber-700">
+                      {item.actionText}
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </DialogContent>
     </Dialog>

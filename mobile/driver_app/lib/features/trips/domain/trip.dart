@@ -22,9 +22,19 @@ class Trip {
   int get completedStops =>
       stops.where((s) => s.status == StopStatus.completed).length;
 
+  /// First stop that has not been visited yet.
   Stop? get nextStop {
     for (final s in stops) {
       if (s.status == StopStatus.pending) return s;
+    }
+    return null;
+  }
+
+  /// The stop the driver is working on: first one that is not completed
+  /// (pending, or arrived and still being handled).
+  Stop? get activeStop {
+    for (final s in stops) {
+      if (s.status != StopStatus.completed) return s;
     }
     return null;
   }

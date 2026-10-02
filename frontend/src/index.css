@@ -1,22 +1,13 @@
-@layer theme, base, mui, components, utilities;
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "./styles/tokens.css";
-
-@font-face {
-    font-family: "Google Sans Flex";
-    src: url("./assets/fonts/GoogleSansFlex.ttf") format("truetype");
-    font-style: normal;
-    font-weight: 100 1000;
-    font-display: swap;
-}
+@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: var(--font-waypoint);
+    --font-sans: 'Geist Variable', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,58 +39,50 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
-    --radius-none: var(--wp-radius-none);
-    --radius-xxs: var(--wp-radius-xxs);
-    --radius-xs: var(--wp-radius-xs);
-    --radius-sm: var(--wp-radius-sm);
-    --radius-md: var(--wp-radius-md);
-    --radius-lg: var(--wp-radius-lg);
-    --radius-xl: var(--wp-radius-xl);
-    --radius-2xl: var(--wp-radius-2xl);
-    --radius-3xl: var(--wp-radius-3xl);
-    --radius-4xl: var(--wp-radius-4xl);
-    --radius-full: var(--wp-radius-full);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Adapt the existing component roles to the original WayPoint light theme. */
 :root {
-    --background: var(--wp-warm-neutral-50);
-    --foreground: var(--wp-text-primary);
-    --card: #fff;
-    --card-foreground: var(--wp-text-primary);
-    --popover: #fff;
-    --popover-foreground: var(--wp-text-primary);
-    --primary: var(--wp-yellow-400);
-    --primary-foreground: var(--wp-text-primary);
-    --secondary: var(--wp-warm-neutral-100);
-    --secondary-foreground: var(--wp-text-secondary);
-    --muted: var(--wp-neutral-100);
-    --muted-foreground: var(--wp-text-tertiary);
-    --accent: var(--wp-warm-neutral-100);
-    --accent-foreground: var(--wp-text-primary);
-    --destructive: var(--wp-text-error-primary);
-    --border: var(--wp-neutral-200);
-    --input: var(--wp-neutral-300);
-    --ring: var(--wp-blue-500);
-    --chart-1: var(--wp-blue-500);
-    --chart-2: var(--wp-lime-500);
-    --chart-3: var(--wp-yellow-500);
-    --chart-4: var(--wp-red-500);
-    --chart-5: var(--wp-warm-neutral-500);
-    --radius: var(--wp-radius-lg);
-    --sidebar: var(--wp-warm-neutral-50);
-    --sidebar-foreground: var(--wp-text-secondary);
-    --sidebar-primary: var(--wp-yellow-400);
-    --sidebar-primary-foreground: var(--wp-text-primary);
-    --sidebar-accent: var(--wp-warm-neutral-100);
-    --sidebar-accent-foreground: var(--wp-text-primary);
-    --sidebar-border: var(--wp-neutral-200);
-    --sidebar-ring: var(--wp-blue-500);
-    --scrollbar-thumb: var(--wp-yellow-500);
-    --scrollbar-thumb-hover: var(--wp-yellow-600);
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
 }
 
-/* Existing fallback theme; the Figma export supplies no dark-mode values. */
 .dark {
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
@@ -132,8 +115,6 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
-    --scrollbar-thumb: var(--muted-foreground);
-    --scrollbar-thumb-hover: var(--foreground);
 }
 
 @layer base {
@@ -146,39 +127,4 @@
   html {
     @apply font-sans;
     }
-
-  /* Apply to the page and every nested scroll container, including portals. */
-  @media (forced-colors: none) {
-    * {
-      scrollbar-width: thin;
-      scrollbar-color: var(--scrollbar-thumb) transparent;
-    }
-
-    @supports selector(::-webkit-scrollbar) {
-      /* Standard properties otherwise override the precise width and hover. */
-      * {
-        scrollbar-width: auto;
-        scrollbar-color: auto;
-      }
-
-      *::-webkit-scrollbar {
-        width: var(--wp-space-sm);
-        height: var(--wp-space-sm);
-      }
-
-      *::-webkit-scrollbar-track,
-      *::-webkit-scrollbar-corner {
-        background: transparent;
-      }
-
-      *::-webkit-scrollbar-thumb {
-        background: var(--scrollbar-thumb);
-        border-radius: var(--wp-radius-full);
-      }
-
-      *::-webkit-scrollbar-thumb:hover {
-        background: var(--scrollbar-thumb-hover);
-      }
-    }
-  }
 }
