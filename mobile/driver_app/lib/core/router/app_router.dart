@@ -43,7 +43,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-                path: '/updates', builder: (_, _) => const UpdatesScreen()),
+              path: '/updates',
+              builder: (_, _) => const UpdatesScreen(),
+              routes: updateRoutes,
+            ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(

@@ -28,6 +28,9 @@ class _FixedTripsRepository implements TripsRepository {
   Future<Trip> getTrip(String id) async => trips.firstWhere((t) => t.id == id);
 
   @override
+  Future<Trip> simulateLoadingComplete(String tripId) async => getTrip(tripId);
+
+  @override
   Future<Trip> startTrip(String tripId) async => getTrip(tripId);
 
   @override

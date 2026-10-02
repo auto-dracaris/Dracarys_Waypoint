@@ -74,8 +74,8 @@ class _StopInfoScreenState extends ConsumerState<StopInfoScreen> {
                     StopProgress(
                       completed: d.trip.completedStops,
                       total: d.trip.stops.length,
-                      // "All stops" opens the trip overview (added with it).
-                      onAllStops: () {},
+                      onAllStops: () =>
+                          context.go(AppRoutes.trip(widget.tripId)),
                     ),
                     MapSheetLayout(
                       map: MapView(

@@ -128,4 +128,32 @@ void main() {
     expect(() => r.markArrived('nope'), throwsStateError);
     expect(() => r.completeStop('nope', 'x'), throwsStateError);
   });
+
+  test('trip 1 carries plan version, update time and the shortfall', () async {
+    final trip = (await repo().getTrips()).first;
+    expect(trip.planVersion, 3);
+    expect(trip.updatedAt, _now.subtract(const Duration(minutes: 2)));
+    final shortfall = trip.shortfall!;
+    expect(shortfall.orderId, 'ORD-4521');
+    expect(shortfall.storeName, 'Waypoint Fresh — Ja-Ela');
+    expect(shortfall.shortCases, 2);
+    expect(shortfall.plannedCases, 12);
+    expect(shortfall.dispatcherNote, 'Proceed with partial load.');
+    expect((await repo().getTrips())[1].shortfall, isNull);
+  });
+
+  test('simulateLoadingComplete moves a loading trip to ready', () async {
+    final r = repo();
+    final ready = await r.simulateLoadingComplete('trip-1');
+    expect(ready.status, TripStatus.ready);
+    expect((await r.getTrip('trip-1')).status, TripStatus.ready);
+  });
+
+  test('simulateLoadingComplete leaves other statuses alone', () async {
+    final r = repo();
+    await r.startTrip('trip-1');
+    final same = await r.simulateLoadingComplete('trip-1');
+    expect(same.status, TripStatus.inProgress);
+    expect(() => r.simulateLoadingComplete('nope'), throwsStateError);
+  });
 }

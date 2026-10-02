@@ -14,10 +14,13 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.variant = AppButtonVariant.filled,
     this.leadingIcon,
+    this.leading,
     this.trailingIcon,
     this.dense = false,
     this.bold = false,
     this.padding = 12,
+    this.radius = 4,
+    this.backgroundColor,
     this.isLoading = false,
   });
 
@@ -25,6 +28,9 @@ class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
   final IconData? leadingIcon;
+
+  /// A custom leading widget (e.g. an SVG); wins over [leadingIcon].
+  final Widget? leading;
   final IconData? trailingIcon;
 
   /// Smaller padding, used inside cards.
@@ -35,6 +41,10 @@ class AppButton extends StatelessWidget {
 
   /// Uniform padding when not [dense].
   final double padding;
+  final double radius;
+
+  /// Overrides the variant's background (e.g. the brand yellow of some CTAs).
+  final Color? backgroundColor;
   final bool isLoading;
 
   (Color bg, Color fg, Color? border) get _colors => switch (variant) {
@@ -50,15 +60,15 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final (bg, fg, border) = _colors;
     final enabled = onPressed != null && !isLoading;
-    final radius = BorderRadius.circular(4);
-    return Material(
-      color: bg,
+    final borderRadius = BorderRadius.circular(radius);
+    final button = Material(
+      color: backgroundColor ?? bg,
       shape: RoundedRectangleBorder(
-        borderRadius: radius,
+        borderRadius: borderRadius,
         side: border == null ? BorderSide.none : BorderSide(color: border),
       ),
       child: InkWell(
-        borderRadius: radius,
+        borderRadius: borderRadius,
         onTap: enabled ? onPressed : null,
         child: Padding(
           padding: dense
@@ -76,8 +86,8 @@ class AppButton extends StatelessWidget {
                     ),
                   ]
                 : [
-                    if (leadingIcon != null) ...[
-                      Icon(leadingIcon, size: 20, color: fg),
+                    if (leading != null || leadingIcon != null) ...[
+                      leading ?? Icon(leadingIcon, size: 20, color: fg),
                       const SizedBox(width: 8),
                     ],
                     Flexible(
@@ -95,5 +105,8 @@ class AppButton extends StatelessWidget {
         ),
       ),
     );
+    return onPressed == null && !isLoading
+        ? Opacity(opacity: 0.5, child: button)
+        : button;
   }
 }

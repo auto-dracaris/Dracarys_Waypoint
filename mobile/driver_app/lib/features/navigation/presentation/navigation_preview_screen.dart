@@ -11,8 +11,10 @@ import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../core/widgets/back_bar.dart';
+import '../../../core/widgets/map_mode.dart';
 import '../../../core/widgets/map_view.dart';
 import '../../trips/data/trips_providers.dart';
+import '../application/route_providers.dart';
 import '../../trips/domain/stop.dart';
 import 'widgets/route_marker.dart';
 
@@ -21,8 +23,11 @@ const _depot = LatLng(6.9645, 79.8880);
 
 /// Route preview to the active stop (Figma "6 — Navigation Preview").
 class NavigationPreviewScreen extends ConsumerWidget {
-  const NavigationPreviewScreen(
-      {super.key, required this.tripId, required this.stopId});
+  const NavigationPreviewScreen({
+    super.key,
+    required this.tripId,
+    required this.stopId,
+  });
 
   final String tripId;
   final String stopId;
@@ -30,8 +35,11 @@ class NavigationPreviewScreen extends ConsumerWidget {
   StopRef get _ref => (tripId: tripId, stopId: stopId);
 
   void _unavailable(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Turn-by-turn navigation is not part of this demo yet')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Turn-by-turn navigation is not part of this demo yet'),
+      ),
+    );
   }
 
   @override
@@ -63,10 +71,14 @@ class NavigationPreviewScreen extends ConsumerWidget {
                       child: MapView(
                         center: LatLng(d.stop.lat, d.stop.lng),
                         fit: points,
+                        mode: ref.watch(mapModeProvider),
                         // Keep every stop clear of the callout and the sheet.
-                        fitPadding:
-                            const EdgeInsets.fromLTRB(40, 170, 40, 260),
-                        route: points,
+                        fitPadding: const EdgeInsets.fromLTRB(40, 170, 40, 260),
+                        route:
+                            ref
+                                .watch(roadRouteProvider(RouteRequest(points)))
+                                .value ??
+                            points,
                         markers: [
                           for (final s in stops)
                             MapMarker(
@@ -87,13 +99,22 @@ class NavigationPreviewScreen extends ConsumerWidget {
                       top: 27,
                       child: _RouteCallout(destination: d.stop.name),
                     ),
+                    Positioned(
+                      right: 20,
+                      top: 150,
+                      child: _MapModeToggle(
+                        mode: ref.watch(mapModeProvider),
+                        onTap: () =>
+                            ref.read(mapModeProvider.notifier).toggle(),
+                      ),
+                    ),
                     Align(
                       alignment: Alignment.bottomCenter,
                       child: _SummarySheet(
                         stop: d.stop,
                         onStart: () => _unavailable(context),
                         // Full route details live on the trip overview.
-                        onDetails: () => _unavailable(context),
+                        onDetails: () => context.go(AppRoutes.trip(tripId)),
                       ),
                     ),
                   ],
@@ -102,6 +123,38 @@ class NavigationPreviewScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Shows the mode a tap switches to: "3D" while flat, "2D" while tilted.
+class _MapModeToggle extends StatelessWidget {
+  const _MapModeToggle({required this.mode, required this.onTap});
+
+  final MapMode mode;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.card,
+      shape: const CircleBorder(side: BorderSide(color: AppColors.border)),
+      elevation: 3,
+      child: InkWell(
+        key: const Key('map-mode-toggle'),
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Center(
+            child: Text(
+              mode == MapMode.flat ? '3D' : '2D',
+              style: AppText.textSmMedium,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -121,7 +174,10 @@ class _RouteCallout extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x2B000000), offset: Offset(0, 5), blurRadius: 12),
+            color: Color(0x2B000000),
+            offset: Offset(0, 5),
+            blurRadius: 12,
+          ),
         ],
       ),
       child: Column(
@@ -132,14 +188,20 @@ class _RouteCallout extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
-                  SvgPicture.asset('assets/images/circle.svg',
-                      width: 14, height: 14),
+                  SvgPicture.asset(
+                    'assets/images/circle.svg',
+                    width: 14,
+                    height: 14,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                      child:
-                          Text('Your Location', style: AppText.textSmMedium)),
-                  SvgPicture.asset('assets/images/ellipsis.svg',
-                      width: 20, height: 20),
+                    child: Text('Your Location', style: AppText.textSmMedium),
+                  ),
+                  SvgPicture.asset(
+                    'assets/images/ellipsis.svg',
+                    width: 20,
+                    height: 20,
+                  ),
                 ],
               ),
             ),
@@ -151,17 +213,25 @@ class _RouteCallout extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
-                  SvgPicture.asset('assets/images/map_pin.svg',
-                      width: 15, height: 15),
+                  SvgPicture.asset(
+                    'assets/images/map_pin.svg',
+                    width: 15,
+                    height: 15,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(destination,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppText.textSmRegular),
+                    child: Text(
+                      destination,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.textSmRegular,
+                    ),
                   ),
-                  SvgPicture.asset('assets/images/arrow_up_down.svg',
-                      width: 20, height: 20),
+                  SvgPicture.asset(
+                    'assets/images/arrow_up_down.svg',
+                    width: 20,
+                    height: 20,
+                  ),
                 ],
               ),
             ),
@@ -200,8 +270,9 @@ class _SummarySheet extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             '${stop.distanceKm.toStringAsFixed(1)} km · Estimated arrival ${formatHm(stop.plannedArrival)}',
-            style:
-                AppText.textSmRegular.copyWith(color: AppColors.inkSecondary),
+            style: AppText.textSmRegular.copyWith(
+              color: AppColors.inkSecondary,
+            ),
           ),
           const SizedBox(height: 24),
           AppButton(
