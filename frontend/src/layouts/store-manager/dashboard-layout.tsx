@@ -1,12 +1,12 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Sidebar } from "@/components/side-bar"; // Path based on your structure
+import { Sidebar } from "@/components/store-manager/side-bar"; // Path based on your structure
 
 export function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const getActiveNavId = () => {
-    if (location.pathname.includes("/delivery")) return "deliveries";
+    if (location.pathname.includes("/deliveries")) return "deliveries";
     if (location.pathname.includes("/orders")) return "orders";
     return "overview";
   };

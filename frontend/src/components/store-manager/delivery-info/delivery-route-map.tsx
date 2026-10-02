@@ -3,7 +3,7 @@ import { Check, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DeliveryDetails } from "@/lib/types";
 import { DeliveryMap } from "./delivery-map";
-import { VehicleBanner } from "../../vehicle-banner";
+import { VehicleBanner } from "../vehicle-banner";
 
 interface DeliveryRouteMapProps {
   data: DeliveryDetails;

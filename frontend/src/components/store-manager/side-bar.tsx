@@ -1,5 +1,5 @@
 import { Home, ListOrdered, Truck, LogOut } from "lucide-react";
-import { Logo } from "./logo";
+import { Logo } from "../logo";
 
 interface NavItem {
   id: string;
