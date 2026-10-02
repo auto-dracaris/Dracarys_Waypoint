@@ -40,6 +40,19 @@ abstract final class AppColors {
   static const green50 = Color(0xFFF0FDF4);
   static const green600 = Color(0xFF16A34A);
 
+  static const lime200 = Color(0xFFD9F99D);
+  static const lime300 = Color(0xFFBEF264);
+  static const lime500 = Color(0xFF84CC16);
+  static const blue100 = Color(0xFFDBEAFE);
+  static const blue700 = Color(0xFF1D4ED8);
+  static const mapRoute = Color(0xFF365314); // lime/900 route line
+  static const yellow700 = Color(0xFFA16207);
+  static const blue800 = Color(0xFF1E40AF);
+  static const neutral300 = Color(0xFFD4D4D4);
+  static const errorPrimary = Color(0xFFDC2626);
+  static const lime800 = Color(0xFF3F6212);
+  static const backLink = Color(0xFF1A1A1A);
+
   // Status
   static const lime100 = Color(0xFFECFCCB);
   static const lime700 = Color(0xFF4D7C0F);
