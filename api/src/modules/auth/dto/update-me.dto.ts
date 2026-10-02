@@ -1,5 +1,10 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
+/**
+ * Fields a user may edit on their own profile.
+ * Phone number is set during registration and can only be changed by a
+ * dispatcher via `PUT /api/users/:id` — it is intentionally absent here.
+ */
 export class UpdateMeDto {
   @IsOptional()
   @IsString({ message: 'First name must be a string' })
@@ -10,13 +15,4 @@ export class UpdateMeDto {
   @IsString({ message: 'Last name must be a string' })
   @MaxLength(100, { message: 'Last name must be at most 100 characters' })
   lastName?: string;
-
-  @IsOptional()
-  @IsString({ message: 'Phone must be a string' })
-  @MaxLength(20, { message: 'Phone must be at most 20 characters' })
-  phone?: string;
-
-  @IsOptional()
-  @IsString({ message: 'Avatar must be a string' })
-  avatar?: string;
 }

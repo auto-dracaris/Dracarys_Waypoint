@@ -30,7 +30,7 @@ export class User extends AutoIncBaseEntity {
   phone: string;
 
   @Column({ type: 'text', nullable: true })
-  avatar: string;
+  avatar: string | null;
 
   @Column({ type: 'enum', enum: UserRole })
   role: UserRole;

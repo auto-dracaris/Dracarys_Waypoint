@@ -19,14 +19,17 @@ import { User } from '../../database/entities/user.entity';
 import { UserOtp } from '../../database/entities/user-otp.entity';
 import { UserSession } from '../../database/entities/user-session.entity';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { OtpPurpose } from './enums/otp-purpose.enum';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { ResetPasswordPayload } from './interfaces/reset-password-payload.interface';
 import { UserAuthRepository } from './repositories/user-auth.repository';
 import { UserOtpRepository } from './repositories/user-otp.repository';
 import { UserSessionRepository } from './repositories/user-session.repository';
@@ -147,9 +150,10 @@ export class AuthService {
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto): Promise<ApiResponseDto> {
     const formattedPhone = formatPhoneNumber(verifyOtpDto.phone);
+    const purpose = verifyOtpDto.purpose ?? OtpPurpose.REGISTRATION;
 
     const userOtp = await this.userOtpRepository.findById(verifyOtpDto.otpId);
-    if (!userOtp || userOtp.purpose !== OtpPurpose.REGISTRATION) {
+    if (!userOtp || userOtp.purpose !== purpose) {
       throw new BadRequestException(INVALID_OTP_MESSAGE);
     }
 
@@ -162,20 +166,129 @@ export class AuthService {
       throw new BadRequestException(INVALID_OTP_MESSAGE);
     }
 
-    if (user.status === UserStatus.ACTIVE) {
-      throw new BadRequestException('User is already verified');
-    }
-
     const isValid = await bcrypt.compare(verifyOtpDto.otp, userOtp.otpHash);
     if (!isValid) {
       throw new BadRequestException(INVALID_OTP_MESSAGE);
     }
 
-    user.status = UserStatus.ACTIVE;
-    await this.userAuthRepository.save(user);
+    // Consume the OTP — valid for one use only
     await this.userOtpRepository.deleteById(userOtp.id);
 
+    if (purpose === OtpPurpose.PASSWORD_RESET) {
+      // Issue a short-lived, single-purpose reset token; no session is created
+      const resetExpiresIn = this.configService.get<string>(
+        'RESET_TOKEN_EXPIRES_IN',
+        '15m',
+      );
+      const payload: ResetPasswordPayload = {
+        sub: user.id,
+        purpose: 'password_reset',
+      };
+      const resetToken = await this.jwtService.signAsync(payload, {
+        expiresIn: resetExpiresIn as any,
+      });
+      return new ApiResponseDto(
+        HttpStatus.OK,
+        'OTP verified. Use the reset token to set your new password.',
+        { resetToken },
+      );
+    }
+
+    // Default: REGISTRATION — activate the account
+    if (user.status === UserStatus.ACTIVE) {
+      throw new BadRequestException('User is already verified');
+    }
+    user.status = UserStatus.ACTIVE;
+    await this.userAuthRepository.save(user);
+
     return new ApiResponseDto(HttpStatus.OK, 'OTP verified successfully', null);
+  }
+
+  async forgotPassword(
+    forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<ApiResponseDto> {
+    const formattedPhone = formatPhoneNumber(forgotPasswordDto.phone);
+
+    const user = await this.userAuthRepository.findByPhone(formattedPhone);
+    // Use a generic message to prevent user enumeration
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      return new ApiResponseDto(
+        HttpStatus.OK,
+        'If an active account exists for this number, a reset code has been sent.',
+        null,
+      );
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expireMinutes = parseInt(
+      this.configService.get<string>('OTP_EXPIRE_MINUTES', '10'),
+      10,
+    );
+    const expiresAt = new Date(Date.now() + expireMinutes * 60 * 1000);
+    const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
+
+    // Replace any existing password-reset OTP for this user
+    await this.userOtpRepository.deleteByUserIdAndPurpose(
+      user.id,
+      OtpPurpose.PASSWORD_RESET,
+    );
+
+    const newOtp = this.userOtpRepository.create({
+      userId: user.id,
+      otpHash,
+      purpose: OtpPurpose.PASSWORD_RESET,
+      expiresAt,
+    });
+    const savedOtp = await this.userOtpRepository.save(newOtp);
+
+    await this.smsService.sendSms(
+      formattedPhone,
+      `Your Waypoint password reset code is: ${otp}. Valid for ${expireMinutes} minutes.`,
+    );
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'If an active account exists for this number, a reset code has been sent.',
+      {
+        otpId: savedOtp.id,
+        ...(process.env.NODE_ENV !== 'production' ? { otp } : {}),
+      },
+    );
+  }
+
+  async resetPassword(
+    resetPasswordDto: ResetPasswordDto,
+  ): Promise<ApiResponseDto> {
+    let payload: ResetPasswordPayload;
+    try {
+      payload = await this.jwtService.verifyAsync<ResetPasswordPayload>(
+        resetPasswordDto.resetToken,
+      );
+    } catch {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
+    if (payload.purpose !== 'password_reset') {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
+    const user = await this.userAuthRepository.findById(payload.sub);
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
+    user.passwordHash = await bcrypt.hash(
+      resetPasswordDto.newPassword,
+      BCRYPT_ROUNDS,
+    );
+    user.updatedById = user.id;
+    await this.userAuthRepository.save(user);
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'Password reset successfully. You can now log in with your new password.',
+      null,
+    );
   }
 
   async resendOtp(resendOtpDto: ResendOtpDto): Promise<ApiResponseDto> {

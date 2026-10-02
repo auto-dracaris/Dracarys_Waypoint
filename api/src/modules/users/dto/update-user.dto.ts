@@ -26,8 +26,4 @@ export class UpdateUserDto {
   @IsString({ message: 'Phone must be a string' })
   @MaxLength(20, { message: 'Phone must be at most 20 characters' })
   phone?: string;
-
-  @IsOptional()
-  @IsString({ message: 'Avatar must be a string' })
-  avatar?: string;
 }

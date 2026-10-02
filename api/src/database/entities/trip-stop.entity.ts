@@ -68,6 +68,9 @@ export class TripStop extends UuidBaseEntity {
   @Column({ name: 'failure_reason', type: 'text', nullable: true })
   failureReason: string | null;
 
+  @Column({ name: 'delivery_proof_url', type: 'text', nullable: true })
+  deliveryProofUrl: string | null;
+
   @Column({ name: 'received_units', type: 'int', nullable: true })
   receivedUnits: number | null;
 
