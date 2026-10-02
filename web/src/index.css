@@ -1,0 +1,68 @@
+@import "tailwindcss";
+@import "./styles/tokens.css";
+
+@font-face {
+  font-family: "Google Sans Flex";
+  src: url("./assets/fonts/GoogleSansFlex.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 1000;
+  font-display: swap;
+}
+
+@theme inline {
+  --font-sans: var(--font-waypoint);
+}
+
+:root {
+  --scrollbar-thumb: var(--wp-yellow-500);
+  --scrollbar-thumb-hover: var(--wp-yellow-600);
+}
+
+@layer base {
+  html {
+    @apply font-sans;
+  }
+
+  body {
+    margin: 0;
+    min-width: var(--wp-spacing-80);
+    min-height: 100svh;
+    background: var(--wp-warm-neutral-50);
+    color: var(--wp-text-primary);
+  }
+  /* Apply to the page and every nested scroll container, including portals. */
+  @media (forced-colors: none) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+
+    @supports selector(::-webkit-scrollbar) {
+      /* Standard properties otherwise override the precise width and hover. */
+      * {
+        scrollbar-width: auto;
+        scrollbar-color: auto;
+      }
+
+      *::-webkit-scrollbar {
+        width: var(--wp-space-sm);
+        height: var(--wp-space-sm);
+      }
+
+      *::-webkit-scrollbar-track,
+      *::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+
+      *::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+        border-radius: var(--wp-radius-full);
+      }
+
+      *::-webkit-scrollbar-thumb:hover {
+        background: var(--scrollbar-thumb-hover);
+      }
+    }
+  }
+}
+
