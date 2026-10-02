@@ -63,8 +63,7 @@ class ArrivedScreen extends ConsumerWidget {
                     completed: d.trip.completedStops,
                     total: d.trip.stops.length,
                     style: StopProgressStyle.stepper,
-                    // "All stops" opens the trip overview (added with it).
-                    onAllStops: () {},
+                    onAllStops: () => context.go(AppRoutes.trip(tripId)),
                   ),
                   const Divider(
                       height: 1, thickness: 1, color: Color(0xFFE8E8E8)),

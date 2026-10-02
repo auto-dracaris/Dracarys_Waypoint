@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/clock.dart';
 import '../../../core/connectivity/online_provider.dart';
 import '../../records/data/records_providers.dart';
+import '../../route_update/data/route_changes_providers.dart';
 import '../../records/domain/saved_record.dart';
 import '../data/trips_providers.dart';
 import '../domain/stop.dart';
@@ -14,6 +15,17 @@ class TripActions {
   TripActions(this._ref);
 
   final Ref _ref;
+
+  /// Demo hook standing in for the loading team finishing the truck.
+  Future<void> simulateLoadingComplete(String tripId) async {
+    await _ref.read(tripsRepositoryProvider).simulateLoadingComplete(tripId);
+    _refresh(tripId);
+  }
+
+  Future<void> acknowledgeRouteChange(String tripId) async {
+    await _ref.read(routeChangesRepositoryProvider).acknowledge(tripId);
+    _ref.invalidate(routeChangeProvider(tripId));
+  }
 
   Future<void> startTrip(String tripId) async {
     await _ref.read(tripsRepositoryProvider).startTrip(tripId);

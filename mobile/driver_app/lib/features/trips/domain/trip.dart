@@ -1,3 +1,4 @@
+import 'shortfall_report.dart';
 import 'stop.dart';
 
 enum TripStatus { assigned, loading, ready, inProgress, completed }
@@ -10,6 +11,9 @@ class Trip {
     required this.departure,
     required this.status,
     required this.stops,
+    this.planVersion = 1,
+    this.updatedAt,
+    this.shortfall,
   });
 
   final String id;
@@ -18,6 +22,11 @@ class Trip {
   final DateTime departure;
   final TripStatus status;
   final List<Stop> stops;
+
+  /// Version of the dispatcher's plan this trip follows.
+  final int planVersion;
+  final DateTime? updatedAt;
+  final ShortfallReport? shortfall;
 
   int get completedStops =>
       stops.where((s) => s.status == StopStatus.completed).length;
@@ -46,5 +55,8 @@ class Trip {
         departure: departure,
         status: status ?? this.status,
         stops: stops ?? this.stops,
+        planVersion: planVersion,
+        updatedAt: updatedAt,
+        shortfall: shortfall,
       );
 }

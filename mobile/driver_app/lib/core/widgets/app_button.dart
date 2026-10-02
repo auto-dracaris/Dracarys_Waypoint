@@ -14,6 +14,7 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.variant = AppButtonVariant.filled,
     this.leadingIcon,
+    this.leading,
     this.trailingIcon,
     this.dense = false,
     this.bold = false,
@@ -27,6 +28,9 @@ class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
   final IconData? leadingIcon;
+
+  /// A custom leading widget (e.g. an SVG); wins over [leadingIcon].
+  final Widget? leading;
   final IconData? trailingIcon;
 
   /// Smaller padding, used inside cards.
@@ -57,7 +61,7 @@ class AppButton extends StatelessWidget {
     final (bg, fg, border) = _colors;
     final enabled = onPressed != null && !isLoading;
     final borderRadius = BorderRadius.circular(radius);
-    return Material(
+    final button = Material(
       color: backgroundColor ?? bg,
       shape: RoundedRectangleBorder(
         borderRadius: borderRadius,
@@ -82,8 +86,8 @@ class AppButton extends StatelessWidget {
                     ),
                   ]
                 : [
-                    if (leadingIcon != null) ...[
-                      Icon(leadingIcon, size: 20, color: fg),
+                    if (leading != null || leadingIcon != null) ...[
+                      leading ?? Icon(leadingIcon, size: 20, color: fg),
                       const SizedBox(width: 8),
                     ],
                     Flexible(
@@ -101,5 +105,8 @@ class AppButton extends StatelessWidget {
         ),
       ),
     );
+    return onPressed == null && !isLoading
+        ? Opacity(opacity: 0.5, child: button)
+        : button;
   }
 }

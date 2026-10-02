@@ -8,6 +8,10 @@ abstract interface class TripsRepository {
   /// Throws [StateError] if [id] is unknown.
   Future<Trip> getTrip(String id);
 
+  /// Demo hook standing in for the loading team: a loading trip becomes ready.
+  /// Other statuses are left alone. Throws [StateError] if [tripId] is unknown.
+  Future<Trip> simulateLoadingComplete(String tripId);
+
   /// Marks the trip as under way. Throws [StateError] if [tripId] is unknown.
   Future<Trip> startTrip(String tripId);
 

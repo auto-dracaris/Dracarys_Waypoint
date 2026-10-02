@@ -1,4 +1,5 @@
 import '../domain/order.dart';
+import '../domain/shortfall_report.dart';
 import '../domain/stop.dart';
 import '../domain/trip.dart';
 import '../domain/vehicle.dart';
@@ -11,7 +12,7 @@ class MockTripsRepository implements TripsRepository {
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now {
     final base = today ?? DateTime.now();
-    _trips = _seed(DateTime(base.year, base.month, base.day));
+    _trips = _seed(DateTime(base.year, base.month, base.day), _now());
   }
 
   final Duration latency;
@@ -36,6 +37,15 @@ class MockTripsRepository implements TripsRepository {
   Future<Trip> getTrip(String id) async {
     await _wait();
     return _trips[_indexOf(id)];
+  }
+
+  @override
+  Future<Trip> simulateLoadingComplete(String tripId) async {
+    await _wait();
+    final i = _indexOf(tripId);
+    final trip = _trips[i];
+    if (trip.status != TripStatus.loading) return trip;
+    return _store(i, trip.copyWith(status: TripStatus.ready));
   }
 
   @override
@@ -106,7 +116,7 @@ class MockTripsRepository implements TripsRepository {
     return i;
   }
 
-  static List<Trip> _seed(DateTime day) {
+  static List<Trip> _seed(DateTime day, DateTime now) {
     DateTime at(int h, int m) => DateTime(day.year, day.month, day.day, h, m);
 
     Order order(String id, String store, int cases, Temperature t,
@@ -160,6 +170,15 @@ class MockTripsRepository implements TripsRepository {
         subtitle: 'Fresh deliveries · Gampaha',
         departure: at(5, 30),
         status: TripStatus.loading,
+        planVersion: 3,
+        updatedAt: now.subtract(const Duration(minutes: 2)),
+        shortfall: const ShortfallReport(
+          orderId: 'ORD-4521',
+          storeName: 'Waypoint Fresh — Ja-Ela',
+          shortCases: 2,
+          plannedCases: 12,
+          dispatcherNote: 'Proceed with partial load.',
+        ),
         stops: [
           stop(t1, 1, 'Cargills Food City — Kadawatha', '05:45-07:00',
               at(5, 50), 7.0011, 79.9503, [

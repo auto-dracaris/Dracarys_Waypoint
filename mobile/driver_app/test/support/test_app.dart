@@ -5,6 +5,8 @@ import 'package:driver_app/core/widgets/map_view.dart';
 import 'package:driver_app/features/auth/data/auth_providers.dart';
 import 'package:driver_app/features/auth/data/mock_auth_repository.dart';
 import 'package:driver_app/features/records/data/mock_records_repository.dart';
+import 'package:driver_app/features/route_update/data/mock_route_changes_repository.dart';
+import 'package:driver_app/features/route_update/data/route_changes_providers.dart';
 import 'package:driver_app/features/records/data/records_providers.dart';
 import 'package:driver_app/features/trips/data/mock_trips_repository.dart';
 import 'package:driver_app/features/trips/data/trips_providers.dart';
@@ -19,6 +21,9 @@ final testNow = DateTime(2026, 9, 29, 7, 8);
 
 const stop3 = '/trips/trip/trip-1/stop/trip-1-stop-3';
 const stop4 = '/trips/trip/trip-1/stop/trip-1-stop-4';
+const overview1 = '/trips/trip/trip-1';
+const offline1 = '/trips/trip/trip-1/offline';
+const routeUpdate1 = '/updates/route-update/trip-1';
 
 MockTripsRepository testTripsRepository() => MockTripsRepository(
       latency: Duration.zero,
@@ -33,6 +38,9 @@ Future<void> pumpTripRoutes(
   required String location,
   MockTripsRepository? trips,
   MockRecordsRepository? records,
+  MockRouteChangesRepository? routeChanges,
+  Widget? home,
+  Widget? updatesHome,
   List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = const Size(402 * 3, 1700 * 3);
@@ -42,8 +50,15 @@ Future<void> pumpTripRoutes(
   final router = GoRouter(initialLocation: location, routes: [
     GoRoute(
       path: '/trips',
-      builder: (_, _) => const Scaffold(body: Text('Trips page')),
+      builder: (_, _) =>
+          home ?? const Scaffold(body: Text('Trips page')),
       routes: tripRoutes,
+    ),
+    GoRoute(
+      path: '/updates',
+      builder: (_, _) =>
+          updatesHome ?? const Scaffold(body: Text('Updates page')),
+      routes: updateRoutes,
     ),
   ]);
   await tester.pumpWidget(ProviderScope(
@@ -54,6 +69,9 @@ Future<void> pumpTripRoutes(
           .overrideWithValue(trips ?? testTripsRepository()),
       recordsRepositoryProvider.overrideWithValue(
           records ?? MockRecordsRepository(latency: Duration.zero)),
+      routeChangesRepositoryProvider.overrideWithValue(routeChanges ??
+          MockRouteChangesRepository(
+              latency: Duration.zero, now: () => testNow)),
       mapTilesEnabledProvider.overrideWithValue(false),
       clockProvider.overrideWithValue(() => testNow),
       ...overrides,
