@@ -17,6 +17,8 @@ interface ApiOrder {
   notes: string | null
   outlet: { uniqueId: string; name: string | null; brand: string; district: string | null; parkingConstraint: string; windowOpenTime: string; windowCloseTime: string } | null
   deferral: { reason: DeferralReason; reasonNote: string | null; deferredToDate: string | null } | null
+  // The vehicle and trip carrying it, once its plan is published.
+  assignment: { vehicle: string; tripNo: number } | null
   // Set on the dispatcher's list: how the order relates to the run being looked at.
   carriedOver?: boolean
   deferredAway?: boolean
@@ -78,8 +80,8 @@ function toOrder(order: ApiOrder): ConfirmedOrder {
     // The API sends times as HH:MM:SS.
     windowStart: outlet?.windowOpenTime.slice(0, 5) ?? null,
     windowEnd: outlet?.windowCloseTime.slice(0, 5) ?? null,
-    assignedVehicle: null,
-    assignedTrip: null,
+    assignedVehicle: order.assignment?.vehicle ?? null,
+    assignedTrip: order.assignment ? `Trip ${order.assignment.tripNo}` : null,
     requestedDelivery: formatDay(order.requestedDate),
     reviewDescription: outlet ? `${outlet.brand} · ${outlet.district ?? 'Unknown'} district · ${order.orderUnits} ${order.orderUnits === 1 ? 'case' : 'cases'}` : undefined,
     deferral: order.deferral ? { reason: deferralReasons[order.deferral.reason], details: order.deferral.reasonNote ?? '', deferredTo: order.deferral.deferredToDate } : undefined,

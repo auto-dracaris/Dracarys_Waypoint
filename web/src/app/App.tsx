@@ -44,7 +44,7 @@ export default function App() {
             <Route path="outlets" element={<HubPage>{(hub) => <OutletsPage {...hub.pageProps} />}</HubPage>} />
             <Route path="team" element={<HubPage>{(hub) => <TeamPage {...hub.pageProps} onViewVehicle={(id) => hub.navigate('Vehicles', id)} />}</HubPage>} />
             <Route path="orders" element={<HubPage>{(hub) => <OrdersPage {...hub.pageProps} />}</HubPage>} />
-            <Route path="planning" element={<HubPage>{(hub) => <FinalPlanReviewPage {...hub.pageProps} onPublish={hub.publish} published={!!hub.publication} />}</HubPage>} />
+            <Route path="planning" element={<HubPage>{(hub) => <FinalPlanReviewPage {...hub.pageProps} />}</HubPage>} />
             <Route
               path="planning/published"
               element={<HubPage>{(hub) => hub.publication && <PublishPlanConfirmationPage {...hub.pageProps} publication={hub.publication} onResend={hub.resend} />}</HubPage>}

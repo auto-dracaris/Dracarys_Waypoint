@@ -1,6 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, Unique } from 'typeorm';
 import type { Relation } from 'typeorm';
 import { UuidBaseEntity } from '../../common/entities/uuid-base.entity';
+import { DeferralReason } from '../../common/enums/deferral-reason.enum';
 import { PriorityIndexStatus } from '../../common/enums/priority-index-status.enum';
 import { decimalTransformer } from '../../common/utils/decimal.transformer';
 import { Order } from './order.entity';
@@ -42,6 +43,17 @@ export class PriorityIndex extends UuidBaseEntity {
   })
   status: PriorityIndexStatus;
 
+  // Set when the run leaves the order off: this is where a draft plan keeps
+  // its deferrals, which only become `order_deferrals` once it is published.
+  @Column({
+    name: 'deferral_reason',
+    type: 'enum',
+    enum: DeferralReason,
+    nullable: true,
+  })
+  deferralReason: DeferralReason | null;
+
+  // The note that goes with `deferralReason`.
   @Column({ type: 'text', nullable: true })
   remark: string | null;
 }

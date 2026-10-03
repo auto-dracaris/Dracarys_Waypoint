@@ -27,6 +27,11 @@ export const API_ENDPOINTS = {
     cancel: (id: number) => `/orders/${id}/cancel`,
     defer: (id: number) => `/orders/${id}/defer`,
   },
+  planning: {
+    plan: '/planning',
+    run: '/planning/run',
+    publish: '/planning/publish',
+  },
   outlets: {
     list: '/outlets',
     summary: '/outlets/summary',

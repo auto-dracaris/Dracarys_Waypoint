@@ -9,6 +9,7 @@ import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { OutletsModule } from './modules/outlets/outlets.module';
+import { PlanningModule } from './modules/planning/planning.module';
 import { UsersModule } from './modules/users/users.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
 
@@ -51,6 +52,7 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
     OutletsModule,
     VehiclesModule,
     OrdersModule,
+    PlanningModule,
   ],
   controllers: [AppController],
   providers: [AppService],

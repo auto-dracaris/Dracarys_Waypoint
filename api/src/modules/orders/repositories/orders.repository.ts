@@ -14,6 +14,8 @@ import { BaseRepository } from '../../../common/repositories/base.repository';
 import { Calendar } from '../../../database/entities/calendar.entity';
 import { OrderDeferral } from '../../../database/entities/order-deferral.entity';
 import { Order } from '../../../database/entities/order.entity';
+import { TripStop } from '../../../database/entities/trip-stop.entity';
+import { TripStatus } from '../../../common/enums/trip-status.enum';
 import { OrderDateQueryDto } from '../dto/order-date-query.dto';
 import { QueryMyOrderDto } from '../dto/query-my-order.dto';
 import {
@@ -241,6 +243,46 @@ export class OrdersRepository extends BaseRepository<Order> {
       entities.map((order, i) => ({ order, runDate: raw[i].run_date })),
       total,
     ];
+  }
+
+  /** Every order awaiting planning on one depot's run, for the planning run. */
+  findAwaiting(date: string, depot: string): Promise<Order[]> {
+    const { scope, filters } = stagesFor(date);
+    return this.withOutlet()
+      .where(scope!)
+      .andWhere(filters.awaiting)
+      .andWhere('depot.name = :depot', { depot })
+      .setParameters({ date, ...STAGE_PARAMETERS })
+      .orderBy('o.id', 'ASC')
+      .getMany();
+  }
+
+  /** The vehicle and trip each order is on, once its plan is published. */
+  async findAssignments(
+    orderIds: number[],
+  ): Promise<Map<number, { vehicle: string; tripNo: number }>> {
+    if (!orderIds.length) {
+      return new Map();
+    }
+    const rows = await this.repository.manager
+      .getRepository(TripStop)
+      .createQueryBuilder('stop')
+      .innerJoin('stop.trip', 'trip')
+      .innerJoin('trip.vehicle', 'vehicle')
+      .select('stop.orderId', 'orderId')
+      .addSelect('vehicle.uniqueId', 'vehicle')
+      .addSelect('trip.tripNo', 'tripNo')
+      .where('stop.orderId IN (:...orderIds)', { orderIds })
+      .andWhere('trip.status NOT IN (:...hidden)', {
+        hidden: [TripStatus.DRAFT, TripStatus.CANCELLED],
+      })
+      .getRawMany<{ orderId: number; vehicle: string; tripNo: number }>();
+    return new Map(
+      rows.map((row) => [
+        row.orderId,
+        { vehicle: row.vehicle, tripNo: row.tripNo },
+      ]),
+    );
   }
 
   /** The status cards and the load to carry, for one run or for every order. */

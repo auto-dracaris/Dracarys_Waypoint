@@ -13,6 +13,7 @@ import { OrderStatus } from '../../common/enums/order-status.enum';
 import { TempRequirement } from '../../common/enums/temp-requirement.enum';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { cutoffOn, today } from '../../common/utils/date.util';
+import { orderReference } from '../../common/utils/order.util';
 import { OrderDeferral } from '../../database/entities/order-deferral.entity';
 import { Order } from '../../database/entities/order.entity';
 import { Outlet } from '../../database/entities/outlet.entity';
@@ -362,8 +363,10 @@ export class OrdersService {
 
   /** Response shape for orders, each with its latest deferral and its cutoff. */
   private async toViews(orders: Order[]) {
-    const [deferrals, closingDays] = await Promise.all([
-      this.ordersRepository.findLatestDeferrals(orders.map((o) => o.id)),
+    const orderIds = orders.map((o) => o.id);
+    const [deferrals, assignments, closingDays] = await Promise.all([
+      this.ordersRepository.findLatestDeferrals(orderIds),
+      this.ordersRepository.findAssignments(orderIds),
       this.ordersRepository.findPreviousOperatingDays([
         ...new Set(orders.map((o) => o.requestedDate)),
       ]),
@@ -376,8 +379,7 @@ export class OrdersService {
       const { outlet, placedBy, ...fields } = order;
       return {
         ...fields,
-        // The reference people quote, in the dataset's format.
-        reference: `ORD${String(order.id).padStart(7, '0')}`,
+        reference: orderReference(order.id),
         cutoffAt,
         cancellable:
           order.status === OrderStatus.CONFIRMED &&
@@ -386,6 +388,8 @@ export class OrdersService {
         outlet: outlet ? this.toOutletView(outlet) : null,
         placedBy: placedBy ?? null,
         deferral: this.toDeferralView(deferrals.get(order.id)),
+        // The vehicle and trip carrying it, once its plan is published.
+        assignment: assignments.get(order.id) ?? null,
       };
     });
   }

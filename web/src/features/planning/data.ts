@@ -10,11 +10,46 @@ export interface PlanRoute {
   vehicleId: string
   vehicleType: string
   trip: string
+  // Where the trip goes and what it costs, e.g. "Fresh · Colombo · departs 03:30 · 101 min".
+  summary?: string
   stops: PlanStop[]
 }
+export type PlanState = 'none' | 'draft' | 'published'
+export interface PlanDeferred {
+  id: string
+  outlet: string
+  reason: string
+  note: string
+  score: number
+  previousDeferrals: number
+}
+// One depot's deliveries for one day, as the planning run produced it.
+export interface DeliveryPlan {
+  date: string
+  depot: string
+  state: PlanState
+  // Orders waiting for this run right now; what a run would work on.
+  awaiting: number
+  totals: { orders: number; assigned: number; trips: number; deferred: number; issues: number }
+  routes: PlanRoute[]
+  deferred: PlanDeferred[]
+  // Rules the draft breaks; it cannot be published while there are any.
+  issues: string[]
+}
+// What every plan is checked against before it can be published.
+export const planConstraints = [
+  'One brand and district per trip',
+  'Weight capacity',
+  'Volume capacity',
+  'Chilled needs refrigeration',
+  'Van-only access',
+  'Delivery windows',
+  'Weekly fuel quota',
+  'Max 2 trips and time budgets',
+]
 
-// This reviewed plan is the Figma snapshot, independent of the Orders fixtures.
-// Its passed constraints are supplied design results, not a live validation run.
+// This reviewed plan is the Figma snapshot, kept only for the published-plan preview page
+// (`features/planning/publication.ts`); the Planning page itself reads the API.
 export const reviewedPlan = {
   date: '2026-09-29',
   routes: [

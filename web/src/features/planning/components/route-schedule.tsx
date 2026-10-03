@@ -10,7 +10,10 @@ export function RouteSchedule({ route }: { route: PlanRoute }) {
           <h3 id={titleId} className="type-text-sm-bold">
             {route.vehicleId}
           </h3>
-          <span className="type-text-xs-regular text-wp-text-secondary">{route.vehicleType}</span>
+          <span className="type-text-xs-regular text-wp-text-secondary">
+            {route.vehicleType}
+            {route.summary && ` · ${route.summary}`}
+          </span>
         </div>
         <StatusBadge tone="info">{route.trip}</StatusBadge>
       </header>
