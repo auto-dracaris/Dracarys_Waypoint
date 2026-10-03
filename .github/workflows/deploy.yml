@@ -53,6 +53,11 @@ jobs:
           cache: npm
           cache-dependency-path: api/package-lock.json
 
+      - run: npm ci
+
+      # Fails the pipeline if the backend doesn't compile (skipped if there's no build script)
+      - run: npm run build --if-present
+
   deploy:
     name: Deploy to server
     needs: [frontend, backend]
@@ -81,10 +86,9 @@ jobs:
           ssh -i ~/.ssh/deploy_key "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'EOF'
             set -e
             cd /opt/waypoint
-            git fetch
             git pull --ff-only origin main
             cd api
-            npm install
+            npm ci
             pm2 restart waypoint-api
             pm2 save
           EOF
