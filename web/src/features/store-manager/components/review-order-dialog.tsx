@@ -2,15 +2,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/shadcn/button'
 import { Package, Snowflake } from 'lucide-react'
 import type { PlaceOrderFormValues } from '@/features/store-manager/types'
+import type { StoreOutlet } from '@/features/store-manager/api'
+import { formatDay, outletLabel, windowLabel } from '@/features/store-manager/order-format'
 
 interface ReviewOrderDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   data: PlaceOrderFormValues | null
+  outlet: StoreOutlet
   onConfirm: () => void
+  submitting: boolean
+  error: string
 }
 
-export function ReviewOrderDialog({ open, onOpenChange, data, onConfirm }: ReviewOrderDialogProps) {
+export function ReviewOrderDialog({ open, onOpenChange, data, outlet, onConfirm, submitting, error }: ReviewOrderDialogProps) {
   if (!data) return null
 
   const isAmbient = data.temperatureMode === 'ambient'
@@ -29,19 +34,19 @@ export function ReviewOrderDialog({ open, onOpenChange, data, onConfirm }: Revie
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
                 <span className="text-stone-500 text-sm font-medium font-sans">Outlet</span>
-                <div className="h-9 px-3 bg-white border border-neutral-200 rounded-md flex items-center text-stone-900 text-sm font-sans">{data.outlet}</div>
+                <div className="h-9 px-3 bg-white border border-neutral-200 rounded-md flex items-center text-stone-900 text-sm font-sans">{outletLabel(outlet)}</div>
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-stone-500 text-sm font-medium font-sans">Serving depot</span>
-                <div className="h-9 px-3 bg-white border border-neutral-200 rounded-md flex items-center text-stone-900 text-sm font-sans">Peliyagoda</div>
+                <div className="h-9 px-3 bg-white border border-neutral-200 rounded-md flex items-center text-stone-900 text-sm font-sans">{outlet.depot ?? '—'}</div>
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-stone-500 text-sm font-medium font-sans">Requested delivery date</span>
-                <div className="h-9 px-3 bg-white border border-neutral-200 rounded-md flex items-center text-stone-900 text-sm font-sans">{data.deliveryDate}</div>
+                <div className="h-9 px-3 bg-white border border-neutral-200 rounded-md flex items-center text-stone-900 text-sm font-sans">{formatDay(data.deliveryDate, true)}</div>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-stone-500 text-sm font-medium font-sans">Receiving window</span>
-                <div className="h-9 px-3 bg-white border border-neutral-200 rounded-md flex items-center text-stone-900 text-sm font-sans">06:00 – 08:00</div>
+                <span className="text-stone-500 text-sm font-medium font-sans">Delivery window</span>
+                <div className="h-9 px-3 bg-white border border-neutral-200 rounded-md flex items-center text-stone-900 text-sm font-sans">{windowLabel(outlet)}</div>
               </div>
             </div>
           </div>
@@ -60,7 +65,7 @@ export function ReviewOrderDialog({ open, onOpenChange, data, onConfirm }: Revie
               <div className="p-3 bg-white border border-neutral-200 rounded-lg flex flex-col gap-1">
                 <span className="text-stone-500 text-xs font-medium font-sans">Quantity</span>
                 <span className="text-stone-900 text-base font-semibold font-sans">
-                  {data.quantity} {data.quantityUnit?.toLowerCase() || 'cases'}
+                  {data.quantity} {data.quantity === 1 ? 'case' : 'cases'}
                 </span>
               </div>
               <div className="p-3 bg-white border border-neutral-200 rounded-lg flex flex-col gap-1">
@@ -86,19 +91,25 @@ export function ReviewOrderDialog({ open, onOpenChange, data, onConfirm }: Revie
             </div>
             <div className="flex flex-col gap-1.5">
               <p className="text-stone-900 text-sm font-semibold font-sans">What happens after submission?</p>
-              <p className="text-stone-600 text-sm font-sans">Your order will be received immediately. Delivery planning starts after the 16:00 cutoff.</p>
+              <p className="text-stone-600 text-sm font-sans">Your order is confirmed as soon as it is submitted. Delivery planning starts after the 16:00 cutoff.</p>
               <p className="text-stone-600 text-sm font-sans">We'll notify you when delivery is scheduled or explain why the order is deferred.</p>
             </div>
           </div>
         </div>
+
+        {error && (
+          <p role="alert" className="text-red-600 text-sm font-sans">
+            {error}
+          </p>
+        )}
 
         {/* Footer Actions */}
         <div className="pt-4 border-t border-neutral-200 flex justify-end gap-3">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="w-32 h-10 border-neutral-300 text-stone-800 font-semibold font-sans shadow-none">
             Back to edit
           </Button>
-          <Button onClick={onConfirm} className="w-32 h-10 bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold font-sans shadow-none">
-            Submit order
+          <Button onClick={onConfirm} disabled={submitting} className="w-32 h-10 bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold font-sans shadow-none">
+            {submitting ? 'Submitting…' : 'Submit order'}
           </Button>
         </div>
       </DialogContent>

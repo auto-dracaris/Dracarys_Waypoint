@@ -1,11 +1,31 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { useUser } from '@/features/auth/user-context'
+import { fetchPlacementOptions } from '@/features/store-manager/api'
+import { outletLabel } from '@/features/store-manager/order-format'
 import { Sidebar } from '@/components/layout/store-manager-sidebar' // Path based on your structure
 
 export function StoreManagerLayout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, logout } = useUser()
+  const { user, accessToken, logout } = useUser()
+  // The outlet this store manager orders for; the request fails while none is linked.
+  const [outletName, setOutletName] = useState('')
+  useEffect(() => {
+    if (!accessToken) return
+    let stale = false
+    fetchPlacementOptions(accessToken).then(
+      (options) => {
+        if (!stale) setOutletName(outletLabel(options.outlet))
+      },
+      () => {
+        if (!stale) setOutletName('No outlet assigned')
+      },
+    )
+    return () => {
+      stale = true
+    }
+  }, [accessToken])
 
   const getActiveNavId = () => {
     if (location.pathname.includes('/deliveries')) return 'deliveries'
@@ -36,7 +56,7 @@ export function StoreManagerLayout() {
     <div className="w-full min-h-screen bg-stone-50 flex justify-start items-start">
       {/* Fixed Sidebar */}
       <Sidebar
-        outletName="Fresh · Ja-Ela"
+        outletName={outletName}
         activeNavId={getActiveNavId()}
         navItems={navConfig}
         user={{

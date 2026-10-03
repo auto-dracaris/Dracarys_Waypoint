@@ -5,7 +5,7 @@ import { DetailPanel } from '@/components/ui/detail-panel'
 import type { DetailPanelState } from '@/components/ui/use-detail-panel'
 import texture from '@/assets/overview/texture.png'
 import driver from '@/assets/team/driver.png'
-import type { StaffMember, StaffTrip } from '../data'
+import type { OutletOption, StaffMember, StaffTrip } from '../data'
 import { StaffAccessEditor, type StaffAccess } from './staff-access-editor'
 
 // `trips` is null while the selected driver's trips are still loading; `self` marks the signed-in user's own account.
@@ -15,6 +15,7 @@ export function TeamDetails({
   trips,
   tripsError,
   self,
+  outlets,
   onSaveAccess,
   onNavigate,
   onViewVehicle,
@@ -24,6 +25,7 @@ export function TeamDetails({
   trips: StaffTrip[] | null
   tripsError: string
   self: boolean
+  outlets: OutletOption[]
   onSaveAccess: (next: StaffAccess) => Promise<void>
   onNavigate: (page: string) => void
   onViewVehicle: (vehicleId: string) => void
@@ -95,7 +97,7 @@ export function TeamDetails({
         <section className="team-work-details">
           <h3 className="type-text-lg-semibold">Depot, role and status</h3>
           <p className="type-text-sm-regular text-wp-text-tertiary">Where they work, what they can do, and whether they can sign in.</p>
-          <StaffAccessEditor key={`${member.id}:${member.depot}:${member.roleKey}:${member.statusKey}`} member={member} self={self} onSave={onSaveAccess} />
+          <StaffAccessEditor key={`${member.id}:${member.depot}:${member.roleKey}:${member.statusKey}:${member.outletId}`} member={member} self={self} outlets={outlets} onSave={onSaveAccess} />
         </section>
       </div>
       <footer className="fleet-details-footer">

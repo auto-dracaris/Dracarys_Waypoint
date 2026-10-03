@@ -5,7 +5,7 @@ import { TripStatus } from '../../../common/enums/trip-status.enum';
 import { VehicleStatus } from '../../../common/enums/vehicle-status.enum';
 import { BaseRepository } from '../../../common/repositories/base.repository';
 import { Vehicle } from '../../../database/entities/vehicle.entity';
-import { QueryVehicleDto } from '../dto/query-vehicle.dto';
+import { QueryVehicleDto, VehicleSortKey } from '../dto/query-vehicle.dto';
 
 // Ids are numeric, so responses carry the depot row for its name.
 const VEHICLE_RELATIONS: FindOptionsRelations<Vehicle> = { depot: true };
@@ -16,6 +16,13 @@ const cancelled = TripStatus.CANCELLED;
 
 type VehicleSummaryKey =
   'total' | 'available' | 'inWorkshop' | 'unavailable' | 'needsReview';
+
+const SORT_COLUMNS: Record<VehicleSortKey, string> = {
+  uniqueId: 'vehicle.uniqueId',
+  type: 'vehicle.type',
+  weightCapKg: 'vehicle.weightCapKg',
+  status: 'vehicle.status',
+};
 
 @Injectable()
 export class VehiclesRepository extends BaseRepository<Vehicle> {
@@ -58,6 +65,15 @@ export class VehiclesRepository extends BaseRepository<Vehicle> {
     if (query.uniqueId) {
       qb.andWhere('vehicle.uniqueId = :uniqueId', { uniqueId: query.uniqueId });
     }
+    if (query.search?.trim()) {
+      qb.andWhere(
+        '(vehicle.uniqueId ILIKE :term OR vehicle.registrationNo ILIKE :term)',
+        { term: `%${query.search.trim()}%` },
+      );
+    }
+    if (query.status) {
+      qb.andWhere('vehicle.status = :status', { status: query.status });
+    }
     if (query.depot) {
       qb.andWhere('depot.name = :depot', { depot: query.depot });
     }
@@ -70,8 +86,13 @@ export class VehiclesRepository extends BaseRepository<Vehicle> {
       });
     }
 
+    // `id` breaks ties so pages stay stable under any sort.
     return qb
-      .orderBy('vehicle.id', 'ASC')
+      .orderBy(
+        SORT_COLUMNS[query.sortBy ?? 'uniqueId'],
+        query.sortDir === 'desc' ? 'DESC' : 'ASC',
+      )
+      .addOrderBy('vehicle.id', 'ASC')
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();

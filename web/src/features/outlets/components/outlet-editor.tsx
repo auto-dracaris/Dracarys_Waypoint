@@ -88,7 +88,7 @@ export function OutletEditor({
             <CloseRounded fontSize="inherit" />
           </IconButton>
         </div>
-        <div className="outlet-editor-fields type-text-sm-medium">
+        <div className="fleet-form-fields type-text-sm-medium">
           {mode === 'availability' ? (
             <label>
               Availability
@@ -101,7 +101,7 @@ export function OutletEditor({
             <>
               {mode === 'create' && (
                 <>
-                  <div className="outlet-window-fields">
+                  <div className="fleet-form-row">
                     <label>
                       Outlet ID
                       <Input
@@ -131,7 +131,7 @@ export function OutletEditor({
                   </label>
                 </>
               )}
-              <div className="outlet-window-fields">
+              <div className="fleet-form-row">
                 <label>
                   Assigned depot
                   <Select controlSize="sm" value={depot} onChange={(event) => chooseDepot(event.target.value)}>
@@ -145,7 +145,7 @@ export function OutletEditor({
                   </Select>
                 </label>
               </div>
-              <div className="outlet-window-fields">
+              <div className="fleet-form-row">
                 <label>
                   Delivery window start
                   <Input controlSize="sm" type="time" required value={requirements.windowStart} onChange={(event) => field('windowStart', event.target.value)} />
@@ -155,7 +155,7 @@ export function OutletEditor({
                   <Input controlSize="sm" type="time" required value={requirements.windowEnd} onChange={(event) => field('windowEnd', event.target.value)} />
                 </label>
               </div>
-              <div className="outlet-window-fields">
+              <div className="fleet-form-row">
                 <label>
                   Mall access start
                   <Input controlSize="sm" type="time" value={requirements.mallWindowStart} onChange={(event) => field('mallWindowStart', event.target.value)} />

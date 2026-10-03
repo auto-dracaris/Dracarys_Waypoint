@@ -197,23 +197,6 @@
 .outlet-activity-icon--warning {
   color: var(--wp-text-warning-primary);
 }
-.outlet-editor-fields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--wp-space-xl);
-  margin-block: var(--wp-space-3xl);
-}
-.outlet-editor-fields label {
-  display: flex;
-  flex-direction: column;
-  gap: var(--wp-space-md);
-  min-width: 0;
-}
-.outlet-window-fields {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--wp-space-xl);
-}
 @container (max-width: 800px) {
   .outlet-toolbar {
     flex-direction: column;
@@ -259,18 +242,4 @@
   .outlet-filters .route-filter--active {
     @apply type-text-xs-medium;
   }
-}
-
-.outlet-pager {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--wp-space-md);
-  flex-wrap: wrap;
-  padding-top: var(--wp-space-md);
-}
-.outlet-pager > div {
-  display: flex;
-  align-items: center;
-  gap: var(--wp-space-md);
 }

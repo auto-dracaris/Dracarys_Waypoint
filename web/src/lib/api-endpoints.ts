@@ -18,6 +18,20 @@ export const API_ENDPOINTS = {
     role: (id: number) => `/users/${id}/role`,
     status: (id: number) => `/users/${id}/status`,
   },
+  orders: {
+    list: '/orders',
+    mine: '/orders/my',
+    placementOptions: '/orders/placement-options',
+    summary: '/orders/summary',
+    detail: (id: number) => `/orders/${id}`,
+    cancel: (id: number) => `/orders/${id}/cancel`,
+    defer: (id: number) => `/orders/${id}/defer`,
+  },
+  planning: {
+    plan: '/planning',
+    run: '/planning/run',
+    publish: '/planning/publish',
+  },
   outlets: {
     list: '/outlets',
     summary: '/outlets/summary',
@@ -28,6 +42,9 @@ export const API_ENDPOINTS = {
   },
   vehicles: {
     list: '/vehicles',
+    summary: '/vehicles/summary',
     detail: (id: number) => `/vehicles/${id}`,
+    status: (id: number) => `/vehicles/${id}/status`,
+    driver: (id: number) => `/vehicles/${id}/driver`,
   },
 } as const

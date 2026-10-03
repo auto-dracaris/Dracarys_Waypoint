@@ -1,52 +1,76 @@
 export type VehicleAvailability = 'Available' | 'In workshop' | 'Unavailable'
-export type VehicleFilter = 'All Vehicles' | 'Available' | 'In Workshop'
+export type VehicleFilter = 'All Vehicles' | VehicleAvailability
+export type VehicleKind = 'truck' | 'van'
+export type FuelType = 'diesel' | 'petrol'
+
 export interface FleetVehicle {
   id: string
+  dbId: number
+  registrationNo: string
   type: string
+  kind: VehicleKind
+  isRefrigerated: boolean
   weight: number
   volume: number
   plannedTrips: number
+  // A vehicle with at least one live trip on the planning day is allocated.
   allocation: 'Allocated' | 'Unallocated'
   availability: VehicleAvailability
-  driver: string
+  depot: string
+  fuelType: FuelType
+  kmPerL: number
+  weeklyFuelQuota: number
   temperature: string
-  fuel: number | null
 }
 
-// Six populated rows from Figma; the four remaining visual rows are placeholders.
-export const initialVehicles: FleetVehicle[] = [
-  {
-    id: 'VEH021',
-    type: 'Reefer truck',
-    weight: 2000,
-    volume: 12,
-    plannedTrips: 2,
-    allocation: 'Allocated',
-    availability: 'Available',
-    driver: 'Nimal Silva',
-    temperature: 'Chilled / Frozen',
-    fuel: 84,
-  },
-  { id: 'VEH022', type: 'Dry box', weight: 3000, volume: 18, plannedTrips: 1, allocation: 'Unallocated', availability: 'Available', driver: 'Not assigned', temperature: 'Ambient', fuel: null },
-  { id: 'VEH023', type: 'Refrigerated van', weight: 800, volume: 4, plannedTrips: 1, allocation: 'Allocated', availability: 'Available', driver: 'Not assigned', temperature: 'Chilled', fuel: null },
-  { id: 'VEH024', type: 'Dry box', weight: 3000, volume: 18, plannedTrips: 0, allocation: 'Allocated', availability: 'Available', driver: 'Not assigned', temperature: 'Ambient', fuel: null },
-  { id: 'VEH025', type: 'Van', weight: 900, volume: 5, plannedTrips: 0, allocation: 'Unallocated', availability: 'Available', driver: 'Not assigned', temperature: 'Ambient', fuel: null },
-  {
-    id: 'VEH026',
-    type: 'Reefer truck',
-    weight: 2000,
-    volume: 12,
-    plannedTrips: 0,
-    allocation: 'Allocated',
-    availability: 'Available',
-    driver: 'Not assigned',
-    temperature: 'Chilled / Frozen',
-    fuel: null,
-  },
-]
+export interface DraftTrip {
+  id: string
+  title: string
+  status: string
+  stops: number
+  orders: number
+  window: string
+  nextStop: string | null
+}
 
-export const initialFleetTotals = { vehicles: 30, Available: 26, 'In workshop': 3, Unavailable: 1 }
-export const draftTrips = [
-  { title: 'Trip 01 · 05:30 – 09:15', subtitle: '4 stops · 6 orders' },
-  { title: 'Trip 02 · 10:00 – 13:30', subtitle: '3 stops · 4 orders' },
-]
+export interface VehicleDetail {
+  driver: { id: number; name: string; phone: string } | null
+  fuelRemaining: number
+  trips: DraftTrip[]
+}
+
+export interface FleetTotals {
+  total: number
+  available: number
+  inWorkshop: number
+  unavailable: number
+  needsReview: number
+}
+
+export interface Driver {
+  id: number
+  name: string
+}
+
+export interface NewVehicle {
+  uniqueId: string
+  registrationNo: string
+  type: VehicleKind
+  depot: string
+  isRefrigerated: boolean
+  fuelType: FuelType
+  weightCapKg: number
+  volumeCapM3: number
+  kmPerL: number
+  weeklyFuelQuotaL: number
+}
+
+export type VehicleSortKey = 'id' | 'type' | 'weight' | 'availability'
+export interface VehicleSort {
+  key: VehicleSortKey | null
+  direction: 'ascending' | 'descending'
+}
+
+export const vehicleFilters: VehicleFilter[] = ['All Vehicles', 'Available', 'In workshop', 'Unavailable']
+export const depots = ['Peliyagoda', 'Kandy']
+export const availabilityTones = { Available: 'success', 'In workshop': 'warning', Unavailable: 'error' } as const

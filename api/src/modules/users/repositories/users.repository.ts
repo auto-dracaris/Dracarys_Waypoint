@@ -26,11 +26,11 @@ export class UsersRepository extends BaseRepository<User> {
     return this.repository.findOneBy({ phone });
   }
 
-  /** One user with the depot row, so a response carries its name. */
+  /** One user with the depot and outlet rows, so a response carries their names. */
   findWithDepot(id: number): Promise<User | null> {
     return this.repository.findOne({
       where: { id },
-      relations: { depot: true },
+      relations: { depot: true, outlet: true },
     });
   }
 
@@ -61,10 +61,11 @@ export class UsersRepository extends BaseRepository<User> {
         }))
       : base;
 
-    // Ids are numeric, so the roster carries the depot row for its name.
+    // Ids are numeric, so the roster carries the depot and outlet rows for
+    // their names.
     return this.findAndCount(page, limit, {
       where,
-      relations: { depot: true },
+      relations: { depot: true, outlet: true },
     });
   }
 }

@@ -130,7 +130,7 @@ export function OutletTable({
         </table>
       </div>
       {meta && meta.total > 0 && (
-        <nav className="outlet-pager type-text-sm-regular" aria-label="Outlet pages">
+        <nav className="fleet-pager type-text-sm-regular" aria-label="Outlet pages">
           <span className="text-wp-text-secondary" role="status">
             Showing {first}–{Math.min(first + outlets.length - 1, meta.total)} of {meta.total}
           </span>

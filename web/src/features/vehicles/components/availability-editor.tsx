@@ -5,18 +5,29 @@ import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import type { FleetVehicle, VehicleAvailability } from '../data'
 
-export function AvailabilityEditor({ vehicle, onSave, onClose }: { vehicle: FleetVehicle; onSave: (status: VehicleAvailability) => void; onClose: () => void }) {
+export function AvailabilityEditor({ vehicle, onSave, onClose }: { vehicle: FleetVehicle; onSave: (status: VehicleAvailability) => Promise<void>; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const [status, setStatus] = useState(vehicle.availability)
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
   useEffect(() => {
     dialog.current?.showModal()
   }, [])
+  async function submit() {
+    setSaving(true)
+    try {
+      await onSave(status)
+    } catch (reason) {
+      setError((reason as Error).message)
+      setSaving(false)
+    }
+  }
   return (
     <dialog ref={dialog} className="stage-notice availability-editor" aria-labelledby="availability-title" onCancel={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault()
-          onSave(status)
+          void submit()
         }}
       >
         <div className="flex items-center justify-between gap-wp-space-lg">
@@ -36,10 +47,15 @@ export function AvailabilityEditor({ vehicle, onSave, onClose }: { vehicle: Flee
           </Select>
         </label>
         <p className="text-wp-text-secondary type-text-sm-regular">Review affected draft trips before publishing the plan.</p>
+        {error && (
+          <p role="alert" className="type-text-sm-regular text-wp-red-700">
+            {error}
+          </p>
+        )}
         <div className="availability-actions">
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary">
-            Save availability
+          <Button type="submit" variant="primary" disabled={saving}>
+            {saving ? 'Saving…' : 'Save availability'}
           </Button>
         </div>
       </form>

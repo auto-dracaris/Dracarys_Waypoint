@@ -12,8 +12,8 @@ import { Button } from '@/components/ui/button'
 import { TeamTable } from '@/features/team/components/team-table'
 import { TeamDetails } from '@/features/team/components/team-details'
 import { useDetailPanel } from '@/components/ui/use-detail-panel'
-import { fetchTeam, fetchTrips, updateStaffAccess } from '@/features/team/api'
-import { teamFilters, countTeam, selectTeam, type StaffMember, type StaffTrip, type TeamFilter, type TeamSort, type TeamSortKey } from '@/features/team/data'
+import { fetchOutletOptions, fetchTeam, fetchTrips, updateStaffAccess } from '@/features/team/api'
+import { teamFilters, countTeam, selectTeam, type OutletOption, type StaffMember, type StaffTrip, type TeamFilter, type TeamSort, type TeamSortKey } from '@/features/team/data'
 import { useUser } from '@/features/auth/user-context'
 import '@/styles/vehicles.css'
 import '@/styles/team.css'
@@ -47,6 +47,7 @@ export function TeamPage({
   const [members, setMembers] = useState<StaffMember[] | null>(null)
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const [outlets, setOutlets] = useState<OutletOption[]>([])
   const [trips, setTrips] = useState<{ memberId: string; items: StaffTrip[] | null; error: string } | null>(null)
   const search = useRef<HTMLInputElement>(null)
   useEffect(() => {
@@ -59,6 +60,19 @@ export function TeamPage({
     window.addEventListener('keydown', shortcut)
     return () => window.removeEventListener('keydown', shortcut)
   }, [])
+  useEffect(() => {
+    if (!accessToken) return
+    let stale = false
+    fetchOutletOptions(accessToken).then(
+      (list) => {
+        if (!stale) setOutlets(list)
+      },
+      () => {},
+    )
+    return () => {
+      stale = true
+    }
+  }, [accessToken])
   useEffect(() => {
     if (!accessToken) return
     let stale = false
@@ -186,6 +200,7 @@ export function TeamPage({
             panel={panel}
             member={selected}
             self={selected.userId === user?.id}
+            outlets={outlets}
             onSaveAccess={async (next) => {
               if (!accessToken) return
               await updateStaffAccess(accessToken, selected, next)

@@ -26,15 +26,15 @@ export const otpSchema = z.object({
   otp: z.string().regex(/^\d{6}$/, 'OTP must be exactly 6 digits.'),
 })
 
+// Mirrors api/src/modules/orders/dto/create-order.dto.ts. The outlet is not part of the form: an order is always for the store manager's own outlet.
 export const placeOrderSchema = z.object({
-  outlet: z.string().min(1, 'Outlet is required'),
+  // The delivery day, as YYYY-MM-DD.
   deliveryDate: z.string().min(1, 'Delivery date is required'),
   temperatureMode: z.enum(['ambient', 'chilled']),
-  quantity: z.number().min(1, 'Must be at least 1'),
-  quantityUnit: z.string().default('Cases'), // Ensures it's always a string
-  weight: z.number().min(0.1, 'Must be > 0'),
-  volume: z.number().min(0.01, 'Must be > 0'),
-  notes: z.string().optional().default(''), // Give it a default empty string so it never yields undefined
+  quantity: z.number().int('Must be a whole number').min(1, 'Must be at least 1'),
+  weight: z.number().positive('Must be > 0'),
+  volume: z.number().positive('Must be > 0'),
+  notes: z.string().max(500, 'Notes cannot exceed 500 characters.').optional().default(''), // Give it a default empty string so it never yields undefined
 })
 
 export const reportIssueSchema = z.object({

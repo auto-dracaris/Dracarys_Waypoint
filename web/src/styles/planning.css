@@ -241,3 +241,9 @@
     gap: var(--wp-space-xs);
   }
 }
+.plan-error {
+  background: var(--wp-red-50);
+  color: var(--wp-red-700);
+  padding: var(--wp-space-lg);
+  border-radius: var(--wp-radius-md);
+}

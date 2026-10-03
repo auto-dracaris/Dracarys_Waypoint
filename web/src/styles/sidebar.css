@@ -140,17 +140,6 @@
   width: var(--wp-space-3xl);
   height: var(--wp-space-3xl);
 }
-.sidebar-panel-icon {
-  position: relative;
-  display: flex;
-  width: var(--wp-space-3xl);
-  height: var(--wp-space-3xl);
-}
-.sidebar-panel-icon .sidebar-panel-arrow {
-  position: absolute;
-  top: 0;
-  left: calc(-1 * var(--wp-space-xs));
-}
 .sidebar-toggle:hover {
   background: var(--wp-warm-neutral-100);
 }
