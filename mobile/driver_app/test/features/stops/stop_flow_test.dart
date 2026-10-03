@@ -141,8 +141,21 @@ void main() {
     });
 
     group('live navigation', () {
-      const quick = SimulatedLocationSource(
-          speedKmh: 2.0e5, tick: Duration(milliseconds: 20));
+      // Widget tests run on fake time, which a real stopwatch cannot see, so
+      // the drive reads a scripted clock that moves 20 ms per reading.
+      Duration Function() steadyClock() {
+        var t = Duration.zero;
+        return () {
+          final now = t;
+          t += const Duration(milliseconds: 20);
+          return now;
+        };
+      }
+
+      final quick = SimulatedLocationSource(
+          speedKmh: 2.0e5,
+          tick: const Duration(milliseconds: 20),
+          elapsed: steadyClock());
 
       Future<void> openDirections(WidgetTester tester) async {
         await pumpTripRoutes(tester,

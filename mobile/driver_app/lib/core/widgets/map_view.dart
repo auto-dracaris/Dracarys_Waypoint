@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:maplibre/maplibre.dart' as ml;
 
+import '../latest_only.dart';
 import '../theme/app_colors.dart';
 import 'camera_target.dart';
 import 'map_mode.dart';
@@ -195,7 +196,7 @@ class _MapViewState extends ConsumerState<MapView> {
         e.reason == ml.CameraChangeReason.apiGesture) {
       widget.onUserMoved?.call();
     }
-    if (e is ml.MapEventCameraIdle) _updateVehicle();
+    if (e is ml.MapEventCameraIdle) _scheduleVehicleUpdate();
   }
 
   Future<void> _installVehicle() async {
@@ -222,6 +223,12 @@ class _MapViewState extends ConsumerState<MapView> {
     _vehicleReady = true;
     await _updateVehicle();
   }
+
+  /// Position updates arrive far faster than the map can apply them. Queue only
+  /// the newest one, or the van falls further behind the camera every tick.
+  final _vehicleUpdates = LatestOnly();
+
+  void _scheduleVehicleUpdate() => _vehicleUpdates.run(_updateVehicle);
 
   Future<void> _updateVehicle() async {
     final style = _controller?.style;
@@ -271,7 +278,7 @@ class _MapViewState extends ConsumerState<MapView> {
   @override
   void didUpdateWidget(MapView old) {
     super.didUpdateWidget(old);
-    if (old.vehicle3d != widget.vehicle3d) _updateVehicle();
+    if (old.vehicle3d != widget.vehicle3d) _scheduleVehicleUpdate();
     final t = widget.cameraTarget;
     if (t != null && t != old.cameraTarget) {
       _follow(t, old.cameraTarget);

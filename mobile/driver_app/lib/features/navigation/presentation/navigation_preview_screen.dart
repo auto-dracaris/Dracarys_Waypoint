@@ -58,6 +58,20 @@ class NavigationPreviewScreen extends ConsumerStatefulWidget {
       _NavigationPreviewScreenState();
 }
 
+/// Where the camera sits while following the van. Tilted mode is a close chase
+/// view: low pitch, tight zoom, aimed a few metres ahead of the van along its
+/// heading so you see the road you are about to take.
+@visibleForTesting
+CameraTarget followTarget(LatLng point, double heading, MapMode mode) =>
+    mode == MapMode.tilted
+    ? CameraTarget(
+        point: const Distance().offset(point, 5, heading),
+        bearing: heading,
+        zoom: 21.5,
+        pitch: 70,
+      )
+    : CameraTarget(point: point, zoom: 18.5);
+
 class _NavigationPreviewScreenState
     extends ConsumerState<NavigationPreviewScreen> {
   /// Camera follows the vehicle while navigating; a manual pan turns it off.
@@ -72,11 +86,6 @@ class _NavigationPreviewScreenState
   bool _busy = false;
 
   StopRef get _ref => (tripId: widget.tripId, stopId: widget.stopId);
-
-  CameraTarget _targetFor(LatLng point, double heading, MapMode mode) =>
-      mode == MapMode.tilted
-      ? CameraTarget(point: point, bearing: heading, zoom: 20, pitch: 76)
-      : CameraTarget(point: point, zoom: 18.5);
 
   Future<void> _arrived() async {
     setState(() => _busy = true);
@@ -133,7 +142,7 @@ class _NavigationPreviewScreenState
                 // locate target must not pull it back afterwards.
                 final CameraTarget? target =
                     nav.phase != NavPhase.idle && _following && pos != null
-                    ? _targetFor(vehicle, heading, mode)
+                    ? followTarget(vehicle, heading, mode)
                     : _locate;
 
                 return Stack(
@@ -210,7 +219,7 @@ class _NavigationPreviewScreenState
                         key: const Key('locate-button'),
                         onTap: () => setState(() {
                           _following = true;
-                          _locate = _targetFor(vehicle, heading, mode);
+                          _locate = followTarget(vehicle, heading, mode);
                         }),
                         child: const Icon(
                           Icons.my_location,

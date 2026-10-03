@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:driver_app/features/navigation/data/simulated_location_source.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
@@ -58,4 +60,53 @@ void main() {
           lessThanOrEqualTo(out[i - 1].remainingMeters));
     }
   });
+
+  test('distance follows the clock, not the tick count (a janky frame catches up)',
+      () async {
+    // 36 km/h = 10 m/s. Scripted clock: 0 ms, 10 ms, then a 100 ms hiccup.
+    final times = [0, 10, 110, 120, 1000000];
+    var i = 0;
+    final src = SimulatedLocationSource(
+      speedKmh: 36,
+      tick: const Duration(milliseconds: 1),
+      elapsed: () => Duration(milliseconds: times[math.min(i++, times.length - 1)]),
+    );
+    final out = await src.follow(const [a, b, c]).take(5).toList();
+    final travelled = [
+      for (final p in out) out.first.remainingMeters - p.remainingMeters
+    ];
+    expect(travelled[1], closeTo(0.1, 1e-6)); // 10 ms * 10 m/s
+    expect(travelled[2], closeTo(1.1, 1e-6)); // jumps with the clock
+    expect(travelled[3], closeTo(1.2, 1e-6));
+  });
+
+  test('heading never swings faster than the turn-rate limit', () async {
+    // A U-turn: north then straight back south (180 degree reversal).
+    const north = LatLng(6.0009, 80.0);
+    final src = SimulatedLocationSource(
+      speedKmh: 180, // 50 m/s: 5 m per 100 ms step, so the reversal comes mid-run
+      tick: const Duration(milliseconds: 1),
+      elapsed: _steadyClock(const Duration(milliseconds: 100)),
+      maxTurnDegreesPerSecond: 90,
+    );
+    final out = await src.follow(const [a, north, a]).take(30).toList();
+    var worst = 0.0;
+    for (var k = 1; k < out.length; k++) {
+      var d = (out[k].heading - out[k - 1].heading).abs();
+      if (d > 180) d = 360 - d;
+      expect(d, lessThanOrEqualTo(9.0001)); // 90 deg/s * 0.1 s
+      worst = math.max(worst, d);
+    }
+    expect(worst, greaterThan(8.9)); // the limiter really was doing the work
+  });
+}
+
+/// A clock that advances by [step] every time it is read.
+Duration Function() _steadyClock(Duration step) {
+  var t = Duration.zero;
+  return () {
+    final now = t;
+    t += step;
+    return now;
+  };
 }

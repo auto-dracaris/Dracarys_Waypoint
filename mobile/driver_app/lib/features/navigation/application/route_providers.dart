@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/widgets/map_view.dart';
+import '../data/route_smoothing.dart';
 import '../data/routing_repository.dart';
 
 final routingRepositoryProvider = Provider<RoutingRepository>((ref) {
@@ -30,13 +31,16 @@ class RouteRequest {
   int get hashCode => Object.hashAll(waypoints);
 }
 
-/// Road geometry for [RouteRequest]; falls back to straight lines when the
-/// routing service is unreachable so the map never loses its route.
+/// Road geometry for [RouteRequest] with its corners rounded into arcs, so the
+/// line is drawn the way a vehicle drives it and the van sits exactly on it.
+/// Falls back to straight lines when the routing service is unreachable so the
+/// map never loses its route.
 final roadRouteProvider =
     FutureProvider.family<List<LatLng>, RouteRequest>((ref, req) async {
   try {
-    return await ref.watch(routingRepositoryProvider).route(req.waypoints);
+    return roundCorners(
+        await ref.watch(routingRepositoryProvider).route(req.waypoints));
   } on RoutingException {
-    return req.waypoints;
+    return roundCorners(req.waypoints);
   }
 });
