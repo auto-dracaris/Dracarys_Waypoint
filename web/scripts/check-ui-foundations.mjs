@@ -2,7 +2,9 @@ import assert from 'node:assert/strict'
 import { readFile, readdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { createElement } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
+import { renderToStaticMarkup, renderToPipeableStream } from 'react-dom/server'
+import { Writable } from 'node:stream'
+import { MemoryRouter } from 'react-router-dom'
 import { createServer } from 'vite'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
@@ -58,6 +60,19 @@ try {
   console.log('Shared control props, refs, loading guards and semantic output passed.')
 
   const { default: App } = await server.ssrLoadModule('/src/app/App.tsx')
+  const renderRoute = (url) => new Promise((resolve, reject) => {
+    const { pathname, search } = new URL(url, 'http://waypoint.test')
+    globalThis.window = { location: { pathname, search }, localStorage: { getItem: () => null } }
+    const element = createElement(MemoryRouter, { initialEntries: [url] }, createElement(App))
+    // Hub's existing map intentionally renders its Suspense fallback during SSR.
+    if (!url.startsWith('/store-manager')) { resolve(renderToStaticMarkup(element)); return }
+    let markup = ''
+    const output = new Writable({ write(chunk, encoding, next) { markup += chunk.toString(); next() } })
+    output.on('finish', () => resolve(markup))
+    const stream = renderToPipeableStream(element, {
+      onAllReady() { stream.pipe(output) }, onError: reject,
+    })
+  })
   const routes = [
     ['/', 'Delivery Overview'], ['/login', 'Sign in to manage'], ['/vehicles', 'Vehicles'],
     ['/outlets', 'Outlets'], ['/team', 'Team'], ['/orders', 'Confirmed Orders'],
@@ -65,8 +80,7 @@ try {
     ['/operations/loading-exception', 'Loading Exception Review'],
   ]
   for (const [pathname, title] of routes) {
-    globalThis.window = { location: { pathname, search: '' }, localStorage: { getItem: () => null } }
-    const markup = render(App)
+    const markup = await renderRoute(pathname)
     assert.match(markup, new RegExp(`<h1[^>]*>${title}</h1>`))
     if (pathname === '/login') {
       assert.match(markup, /id="login-email"[^>]*type="email"[^>]*required=""/)
@@ -74,8 +88,7 @@ try {
     } else assert.match(markup, /aria-label="Open navigation"/)
     if (pathname === '/orders') assert.match(markup, /orders-workspace\s/, 'Orders must retain full-width planning without a selected order')
   }
-  globalThis.window.location = { pathname: '/orders', search: '?order=DEMO-108' }
-  assert.match(render(App), /orders-workspace--review-open/, 'URL order selection must still open allocation review')
+  assert.match(await renderRoute('/orders?order=DEMO-108'), /orders-workspace--review-open/, 'URL order selection must still open allocation review')
   const { Sidebar } = await server.ssrLoadModule('/src/components/layout/sidebar.tsx')
   for (const role of ['Hub', 'Store Manager']) {
     for (const collapsed of [false, true]) {
@@ -87,6 +100,27 @@ try {
     }
   }
   console.log('Nine routes, order selection and four sidebar variants rendered successfully.')
+
+  for (const [url, content] of [
+    ['/store-manager', /Loading dashboard data/],
+    ['/store-manager/orders', /<h1[^>]*>Orders</],
+    ['/store-manager/orders/create', /Place an order/],
+    ['/store-manager/deliveries', /<h1[^>]*>Deliveries</],
+    ['/store-manager/delivery/VEH012', /Ambient Delivery/],
+    ['/store-manager/login', /type="password"/],
+    ['/store-manager/unknown', /Page not found/],
+    ['/unknown', /Page not found/],
+  ]) {
+    const markup = await renderRoute(url)
+    assert.match(markup, content, url)
+    assert.doesNotMatch(markup, /overview-shell/, 'Store Manager must not render inside the Hub shell')
+  }
+  const { TodayDeliveries } = await server.ssrLoadModule('/src/features/store-manager/components/my-deliveries/today-deliveries.tsx')
+  const { mockApiData } = await server.ssrLoadModule('/src/features/store-manager/data/dashboard-overview.ts')
+  const deliveries = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(TodayDeliveries, { deliveries: mockApiData.todayDeliveries })))
+  assert.match(deliveries, /href="\/store-manager\/delivery\/VEH012"/)
+  assert.doesNotMatch(deliveries, /src="\/store-manager\//, 'Artwork must use bundled asset imports')
+  console.log('Six Store Manager routes, delivery links and both not-found routes rendered successfully.')
 
   const { OrdersTable } = await server.ssrLoadModule('/src/features/orders/components/orders-table.tsx')
   const { initialOrders } = await server.ssrLoadModule('/src/features/orders/data.ts')

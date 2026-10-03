@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+@import "./styles/store-manager/theme.css";
 
 @font-face {
   font-family: "Google Sans Flex";
@@ -10,16 +14,24 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-waypoint);
+  --font-sans: var(--app-font-sans);
 }
 
 :root {
+  --app-font-sans: var(--font-waypoint);
+  --app-radius-sm: .25rem;
+  --app-radius-md: .375rem;
+  --app-radius-lg: .5rem;
+  --app-radius-xl: .75rem;
+  --app-radius-2xl: 1rem;
+  --app-radius-3xl: 1.5rem;
+  --app-radius-4xl: 2rem;
   --scrollbar-thumb: var(--wp-yellow-500);
   --scrollbar-thumb-hover: var(--wp-yellow-600);
 }
 
 /* Shared keyboard focus belongs to the application, not a feature stylesheet. */
-:is(button, input, select, textarea, summary, a):focus-visible { outline: 2px solid var(--wp-yellow-500); outline-offset: var(--wp-space-xxs); }
+html[data-area="hub"] :is(button, input, select, textarea, summary, a):focus-visible { outline: 2px solid var(--wp-yellow-500); outline-offset: var(--wp-space-xxs); }
 
 @layer base {
   html {
@@ -28,41 +40,45 @@
 
   body {
     margin: 0;
-    min-width: var(--wp-spacing-80);
+
     min-height: 100svh;
+  }
+
+  html[data-area="hub"] body {
+    min-width: var(--wp-spacing-80);
     background: var(--wp-warm-neutral-50);
     color: var(--wp-text-primary);
   }
   /* Apply to the page and every nested scroll container, including portals. */
   @media (forced-colors: none) {
-    * {
+    html[data-area="hub"] * {
       scrollbar-width: thin;
       scrollbar-color: var(--scrollbar-thumb) transparent;
     }
 
     @supports selector(::-webkit-scrollbar) {
       /* Standard properties otherwise override the precise width and hover. */
-      * {
+      html[data-area="hub"] * {
         scrollbar-width: auto;
         scrollbar-color: auto;
       }
 
-      *::-webkit-scrollbar {
+      html[data-area="hub"] *::-webkit-scrollbar {
         width: var(--wp-space-sm);
         height: var(--wp-space-sm);
       }
 
-      *::-webkit-scrollbar-track,
-      *::-webkit-scrollbar-corner {
+      html[data-area="hub"] *::-webkit-scrollbar-track,
+      html[data-area="hub"] *::-webkit-scrollbar-corner {
         background: transparent;
       }
 
-      *::-webkit-scrollbar-thumb {
+      html[data-area="hub"] *::-webkit-scrollbar-thumb {
         background: var(--scrollbar-thumb);
         border-radius: var(--wp-radius-full);
       }
 
-      *::-webkit-scrollbar-thumb:hover {
+      html[data-area="hub"] *::-webkit-scrollbar-thumb:hover {
         background: var(--scrollbar-thumb-hover);
       }
     }

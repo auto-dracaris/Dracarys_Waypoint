@@ -24,9 +24,9 @@ Store Manager routes:
 | Delivery tracking | `/store-manager/delivery/:id` |
 | Existing Store Manager login | `/store-manager/login` |
 
-Both areas use this one development server and production build. Store Manager's router uses `/store-manager` as its basename, so its existing internal links stay within that area. The browser entry loads only the selected area's global stylesheet to preserve both designs, including portaled shadcn dialogs. Use normal document links (not client-side navigation) when linking between Hub and Store Manager. Production hosting must serve `index.html` for application routes so direct links and refresh work.
+Both areas use one development server, production build, and BrowserRouter. `main.tsx` mounts `app/App.tsx`, which declares all routes under the Hub or Store Manager layout. Use React Router links and navigation, including between areas. Production hosting must serve `index.html` for application routes so direct links and refresh work.
 
-This is a directory consolidation; existing demo data, login behavior, and service integration status are preserved.
+One Tailwind pipeline loads both sets of styles. The router sets `data-area` on the document before paint; fonts, corner sizes, base colours, focus and scrollbar rules follow the active area. This includes portaled shadcn dialogs and selects. Existing demo data, login behavior, and service integration status are preserved.
 
 ```powershell
 npm run lint
@@ -38,23 +38,24 @@ npm run check:ui
 
 ```text
 src/
-  app/                 App composition; future routing and providers
-  pages/               Figma screens
+  app/App.tsx          Single route configuration and active-area theme selection
+  pages/               Hub screens and store-manager/ screens
   features/            Feature-specific components, behavior, and data
+    hub/               Hub navigation, notifications and workflow state
+    store-manager/     Store components, demo data, schemas and types
   components/
-    ui/                Reusable plain React UI, added as patterns emerge
-    layout/            Shared header, sidebar, and page shell
+    ui/                Existing Hub controls; shadcn/ preserves Store controls
+    layout/            Hub and Store Manager shells, headers and sidebars
   lib/                 Shared utilities, added when needed
-  styles/              Original Figma tokens and generated CSS
-  assets/              Preserved images and fonts
-  store-manager/       Migrated pages, layouts, shadcn controls, utilities and assets
-  main.tsx             Browser entry point
+  styles/              Original tokens, feature CSS and store-manager/theme.css
+  assets/              Preserved images, fonts and store-manager/ artwork
+  main.tsx             Single browser entry and BrowserRouter
   index.css            Global styles and token imports
 ```
 
 Empty folders contain `.gitkeep` files to preserve the structure in Git.
 
-`components.json` points shadcn at `src/store-manager/components/ui` and its original stylesheet. Store Manager public artwork lives in `public/store-manager`. Keep these controls separate from Hub's `src/components/ui` to avoid replacing either implementation.
+`components.json` points shadcn at `src/components/ui/shadcn` and the common `src/index.css` entry. Store Manager artwork uses bundled imports from `src/assets/store-manager`. Keep the two control implementations separate to preserve their props and styling; pages and business components belong in the shared architecture, not a second application directory.
 
 Phase 1 of modularization provides shared Button, IconButton, Input, Select, Textarea, StatusBadge and Tooltip primitives, with styles owned by those components. Existing screens consume them while feature code retains validation and business state. See the [shared UI guide](src/components/ui/README.md) for props and examples. Search/filter composition, shared page sections and feature hooks remain later phases.
 
@@ -63,7 +64,7 @@ Phase 1 of modularization provides shared Button, IconButton, Input, Select, Tex
 1. Implement the first Figma screen in `pages` using plain React, Tailwind, and WayPoint tokens.
 2. Keep business-specific behavior in its feature folder.
 3. Extract repeated UI into `components/ui` and shared screen structure into `components/layout` as needed.
-4. Pages import features and shared components; shared components should not import pages or features.
+4. Pages import features and shared controls. UI primitives must not import pages or features; application layouts may compose feature state and navigation.
 5. Use `@/` imports across folders and relative imports within a feature.
 6. Compare each page with Figma and check responsive behavior before starting the next.
 7. Use Material UI icons (`@mui/icons-material`) that match the Figma design as closely as possible. Do not download icons as SVG files.
