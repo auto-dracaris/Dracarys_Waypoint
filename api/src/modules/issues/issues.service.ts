@@ -14,7 +14,7 @@ import {
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { ImagePurpose } from '../../common/enums/image-purpose.enum';
-import { IssueStatus } from '../../common/enums/issue-status.enum';
+import { IssueStatus } from './enums';
 import { OrderStatus } from '../../common/enums/order-status.enum';
 import { TripStatus } from '../../common/enums/trip-status.enum';
 import { UserRole } from '../../common/enums/user-role.enum';
@@ -148,16 +148,24 @@ export class IssuesService {
     );
   }
 
-  /** A dispatcher sees every issue; anyone else the ones they reported. */
+  /** Loaders may also review all reports on an active trip in their depot. */
   async findAll(
     query: QueryIssueDto,
     user: AuthenticatedUser,
   ): Promise<ApiResponseDto> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
+    let reporterId =
+      user.role === UserRole.DISPATCHER ? undefined : user.userId;
+    if (user.role === UserRole.LOADER && query.tripId) {
+      const trip = await this.tripsService.loadFor(query.tripId, user);
+      if (NOT_YET_LEFT.includes(trip.status)) {
+        reporterId = undefined;
+      }
+    }
     const [issues, total] = await this.issuesRepository.findFiltered(
       query,
-      user.role === UserRole.DISPATCHER ? undefined : user.userId,
+      reporterId,
     );
 
     return new ApiResponseDto(HttpStatus.OK, 'Issues retrieved successfully', {
@@ -311,6 +319,11 @@ export class IssuesService {
       type: issue.type,
       title: ISSUE_TITLES[issue.type],
       status: issue.status,
+      statusLabel: {
+        [IssueStatus.OPEN]: 'Decision Pending',
+        [IssueStatus.ACKNOWLEDGED]: 'Under Review',
+        [IssueStatus.RESOLVED]: 'Approved',
+      }[issue.status],
       description: issue.description,
       affectedCases: issue.affectedUnits,
       recordedAt: issue.recordedAt,

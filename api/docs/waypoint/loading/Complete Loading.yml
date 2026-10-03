@@ -1,0 +1,28 @@
+info:
+  name: Complete Loading
+  type: http
+  seq: 10
+
+http:
+  method: POST
+  url: "{{baseUrl}}/trips/{{tripId}}/loading/complete"
+  auth:
+    type: bearer
+    token: "{{loaderAccessToken}}"
+
+runtime:
+  variables:
+    - name: tripId
+      value: 9c9acd3e-5f21-4f79-b22a-51979d334687
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.body?.data?.dispatchCode) {
+          bru.setEnvVar("dispatchCode", res.body.data.dispatchCode);
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,22 @@
+info:
+  name: Trip Issues
+  type: http
+  seq: 9
+
+http:
+  method: GET
+  url: "{{baseUrl}}/issues?tripId={{tripId}}"
+  auth:
+    type: bearer
+    token: "{{loaderAccessToken}}"
+
+runtime:
+  variables:
+    - name: tripId
+      value: 9c9acd3e-5f21-4f79-b22a-51979d334687
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
