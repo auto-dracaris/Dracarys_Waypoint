@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class UpdateMeDto {
   @IsOptional()
@@ -16,7 +16,9 @@ export class UpdateMeDto {
   @MaxLength(20, { message: 'Phone must be at most 20 characters' })
   phone?: string;
 
+  // An image uploaded with `POST /images` (purpose `avatar`); null removes
+  // the profile picture.
   @IsOptional()
-  @IsString({ message: 'Avatar must be a string' })
-  avatar?: string;
+  @IsUUID(undefined, { message: 'avatarImageId must be an image id' })
+  avatarImageId?: string | null;
 }

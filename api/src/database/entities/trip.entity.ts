@@ -115,6 +115,11 @@ export class Trip extends UuidBaseEntity {
   @Column({ type: 'enum', enum: TripStatus, default: TripStatus.DRAFT })
   status: TripStatus;
 
+  // Goes up each time the dispatcher reorders the stops, so a handset can
+  // tell it is acting on an out-of-date route.
+  @Column({ name: 'plan_version', type: 'int', default: 1 })
+  planVersion: number;
+
   @Column({ name: 'actual_depart_at', type: 'timestamptz', nullable: true })
   actualDepartAt: Date | null;
 

@@ -44,6 +44,20 @@ export class VehicleLocation extends UuidBaseEntity {
   })
   lng: number;
 
+  // Degrees clockwise from north, when the handset reports it.
+  @Column({ type: 'smallint', nullable: true })
+  heading: number | null;
+
+  @Column({
+    name: 'speed_kmh',
+    type: 'decimal',
+    precision: 5,
+    scale: 1,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
+  speedKmh: number | null;
+
   @Column({ name: 'recorded_at', type: 'timestamptz' })
   recordedAt: Date;
 

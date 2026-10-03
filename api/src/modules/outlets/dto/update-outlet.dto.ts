@@ -1,5 +1,7 @@
 import {
   IsEnum,
+  IsLatitude,
+  IsLongitude,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -67,6 +69,15 @@ export class UpdateOutletDto {
   @IsNotEmpty({ message: 'Address cannot be empty' })
   @IsString({ message: 'Address must be a string' })
   address?: string;
+
+  // Where the outlet is on the map, for the driver's stops and navigation.
+  @IsOptional()
+  @IsLatitude({ message: 'Latitude must be between -90 and 90' })
+  lat?: number;
+
+  @IsOptional()
+  @IsLongitude({ message: 'Longitude must be between -180 and 180' })
+  lng?: number;
 
   @IsOptional()
   @IsString({ message: 'Contact phone must be a string' })

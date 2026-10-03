@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SmsModule } from '../../common/sms/sms.module';
 import { UserOtp } from '../../database/entities/user-otp.entity';
 import { UserSession } from '../../database/entities/user-session.entity';
+import { ImagesModule } from '../images/images.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UserAuthRepository } from './repositories/user-auth.repository';
@@ -18,6 +19,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     TypeOrmModule.forFeature([UserSession, UserOtp]),
     PassportModule,
     SmsModule,
+    ImagesModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

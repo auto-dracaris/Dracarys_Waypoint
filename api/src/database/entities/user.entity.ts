@@ -4,6 +4,7 @@ import { AutoIncBaseEntity } from '../../common/entities/autoinc-base.entity';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { UserStatus } from '../../common/enums/user-status.enum';
 import { Depot } from './depot.entity';
+import { Image } from './image.entity';
 import { Outlet } from './outlet.entity';
 
 @Entity('users')
@@ -25,8 +26,13 @@ export class User extends AutoIncBaseEntity {
   @Column({ length: 20, nullable: true, unique: true })
   phone: string;
 
-  @Column({ type: 'text', nullable: true })
-  avatar: string;
+  // The profile picture. Responses give its URL as `avatar`.
+  @Column({ name: 'avatar_image_id', type: 'uuid', nullable: true })
+  avatarImageId: string | null;
+
+  @ManyToOne(() => Image, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'avatar_image_id' })
+  avatarImage?: Relation<Image> | null;
 
   @Column({ type: 'enum', enum: UserRole })
   role: UserRole;

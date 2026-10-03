@@ -11,6 +11,7 @@ import {
 import { OrderStatus } from '../../../common/enums/order-status.enum';
 import { TempRequirement } from '../../../common/enums/temp-requirement.enum';
 import { BaseRepository } from '../../../common/repositories/base.repository';
+import { orderIdFromReference } from '../../../common/utils/order.util';
 import { Calendar } from '../../../database/entities/calendar.entity';
 import { OrderDeferral } from '../../../database/entities/order-deferral.entity';
 import { Order } from '../../../database/entities/order.entity';
@@ -98,12 +99,6 @@ const SORT_COLUMNS: Record<OrderSortKey, string> = {
   status: 'o.status',
 };
 
-/** An order reference (`ORD0000012` or `12`) as the id it stands for. */
-const idFromReference = (search: string): number | null => {
-  const match = /^(?:ORD)?0*(\d{1,9})$/i.exec(search.trim());
-  return match ? parseInt(match[1], 10) : null;
-};
-
 export interface OrderSummary {
   total: number;
   awaiting: number;
@@ -163,7 +158,9 @@ export class OrdersRepository extends BaseRepository<Order> {
     }
     if (query.search?.trim()) {
       // An id that cannot be a reference matches nothing.
-      qb.andWhere('o.id = :id', { id: idFromReference(query.search) ?? 0 });
+      qb.andWhere('o.id = :id', {
+        id: orderIdFromReference(query.search) ?? 0,
+      });
     }
 
     return qb
@@ -213,7 +210,7 @@ export class OrdersRepository extends BaseRepository<Order> {
       qb.andWhere(
         '(o.id = :id OR outlet.uniqueId ILIKE :term OR outlet.name ILIKE :term)',
         {
-          id: idFromReference(query.search) ?? 0,
+          id: orderIdFromReference(query.search) ?? 0,
           term: `%${query.search.trim()}%`,
         },
       );

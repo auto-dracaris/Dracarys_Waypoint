@@ -26,11 +26,14 @@ export class UsersRepository extends BaseRepository<User> {
     return this.repository.findOneBy({ phone });
   }
 
-  /** One user with the depot and outlet rows, so a response carries their names. */
+  /**
+   * One user with the depot, outlet and avatar image rows, so a response
+   * carries their names and the picture's URL.
+   */
   findWithDepot(id: number): Promise<User | null> {
     return this.repository.findOne({
       where: { id },
-      relations: { depot: true, outlet: true },
+      relations: { depot: true, outlet: true, avatarImage: true },
     });
   }
 
@@ -65,7 +68,7 @@ export class UsersRepository extends BaseRepository<User> {
     // their names.
     return this.findAndCount(page, limit, {
       where,
-      relations: { depot: true, outlet: true },
+      relations: { depot: true, outlet: true, avatarImage: true },
     });
   }
 }

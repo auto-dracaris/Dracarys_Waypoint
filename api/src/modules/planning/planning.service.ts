@@ -13,10 +13,10 @@ import { Depot } from '../../common/enums/depot.enum';
 import { ParkingConstraint } from '../../common/enums/parking-constraint.enum';
 import { PriorityIndexStatus } from '../../common/enums/priority-index-status.enum';
 import { TripStatus } from '../../common/enums/trip-status.enum';
-import { today } from '../../common/utils/date.util';
+import { atMinute, today } from '../../common/utils/date.util';
+import { deliveryWindow } from '../../common/utils/outlet.util';
 import { orderReference } from '../../common/utils/order.util';
 import { Order } from '../../database/entities/order.entity';
-import { Outlet } from '../../database/entities/outlet.entity';
 import { PriorityIndex } from '../../database/entities/priority-index.entity';
 import { Trip } from '../../database/entities/trip.entity';
 import { Vehicle } from '../../database/entities/vehicle.entity';
@@ -25,7 +25,6 @@ import { PlanQueryDto } from './dto/plan-query.dto';
 import { allocate } from './engine/allocation';
 import {
   scheduleVehicle,
-  toMinutes,
   tripsByVehicle,
   validate,
 } from './engine/feasibility';
@@ -48,10 +47,6 @@ import {
 const BUDGETS = { freshMinutes: 270, otherMinutes: 480, maxTripsPerVehicle: 2 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Minutes from midnight on `date`, as an instant in Colombo (+05:30, no DST). */
-const atMinute = (date: string, minutes: number): Date =>
-  new Date(new Date(`${date}T00:00:00+05:30`).getTime() + minutes * 60_000);
 
 type PlanState = 'none' | 'draft' | 'published';
 
@@ -264,7 +259,7 @@ export class PlanningService {
             volumeM3: order.orderVolumeM3,
             dockType: outlet.dockType,
             vanOnly: outlet.parkingConstraint === ParkingConstraint.VAN_ONLY,
-            ...this.deliveryWindow(outlet),
+            ...deliveryWindow(outlet),
             requestedDate: order.requestedDate,
             timesDeferred: deferrals.get(order.id) ?? 0,
             daysSinceLastServed: lastServed
@@ -309,27 +304,6 @@ export class PlanningService {
         },
         budgets: BUDGETS,
       },
-    };
-  }
-
-  /** When an outlet takes deliveries: its own window, within the mall's if it is in one. */
-  private deliveryWindow(outlet: Outlet): {
-    windowOpen: string;
-    windowClose: string;
-  } {
-    const later = (a: string, b: string | null) =>
-      b && toMinutes(b) > toMinutes(a) ? b : a;
-    const earlier = (a: string, b: string | null) =>
-      b && toMinutes(b) < toMinutes(a) ? b : a;
-    return {
-      windowOpen: later(outlet.windowOpenTime, outlet.mallWindowOpen).slice(
-        0,
-        5,
-      ),
-      windowClose: earlier(
-        outlet.windowCloseTime,
-        outlet.mallWindowClose,
-      ).slice(0, 5),
     };
   }
 
@@ -538,7 +512,7 @@ export class PlanningService {
       tempRequirement: order.tempRequirement,
       orderWeightKg: order.orderWeightKg,
       orderVolumeM3: order.orderVolumeM3,
-      ...this.deliveryWindow(outlet),
+      ...deliveryWindow(outlet),
     };
   }
 }

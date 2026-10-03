@@ -4,6 +4,8 @@ import { FindOptionsRelations, Repository } from 'typeorm';
 import { TripStatus } from '../../../common/enums/trip-status.enum';
 import { VehicleStatus } from '../../../common/enums/vehicle-status.enum';
 import { BaseRepository } from '../../../common/repositories/base.repository';
+import { VehicleLocation } from '../../../database/entities/vehicle-location.entity';
+import { Trip } from '../../../database/entities/trip.entity';
 import { Vehicle } from '../../../database/entities/vehicle.entity';
 import { QueryVehicleDto, VehicleSortKey } from '../dto/query-vehicle.dto';
 
@@ -165,6 +167,54 @@ export class VehiclesRepository extends BaseRepository<Vehicle> {
       .where('vehicle.id = :vehicleId', { vehicleId })
       .getRawOne<{ count: string }>();
     return parseInt(row?.count ?? '0', 10);
+  }
+
+  /** The vehicle a driver is assigned to; a driver is on one vehicle at a time. */
+  findByDriver(driverId: number): Promise<Vehicle | null> {
+    return this.repository.findOneBy({ driverId, isActive: true });
+  }
+
+  /** The trip the vehicle is out on right now, if any. */
+  findTripOnRoad(vehicleId: number): Promise<Trip | null> {
+    return this.repository.manager
+      .getRepository(Trip)
+      .findOneBy({ vehicleId, status: TripStatus.DISPATCHED });
+  }
+
+  /**
+   * Stores position fixes, skipping any whose id is already there, and moves
+   * the vehicle's last known position to the newest fix if it is newer.
+   */
+  async saveLocations(
+    vehicleId: number,
+    points: Partial<VehicleLocation>[],
+  ): Promise<void> {
+    const manager = this.repository.manager;
+    await manager
+      .createQueryBuilder()
+      .insert()
+      .into(VehicleLocation)
+      .values(points.map((point) => ({ ...point, vehicleId })))
+      .orIgnore()
+      .execute();
+
+    const latest = points.reduce((newest, point) =>
+      point.recordedAt! > newest.recordedAt! ? point : newest,
+    );
+    await manager
+      .createQueryBuilder()
+      .update(Vehicle)
+      .set({
+        lastLat: latest.lat,
+        lastLng: latest.lng,
+        lastLocationAt: latest.recordedAt,
+      })
+      .where('id = :vehicleId', { vehicleId })
+      .andWhere(
+        '(last_location_at IS NULL OR last_location_at < :recordedAt)',
+        { recordedAt: latest.recordedAt },
+      )
+      .execute();
   }
 
   /**
