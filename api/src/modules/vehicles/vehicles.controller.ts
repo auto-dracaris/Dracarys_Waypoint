@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AssignDriverDto } from './dto/assign-driver.dto';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
+import { LocationBatchDto } from './dto/location-batch.dto';
 import { PatchVehicleStatusDto } from './dto/patch-vehicle-status.dto';
 import { QueryVehicleDto } from './dto/query-vehicle.dto';
 import { VehicleDateQueryDto } from './dto/vehicle-date-query.dto';
@@ -63,6 +64,18 @@ export class VehiclesController {
     @CurrentUser('userId') actorId: number,
   ): Promise<ApiResponseDto> {
     return this.vehiclesService.updateStatus(id, dto, actorId);
+  }
+
+  // The one route here for drivers: it overrides the class's dispatcher-only
+  // rule, and the service checks the vehicle is the caller's.
+  @Post(':id/locations')
+  @Roles(UserRole.DRIVER)
+  addLocations(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: LocationBatchDto,
+    @CurrentUser('userId') driverId: number,
+  ): Promise<ApiResponseDto> {
+    return this.vehiclesService.addLocations(id, dto, driverId);
   }
 
   @Patch(':id/driver')

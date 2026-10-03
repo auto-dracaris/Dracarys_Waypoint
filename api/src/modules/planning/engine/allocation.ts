@@ -1,7 +1,8 @@
 import { DeferralReason } from '../../../common/enums/deferral-reason.enum';
 import { TempRequirement } from '../../../common/enums/temp-requirement.enum';
 import { VehicleType } from '../../../common/enums/vehicle-type.enum';
-import { checkVehicle, toMinutes } from './feasibility';
+import { toMinutes } from '../../../common/utils/date.util';
+import { checkVehicle } from './feasibility';
 import {
   AllocationResult,
   PlannedTrip,

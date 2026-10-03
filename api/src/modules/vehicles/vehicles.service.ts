@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   HttpStatus,
   Injectable,
   NotFoundException,
@@ -17,6 +18,7 @@ import { Vehicle } from '../../database/entities/vehicle.entity';
 import { UsersRepository } from '../users/repositories/users.repository';
 import { AssignDriverDto } from './dto/assign-driver.dto';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
+import { LocationBatchDto } from './dto/location-batch.dto';
 import { PatchVehicleStatusDto } from './dto/patch-vehicle-status.dto';
 import { QueryVehicleDto } from './dto/query-vehicle.dto';
 import { VehicleDateQueryDto } from './dto/vehicle-date-query.dto';
@@ -195,6 +197,40 @@ export class VehiclesService {
         : 'Driver assigned successfully',
       await this.buildDetail(vehicleId, today()),
     );
+  }
+
+  /**
+   * Position fixes from the handset of the vehicle's own driver, batched so
+   * ones taken offline can follow later.
+   */
+  async addLocations(
+    vehicleId: number,
+    dto: LocationBatchDto,
+    driverId: number,
+  ): Promise<ApiResponseDto> {
+    const vehicle = await this.findOrThrow(vehicleId);
+    if (vehicle.driverId !== driverId) {
+      throw new ForbiddenException('You are not the driver of this vehicle');
+    }
+    const trip = await this.vehiclesRepository.findTripOnRoad(vehicleId);
+    await this.vehiclesRepository.saveLocations(
+      vehicleId,
+      dto.points.map((point) => ({
+        id: point.clientId,
+        tripId: trip?.id ?? null,
+        lat: point.lat,
+        lng: point.lng,
+        heading: point.heading ?? null,
+        speedKmh: point.speedKmh ?? null,
+        recordedAt: new Date(point.recordedAt),
+        createdById: driverId,
+        updatedById: driverId,
+      })),
+    );
+
+    return new ApiResponseDto(HttpStatus.OK, 'Locations saved', {
+      received: dto.points.length,
+    });
   }
 
   private async findOrThrow(vehicleId: number): Promise<Vehicle> {

@@ -3,6 +3,7 @@ import type { Relation } from 'typeorm';
 import { UuidBaseEntity } from '../../common/entities/uuid-base.entity';
 import { IssueStatus } from '../../common/enums/issue-status.enum';
 import { IssueType } from '../../common/enums/issue-type.enum';
+import { Image } from './image.entity';
 import { Order } from './order.entity';
 import { TripStop } from './trip-stop.entity';
 import { Trip } from './trip.entity';
@@ -66,6 +67,14 @@ export class Issue extends UuidBaseEntity {
 
   @Column({ name: 'affected_units', type: 'int', nullable: true })
   affectedUnits: number | null;
+
+  // The reporter's photo of the problem.
+  @Column({ name: 'photo_image_id', type: 'uuid', nullable: true })
+  photoImageId: string | null;
+
+  @ManyToOne(() => Image, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'photo_image_id' })
+  photoImage?: Relation<Image> | null;
 
   // The reporter's device clock, for issues raised offline.
   @Column({ name: 'recorded_at', type: 'timestamptz', nullable: true })

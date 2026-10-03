@@ -1,5 +1,6 @@
 import { Brand } from '../../../common/enums/brand.enum';
 import { TempRequirement } from '../../../common/enums/temp-requirement.enum';
+import { toMinutes } from '../../../common/utils/date.util';
 import { VehicleType } from '../../../common/enums/vehicle-type.enum';
 import {
   AllocationResult,
@@ -21,12 +22,6 @@ import {
 // Tech during the trading day. Minutes from midnight.
 const FRESH_START_MIN = 3 * 60 + 30;
 const OTHER_START_MIN = 8 * 60;
-
-/** `HH:MM` (or `HH:MM:SS`) as minutes from midnight. */
-export const toMinutes = (time: string): number => {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-};
 
 export interface StopSchedule {
   orderId: number;

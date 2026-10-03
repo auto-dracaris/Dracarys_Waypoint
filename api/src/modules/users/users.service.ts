@@ -148,7 +148,7 @@ export class UsersService extends BaseCrudService<User> {
     return new ApiResponseDto(
       HttpStatus.OK,
       'User status updated successfully',
-      this.toPublic(saved),
+      this.toPublic(await this.findWithDepotOrThrow(saved.id)),
     );
   }
 
@@ -170,7 +170,7 @@ export class UsersService extends BaseCrudService<User> {
     return new ApiResponseDto(
       HttpStatus.OK,
       'User role updated successfully',
-      this.toPublic(saved),
+      this.toPublic(await this.findWithDepotOrThrow(saved.id)),
     );
   }
 
@@ -213,8 +213,9 @@ export class UsersService extends BaseCrudService<User> {
     return user;
   }
 
+  // Without the password hash, and with the profile picture as its URL.
   private toPublic(user: User) {
-    const { passwordHash: _passwordHash, ...result } = user;
-    return result;
+    const { passwordHash: _passwordHash, avatarImage, ...result } = user;
+    return { ...result, avatar: avatarImage?.url ?? null };
   }
 }
