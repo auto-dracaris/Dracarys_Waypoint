@@ -9,7 +9,10 @@ import 'auth_scaffold.dart';
 import 'validators.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.notice});
+
+  /// A one-off message from the screen that sent the driver here.
+  final String? notice;
 
   @override
   AuthFormState<LoginScreen> createState() => _LoginScreenState();
@@ -32,6 +35,11 @@ class _LoginScreenState extends AuthFormState<LoginScreen> {
       title: 'Sign in',
       subtitle: 'Welcome back, driver.',
       children: [
+        if (widget.notice != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(widget.notice!, key: const Key('login-notice')),
+          ),
         Form(
           key: formKey,
           child: Column(
@@ -69,6 +77,11 @@ class _LoginScreenState extends AuthFormState<LoginScreen> {
           key: const Key('go-signup'),
           onPressed: () => context.go('/signup'),
           child: const Text('Create account'),
+        ),
+        TextButton(
+          key: const Key('go-forgot'),
+          onPressed: () => context.go('/forgot-password'),
+          child: const Text('Forgot password?'),
         ),
       ],
     );

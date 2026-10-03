@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/account/presentation/account_screen.dart';
 import '../../features/auth/presentation/auth_controller.dart';
+import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/otp_screen.dart';
+import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/notifications/presentation/updates_screen.dart';
@@ -29,8 +32,27 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
     routes: [
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
-      GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+      GoRoute(
+        path: '/login',
+        builder: (_, state) =>
+            LoginScreen(notice: state.uri.queryParameters['message']),
+      ),
       GoRoute(path: '/signup', builder: (_, _) => const SignUpScreen()),
+      GoRoute(
+        path: '/verify-otp',
+        builder: (_, state) => OtpScreen(
+          phone: state.uri.queryParameters['phone'] ?? '',
+          otpId: int.tryParse(state.uri.queryParameters['otpId'] ?? '') ?? 0,
+        ),
+      ),
+      GoRoute(
+          path: '/forgot-password',
+          builder: (_, _) => const ForgotPasswordScreen()),
+      GoRoute(
+        path: '/reset-password',
+        builder: (_, state) => ResetPasswordScreen(
+            phone: state.uri.queryParameters['phone'] ?? ''),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => AppShell(shell: shell),
         branches: [

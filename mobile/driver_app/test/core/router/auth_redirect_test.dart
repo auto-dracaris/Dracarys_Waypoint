@@ -32,6 +32,12 @@ void main() {
     expect(authRedirect(location: '/trips', auth: error), '/login');
   });
 
+  test('verify-otp, forgot-password and reset-password are public', () {
+    for (final p in ['/verify-otp', '/forgot-password', '/reset-password']) {
+      expect(authRedirect(location: p, auth: signedOut), isNull, reason: p);
+    }
+  });
+
   test('signed in users skip login and sign-up', () {
     expect(authRedirect(location: '/login', auth: signedIn), '/trips');
     expect(authRedirect(location: '/signup', auth: signedIn), '/trips');

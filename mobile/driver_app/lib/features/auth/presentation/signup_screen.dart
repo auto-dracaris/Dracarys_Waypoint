@@ -91,13 +91,20 @@ class _SignUpScreenState extends AuthFormState<SignUpScreen> {
           key: const Key('signup-submit'),
           label: 'Create account',
           isLoading: busy,
-          onPressed: () => submit(() => ref
-              .read(authControllerProvider.notifier)
-              .signUp(
-                  firstName: _firstName.text.trim(),
-                  lastName: _lastName.text.trim(),
-                  phone: _phone.text.trim(),
-                  password: _password.text)),
+          onPressed: () => submit(() async {
+            final challenge =
+                await ref.read(authControllerProvider.notifier).signUp(
+                      firstName: _firstName.text.trim(),
+                      lastName: _lastName.text.trim(),
+                      phone: _phone.text.trim(),
+                      password: _password.text,
+                    );
+            if (!context.mounted) return;
+            context.go(Uri(path: '/verify-otp', queryParameters: {
+              'phone': challenge.phone,
+              'otpId': '${challenge.otpId}',
+            }).toString());
+          }),
         ),
         const SizedBox(height: 12),
         TextButton(
