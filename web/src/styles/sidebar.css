@@ -24,7 +24,6 @@
 .sidebar-panel-icon { position: relative; display: flex; width: var(--wp-space-3xl); height: var(--wp-space-3xl); }
 .sidebar-panel-icon .sidebar-panel-arrow { position: absolute; top: 0; left: calc(-1 * var(--wp-space-xs)); }
 .sidebar-toggle:hover { background: var(--wp-warm-neutral-100); }
-.sidebar-link-tooltip { display: none; position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: var(--wp-space-md); padding: var(--wp-space-md) var(--wp-space-lg); border-radius: var(--wp-radius-md); background: var(--wp-warm-neutral-950); color: var(--wp-text-white); white-space: nowrap; pointer-events: none; z-index: 40; box-shadow: 0 var(--wp-space-xxs) var(--wp-space-md) rgb(from var(--wp-neutral-950) r g b / 15%); }
 .sidebar-profile { position: relative; display: flex; align-items: center; gap: var(--wp-space-lg); width: 100%; text-align: left; cursor: pointer; border-radius: var(--wp-radius-md); }
 .sidebar-profile-label { display: flex; flex-direction: column; min-width: 0; }
 .sidebar-profile-label > span { overflow-wrap: anywhere; }
@@ -42,8 +41,6 @@
   .sidebar--collapsed .dispatcher-card { padding: var(--wp-space-md); margin-inline: var(--wp-space-md); }
   .sidebar--collapsed .sidebar-profile { justify-content: center; }
   .sidebar--collapsed .logout-button { justify-content: center; padding-bottom: var(--wp-space-xs); }
-  .sidebar--collapsed :is(.nav-item, .sidebar-toggle, .sidebar-profile, .logout-button):is(:hover, :focus-visible) > .sidebar-link-tooltip { display: block; }
-  .sidebar--collapsed.sidebar--tooltips-dismissed :is(.nav-item, .sidebar-toggle, .sidebar-profile, .logout-button):is(:hover, :focus-visible) > .sidebar-link-tooltip { display: none; }
 }
 @media (min-width: 768px) and (max-width: 1023px) {
   .sidebar:not(.sidebar--collapsed) { flex-basis: var(--wp-spacing-56); width: var(--wp-spacing-56); }
@@ -54,7 +51,6 @@
   .sidebar-backdrop { display: block; position: fixed; inset: 0; background: rgb(from var(--wp-neutral-950) r g b / 25%); z-index: 20; }
   .brand-header { padding-top: var(--wp-space-xl); }
   .sidebar-divider { margin-block: var(--wp-space-xl); }
-  .sidebar-link-tooltip { display: none; }
   body:has(.sidebar--open) { overflow: hidden; }
 }
 @media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }

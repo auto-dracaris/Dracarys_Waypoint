@@ -62,7 +62,6 @@
 .order-error { background: var(--wp-red-50); color: var(--wp-red-700); padding: var(--wp-space-lg); border-radius: var(--wp-radius-md); }
 .order-assignment-summary--deferred { border-color: var(--wp-yellow-300); background: var(--wp-yellow-50); }
 .order-assignment-summary--deferred > svg { color: var(--wp-yellow-700); }
-.orders-table .allocation-badge--deferred { color: var(--wp-yellow-700); background: var(--wp-yellow-100); }
 .order-defer-dialog { width: min(var(--wp-spacing-140), calc(100% - var(--wp-space-4xl))); padding: var(--wp-space-none); border-radius: var(--wp-radius-md); }
 .order-defer-dialog[open] { animation: order-defer-enter 180ms ease-out; }
 .order-defer-header { display: flex; align-items: flex-start; gap: var(--wp-space-lg); padding: var(--wp-space-xl) var(--wp-space-2xl); }
@@ -72,10 +71,6 @@
 .order-defer-summary { display: flex; flex-direction: column; gap: var(--wp-space-md); padding: var(--wp-space-lg); background: var(--wp-neutral-50); border: 1px solid var(--wp-neutral-200); border-radius: var(--wp-radius-md); }
 .order-defer-fields { display: grid; gap: var(--wp-space-xs); }
 .order-defer-fields label:not(:first-child) { margin-top: var(--wp-space-md); }
-.order-defer-fields select, .order-defer-fields textarea { width: 100%; min-width: 0; padding: var(--wp-space-md) var(--wp-space-lg); border: 1px solid var(--wp-neutral-300); border-radius: var(--wp-radius-md); background: var(--wp-neutral-50); color: var(--wp-text-primary); }
-.order-defer-fields select { min-height: var(--wp-space-6xl); }
-.order-defer-fields textarea { min-height: var(--wp-space-8xl); resize: vertical; }
-.order-defer-fields select:focus-visible, .order-defer-fields textarea:focus-visible { outline: 2px solid var(--wp-yellow-500); outline-offset: var(--wp-space-xxs); }
 .order-defer-expectation { display: flex; flex-direction: column; gap: var(--wp-space-xxs); }
 .order-defer-preview { display: flex; flex-direction: column; gap: var(--wp-space-md); min-height: var(--wp-space-8xl); padding: var(--wp-space-lg) var(--wp-space-xl); border-radius: var(--wp-radius-sm); background: var(--wp-neutral-100); color: var(--wp-text-tertiary); }
 .order-defer-preview > div { display: flex; align-items: flex-start; gap: var(--wp-space-lg); }

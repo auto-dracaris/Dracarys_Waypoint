@@ -1,0 +1,6 @@
+.icon-button { display: inline-flex; align-items: center; justify-content: center; width: var(--wp-space-5xl); height: var(--wp-space-5xl); border-radius: var(--wp-radius-md); cursor: pointer; font-size: var(--wp-space-3xl); flex-shrink: 0; }
+.icon-button:hover:not(:disabled) { background: var(--wp-neutral-100); }
+.icon-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.icon-button--sm { width: var(--wp-space-4xl); height: var(--wp-space-4xl); font-size: var(--wp-space-2xl); }
+.icon-button--lg { width: var(--wp-space-6xl); height: var(--wp-space-6xl); }
+.icon-button-icon { display: inline-flex; align-items: center; }

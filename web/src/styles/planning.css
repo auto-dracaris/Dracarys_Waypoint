@@ -13,9 +13,6 @@
 .plan-route-header, .plan-route-header > div { display: flex; align-items: center; gap: var(--wp-space-lg); }
 .plan-route-header { justify-content: space-between; flex-wrap: wrap; background: var(--wp-neutral-50); padding: var(--wp-space-lg); }
 .plan-route-header > div { flex-wrap: wrap; }
-.plan-badge { display: inline-flex; align-items: center; justify-content: center; min-height: var(--wp-space-2xl); padding-inline: var(--wp-space-md); border-radius: var(--wp-radius-lg); white-space: nowrap; }
-.plan-badge--trip { color: var(--wp-blue-700); background: var(--wp-blue-100); }
-.plan-badge--deferred { color: var(--wp-yellow-700); background: var(--wp-yellow-100); }
 .plan-schedule-scroll { overflow-x: auto; }
 .plan-schedule-scroll:focus-visible { outline: 2px solid var(--wp-yellow-500); outline-offset: calc(-1 * var(--wp-space-xxs)); }
 .plan-schedule { width: 100%; min-width: var(--wp-spacing-192); border-collapse: collapse; table-layout: fixed; }
