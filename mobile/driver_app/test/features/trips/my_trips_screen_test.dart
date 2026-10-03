@@ -28,7 +28,18 @@ class _FixedTripsRepository implements TripsRepository {
   Future<Trip> getTrip(String id) async => trips.firstWhere((t) => t.id == id);
 
   @override
+  Future<Trip> simulateLoadingComplete(String tripId) async => getTrip(tripId);
+
+  @override
+  Future<Trip> startTrip(String tripId) async => getTrip(tripId);
+
+  @override
   Future<Trip> markArrived(String tripId) async => getTrip(tripId);
+
+  @override
+  Future<Trip> completeStop(String tripId, String stopId,
+          {Map<String, int> deliveredCases = const {}}) async =>
+      getTrip(tripId);
 }
 
 Future<void> pumpScreen(WidgetTester tester, TripsRepository repo) async {

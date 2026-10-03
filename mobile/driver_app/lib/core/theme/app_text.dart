@@ -17,9 +17,11 @@ abstract final class AppText {
       );
 
   static final displaySm = _sans(30, 600, 38);
+  static final displaySmMedium = _sans(30, 500, 38);
   static final displayMd = _sans(36, 600, 44);
   static final displayXs = _sans(24, 500, 32);
   static final textLgSemibold = _sans(18, 600, 28);
+  static final textLgMedium = _sans(18, 500, 28);
   static final textMdMedium = _sans(16, 500, 24);
   static final textMdSemibold = _sans(16, 600, 24);
   static final textSmRegular = _sans(14, 400, 20);
@@ -28,15 +30,17 @@ abstract final class AppText {
   static final textSmSemibold = _sans(14, 600, 20);
   static final textXsRegular = _sans(12, 400, 18);
   static final textXsMedium = _sans(12, 500, 18);
+  static final textXsSemibold = _sans(12, 600, 18);
 
   /// Figma's "font/family/title" (Outfit Medium) — back links, day headings.
-  static TextStyle outfit(double size, Color color, {double? lineHeight}) =>
+  static TextStyle outfit(double size, Color color,
+          {double? lineHeight, int weight = 500}) =>
       TextStyle(
         fontFamily: 'Outfit',
         fontSize: size,
         height: lineHeight == null ? null : lineHeight / size,
-        fontWeight: FontWeight.w500,
-        fontVariations: const [FontVariation('wght', 500)],
+        fontWeight: FontWeight.values[(weight ~/ 100) - 1],
+        fontVariations: [FontVariation('wght', weight.toDouble())],
         color: color,
       );
 

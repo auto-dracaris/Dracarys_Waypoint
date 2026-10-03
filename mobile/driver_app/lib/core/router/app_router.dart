@@ -10,6 +10,7 @@ import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/notifications/presentation/updates_screen.dart';
 import '../../features/trips/presentation/my_trips_screen.dart';
 import 'app_shell.dart';
+import 'trip_routes.dart';
 import 'auth_redirect.dart';
 
 final splashDurationProvider =
@@ -34,11 +35,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _, shell) => AppShell(shell: shell),
         branches: [
           StatefulShellBranch(routes: [
-            GoRoute(path: '/trips', builder: (_, _) => const MyTripsScreen()),
+            GoRoute(
+              path: '/trips',
+              builder: (_, _) => const MyTripsScreen(),
+              routes: tripRoutes,
+            ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-                path: '/updates', builder: (_, _) => const UpdatesScreen()),
+              path: '/updates',
+              builder: (_, _) => const UpdatesScreen(),
+              routes: updateRoutes,
+            ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(

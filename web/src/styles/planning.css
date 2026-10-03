@@ -1,0 +1,63 @@
+@reference "../index.css";
+
+.plan-page-header { align-items: center; }
+.plan-page-title { display: flex; flex-direction: column; gap: var(--wp-space-xs); }
+.plan-header-actions { display: flex; align-items: center; gap: var(--wp-space-lg); }
+.plan-publish-button { min-width: var(--wp-space-11xl); min-height: var(--wp-space-5xl); padding-block: var(--wp-space-md); @apply type-text-md-semibold; }
+.plan-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--wp-space-lg); }
+.plan-summary .fleet-stat { padding-block: var(--wp-space-lg); }
+.plan-summary .fleet-stat svg { width: var(--wp-space-4xl); height: var(--wp-space-4xl); }
+.plan-review-workspace { display: grid; grid-template-columns: minmax(0, 1fr) var(--wp-spacing-96); gap: var(--wp-space-xl); align-items: start; }
+.plan-sequences { display: flex; flex-direction: column; gap: var(--wp-space-xl); min-width: 0; padding: var(--wp-space-xl); border: 1px solid var(--wp-neutral-200); border-radius: var(--wp-radius-xl); }
+.plan-route { min-width: 0; overflow: hidden; border: 1px solid var(--wp-neutral-200); border-radius: var(--wp-radius-md); }
+.plan-route-header, .plan-route-header > div { display: flex; align-items: center; gap: var(--wp-space-lg); }
+.plan-route-header { justify-content: space-between; flex-wrap: wrap; background: var(--wp-neutral-50); padding: var(--wp-space-lg); }
+.plan-route-header > div { flex-wrap: wrap; }
+.plan-badge { display: inline-flex; align-items: center; justify-content: center; min-height: var(--wp-space-2xl); padding-inline: var(--wp-space-md); border-radius: var(--wp-radius-lg); white-space: nowrap; }
+.plan-badge--trip { color: var(--wp-blue-700); background: var(--wp-blue-100); }
+.plan-badge--deferred { color: var(--wp-yellow-700); background: var(--wp-yellow-100); }
+.plan-schedule-scroll { overflow-x: auto; }
+.plan-schedule-scroll:focus-visible { outline: 2px solid var(--wp-yellow-500); outline-offset: calc(-1 * var(--wp-space-xxs)); }
+.plan-schedule { width: 100%; min-width: var(--wp-spacing-192); border-collapse: collapse; table-layout: fixed; }
+.plan-schedule col:nth-child(1) { width: var(--wp-space-7xl); }
+.plan-schedule col:nth-child(3) { width: var(--wp-space-9xl); }
+.plan-schedule col:nth-child(4) { width: var(--wp-space-9xl); }
+.plan-schedule col:nth-child(5) { width: var(--wp-spacing-32); }
+.plan-schedule col:nth-child(6) { width: var(--wp-space-11xl); }
+.plan-schedule th, .plan-schedule td { padding: var(--wp-space-lg); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.plan-schedule thead { background: var(--wp-neutral-100); color: var(--wp-text-secondary); }
+.plan-schedule tbody tr + tr { border-top: 1px solid var(--wp-neutral-200); }
+.plan-review-sidebar { display: flex; flex-direction: column; gap: var(--wp-space-xl); min-width: 0; }
+.plan-review-card { display: flex; flex-direction: column; gap: var(--wp-space-lg); padding: var(--wp-space-2xl); border: 1px solid var(--wp-neutral-300); border-radius: var(--wp-radius-xl); }
+.plan-validation { gap: var(--wp-space-xl); }
+.plan-validation--passed { background: var(--wp-lime-50); border-color: var(--wp-lime-500); color: var(--wp-lime-800); }
+.plan-validation--pending { background: var(--wp-yellow-50); border-color: var(--wp-yellow-500); color: var(--wp-yellow-800); }
+.plan-validation h2 { display: flex; align-items: center; gap: var(--wp-space-md); }
+.plan-validation h2 svg { width: var(--wp-space-2xl); height: var(--wp-space-2xl); flex-shrink: 0; }
+.plan-constraints { display: flex; flex-direction: column; gap: var(--wp-space-lg); padding-top: var(--wp-space-xl); border-top: 1px solid var(--wp-lime-100); }
+.plan-constraints li { display: flex; align-items: center; gap: var(--wp-space-md); }
+.plan-constraints svg { width: var(--wp-space-xl); height: var(--wp-space-xl); color: var(--wp-lime-600); flex-shrink: 0; }
+.plan-deferred-list { display: flex; flex-direction: column; gap: var(--wp-space-lg); border-top: 1px solid var(--wp-neutral-200); padding-top: var(--wp-space-lg); }
+.plan-deferred-order { display: flex; flex-direction: column; gap: var(--wp-space-md); padding: var(--wp-space-lg); background: var(--wp-neutral-50); border-radius: var(--wp-radius-md); }
+.plan-deferred-order header { display: flex; align-items: center; justify-content: space-between; gap: var(--wp-space-md); }
+.plan-empty { display: flex; flex-direction: column; align-items: flex-start; gap: var(--wp-space-lg); padding: var(--wp-space-3xl); }
+@media (max-width: 1535px) {
+  .plan-summary .fleet-stat > div { align-items: flex-start; }
+  .plan-summary .fleet-stat span { @apply type-text-sm-medium; }
+  .plan-review-workspace { grid-template-columns: minmax(0, 1fr) var(--wp-spacing-80); }
+}
+@media (max-width: 1199px) {
+  .plan-review-workspace { grid-template-columns: minmax(0, 1fr); }
+  .plan-review-sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .plan-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .plan-header-actions { flex-wrap: wrap; }
+  .plan-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .plan-summary .fleet-stat strong { @apply type-display-md-semibold; }
+  .plan-summary .fleet-stat svg { width: var(--wp-space-3xl); height: var(--wp-space-3xl); }
+  .plan-review-sidebar { display: flex; }
+  .plan-sequences, .plan-review-card { padding: var(--wp-space-lg); }
+  .plan-route-header > div { gap: var(--wp-space-xs); }
+}
+

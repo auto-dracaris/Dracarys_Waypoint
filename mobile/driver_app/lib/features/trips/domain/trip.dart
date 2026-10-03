@@ -1,3 +1,4 @@
+import 'shortfall_report.dart';
 import 'stop.dart';
 
 enum TripStatus { assigned, loading, ready, inProgress, completed }
@@ -10,6 +11,9 @@ class Trip {
     required this.departure,
     required this.status,
     required this.stops,
+    this.planVersion = 1,
+    this.updatedAt,
+    this.shortfall,
   });
 
   final String id;
@@ -19,12 +23,27 @@ class Trip {
   final TripStatus status;
   final List<Stop> stops;
 
+  /// Version of the dispatcher's plan this trip follows.
+  final int planVersion;
+  final DateTime? updatedAt;
+  final ShortfallReport? shortfall;
+
   int get completedStops =>
       stops.where((s) => s.status == StopStatus.completed).length;
 
+  /// First stop that has not been visited yet.
   Stop? get nextStop {
     for (final s in stops) {
       if (s.status == StopStatus.pending) return s;
+    }
+    return null;
+  }
+
+  /// The stop the driver is working on: first one that is not completed
+  /// (pending, or arrived and still being handled).
+  Stop? get activeStop {
+    for (final s in stops) {
+      if (s.status != StopStatus.completed) return s;
     }
     return null;
   }
@@ -36,5 +55,8 @@ class Trip {
         departure: departure,
         status: status ?? this.status,
         stops: stops ?? this.stops,
+        planVersion: planVersion,
+        updatedAt: updatedAt,
+        shortfall: shortfall,
       );
 }

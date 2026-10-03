@@ -11,6 +11,10 @@ String formatTime(DateTime t) {
   return '${hour.toString().padLeft(2, '0')}:$minute $period';
 }
 
+/// 24-hour `HH:mm`: `07:10`.
+String formatHm(DateTime t) =>
+    '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
 /// Compact 12-hour clock without a leading zero: `5:20 PM`.
 String _clock(DateTime t) => formatTime(t).replaceFirst(RegExp(r'^0'), '');
 

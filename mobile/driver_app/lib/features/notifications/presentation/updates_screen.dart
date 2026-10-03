@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/clock.dart';
 import '../../../core/format.dart';
+import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/async_value_view.dart';
@@ -94,6 +95,14 @@ class _TopBar extends StatelessWidget {
   }
 }
 
+void _open(BuildContext context, AppNotification n) {
+  final tripId = n.tripId;
+  if (tripId == null) return;
+  context.go(n.kind == NotificationKind.stopSequenceChanged
+      ? AppRoutes.routeUpdate(tripId)
+      : AppRoutes.trip(tripId));
+}
+
 class _Feed extends StatelessWidget {
   const _Feed({
     required this.all,
@@ -164,8 +173,7 @@ class _Feed extends StatelessWidget {
                     key: Key('notification-${entry.value[i].id}'),
                     notification: entry.value[i],
                     now: now,
-                    // Trip details screen is built next.
-                    onAction: () {},
+                    onAction: () => _open(context, entry.value[i]),
                   ),
                 ],
               ],

@@ -1,9 +1,9 @@
-import { Sidebar } from "@/components/side-bar";
-import { Header } from "@/components/header";
+import { Header } from "@/components/store-manager/header";
 import { MetricsOverview } from "@/components/store-manager/delivery-info/metrics-overview";
 import { DeliveryRouteMap } from "@/components/store-manager/delivery-info/delivery-route-map";
 import { Info } from "lucide-react";
 import type { DeliveryDetails } from "@/lib/types";
+import { useNavigate } from "react-router-dom";
 
 const deliveryData: DeliveryDetails = {
   vehicleId: "VEH021",
@@ -57,40 +57,17 @@ const breadcrumbList = [
   { label: "Vehicles", isCurrent: true },
 ];
 
-const navConfig = [
-  { id: "overview", label: "Overview", iconName: "home" as const, path: "/" },
-  {
-    id: "orders",
-    label: "Orders",
-    iconName: "orders" as const,
-    path: "/orders",
-  },
-  {
-    id: "deliveries",
-    label: "Deliveries",
-    iconName: "deliveries" as const,
-    path: "/deliveries",
-  },
-];
-
-const userInfo = {
-  name: "Dispatcher User",
-  initials: "DJ",
-  role: "Dispatcher",
-  status: "Signed in",
-};
-
 export function DeliveryTrackingPage() {
+  const navigate = useNavigate();
   return (
     <div className="w-full min-h-screen bg-neutral-50 flex justify-start items-start">
       <div className="flex-1 pl-8 pr-6 pt-5 pb-8 flex flex-col gap-6 overflow-hidden">
         <Header
-          title="Ambient delivery"
-          deliveryCode="DEMO-105"
-          dateLabel="Tuesday, 29 September"
-          breadcrumbs={breadcrumbList}
-          onPlaceOrder={() => console.log("Place order clicked")}
-          onOpenNotifications={() => console.log("Open notifications clicked")}
+          title="Ambient Delivery"
+          deliveryCode=""
+          dateLabel="Tuesday, 29 September · Your outlet at a glance"
+          breadcrumbs={[]}
+          onPlaceOrder={() => navigate("/orders/create")}
         />
         <MetricsOverview
           plannedArrival={deliveryData.plannedArrival}

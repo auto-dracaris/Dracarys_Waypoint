@@ -1,4 +1,4 @@
-import { VehicleBanner } from "@/components/vehicle-banner";
+import { VehicleBanner } from "@/components/store-manager/vehicle-banner";
 import { Link } from "react-router-dom";
 
 export interface DeliveryItem {

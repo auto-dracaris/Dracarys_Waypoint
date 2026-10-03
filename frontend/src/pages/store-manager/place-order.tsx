@@ -14,8 +14,13 @@ import {
 } from "lucide-react";
 import type { PlaceOrderFormValues } from "@/lib/types";
 import { placeOrderSchema } from "@/lib/schema";
+import { ReviewOrderDialog } from "@/components/store-manager/review-order-dialog";
+import { useState } from "react";
 
 export function PlaceOrderPage() {
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [pendingOrderData, setPendingOrderData] =
+    useState<PlaceOrderFormValues | null>(null);
   const form = useForm<PlaceOrderFormValues>({
     resolver: zodResolver(placeOrderSchema),
     defaultValues: {
@@ -35,8 +40,14 @@ export function PlaceOrderPage() {
   const summary = form.watch();
 
   function onSubmit(data: PlaceOrderFormValues) {
-    console.log("Order Payload:", data);
-    // Handle submission API logic here
+    setPendingOrderData(data);
+    setIsReviewOpen(true);
+  }
+
+  function handleFinalSubmit() {
+    console.log("Submitting final payload to API:", pendingOrderData);
+    setIsReviewOpen(false);
+    // TODO: Add your API call, success toast, and navigation here
   }
 
   return (
@@ -546,6 +557,12 @@ export function PlaceOrderPage() {
           </div>
         </form>
       </div>
+      <ReviewOrderDialog
+        open={isReviewOpen}
+        onOpenChange={setIsReviewOpen}
+        data={pendingOrderData}
+        onConfirm={handleFinalSubmit}
+      />
     </div>
   );
 }

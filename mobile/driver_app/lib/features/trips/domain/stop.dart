@@ -1,6 +1,6 @@
 import 'order.dart';
 
-enum StopStatus { pending, completed }
+enum StopStatus { pending, arrived, completed }
 
 class Stop {
   const Stop({
@@ -13,7 +13,11 @@ class Stop {
     required this.lat,
     required this.lng,
     required this.orders,
+    this.contactPhone = '',
+    this.etaMinutes = 0,
+    this.distanceKm = 0,
     this.status = StopStatus.pending,
+    this.arrivedAt,
   });
 
   final String id;
@@ -25,9 +29,20 @@ class Stop {
   final double lat;
   final double lng;
   final List<Order> orders;
-  final StopStatus status;
+  final String contactPhone;
 
-  Stop copyWith({StopStatus? status}) => Stop(
+  /// Driving time and distance from the previous point (mock routing data).
+  final int etaMinutes;
+  final double distanceKm;
+  final StopStatus status;
+  final DateTime? arrivedAt;
+
+  Stop copyWith({
+    StopStatus? status,
+    DateTime? arrivedAt,
+    List<Order>? orders,
+  }) =>
+      Stop(
         id: id,
         sequence: sequence,
         name: name,
@@ -36,7 +51,11 @@ class Stop {
         dock: dock,
         lat: lat,
         lng: lng,
-        orders: orders,
+        orders: orders ?? this.orders,
+        contactPhone: contactPhone,
+        etaMinutes: etaMinutes,
+        distanceKm: distanceKm,
         status: status ?? this.status,
+        arrivedAt: arrivedAt ?? this.arrivedAt,
       );
 }
