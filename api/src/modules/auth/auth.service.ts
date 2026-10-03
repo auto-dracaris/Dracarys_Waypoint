@@ -12,14 +12,17 @@ import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { Depot } from '../../common/enums/depot.enum';
+import { ImagePurpose } from '../../common/enums/image-purpose.enum';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { UserStatus } from '../../common/enums/user-status.enum';
 import { DepotsRepository } from '../../common/repositories/depots.repository';
 import { SmsService } from '../../common/sms/sms.service';
 import { formatPhoneNumber } from '../../common/utils/phone.util';
+import { vehicleLabel } from '../../common/utils/vehicle.util';
 import { User } from '../../database/entities/user.entity';
 import { UserOtp } from '../../database/entities/user-otp.entity';
 import { UserSession } from '../../database/entities/user-session.entity';
+import { ImagesService } from '../images/images.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -50,6 +53,7 @@ export class AuthService {
     private readonly userOtpRepository: UserOtpRepository,
     private readonly depotsRepository: DepotsRepository,
     private readonly smsService: SmsService,
+    private readonly imagesService: ImagesService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<ApiResponseDto> {
@@ -246,7 +250,7 @@ export class AuthService {
 
     return new ApiResponseDto(HttpStatus.OK, 'Logged in successfully', {
       ...tokens,
-      user: this.toPublic(user),
+      user: await this.toProfile(user),
     });
   }
 
@@ -256,7 +260,7 @@ export class AuthService {
     return new ApiResponseDto(
       HttpStatus.OK,
       'Profile retrieved successfully',
-      this.toPublic(user),
+      await this.toProfile(user),
     );
   }
 
@@ -265,14 +269,37 @@ export class AuthService {
     updateMeDto: UpdateMeDto,
   ): Promise<ApiResponseDto> {
     const user = await this.findUserOrThrow(userId);
-    Object.assign(user, updateMeDto);
+    const { avatarImageId, ...fields } = updateMeDto;
+    Object.assign(user, fields);
     user.updatedById = userId;
+
+    // Undefined leaves the picture alone; null removes it; an id replaces it.
+    const replaced =
+      avatarImageId !== undefined && avatarImageId !== user.avatarImageId
+        ? user.avatarImage
+        : null;
+    if (avatarImageId !== undefined) {
+      const image = avatarImageId
+        ? await this.imagesService.findForUse(
+            avatarImageId,
+            ImagePurpose.AVATAR,
+            userId,
+          )
+        : null;
+      // The relation is set with the id: a loaded relation would otherwise
+      // win over the changed column on save.
+      user.avatarImageId = image?.id ?? null;
+      user.avatarImage = image;
+    }
     const saved = await this.userAuthRepository.save(user);
+    if (replaced) {
+      await this.imagesService.remove(replaced);
+    }
 
     return new ApiResponseDto(
       HttpStatus.OK,
       'Profile updated successfully',
-      this.toPublic(saved),
+      await this.toProfile(saved),
     );
   }
 
@@ -338,7 +365,7 @@ export class AuthService {
       await queryRunner.commitTransaction();
       return new ApiResponseDto(HttpStatus.OK, 'Token refreshed successfully', {
         ...tokens,
-        user: this.toPublic(user),
+        user: await this.toProfile(user),
       });
     } catch (error: any) {
       await queryRunner.rollbackTransaction();
@@ -402,9 +429,42 @@ export class AuthService {
     return user;
   }
 
+  // Without the password hash, and with the profile picture as its URL.
   private toPublic(user: User) {
-    const { passwordHash: _passwordHash, ...result } = user;
-    return result;
+    const { passwordHash: _passwordHash, avatarImage, ...result } = user;
+    return { ...result, avatar: avatarImage?.url ?? null };
+  }
+
+  /**
+   * The user as a client sees it. A driver also gets the `driver` block the
+   * handset works from: their code, home depot and the vehicle they are on.
+   */
+  private async toProfile(user: User) {
+    const profile = this.toPublic(user);
+    if (user.role !== UserRole.DRIVER) {
+      return profile;
+    }
+    const [depot, vehicle] = await Promise.all([
+      this.depotsRepository.findById(user.depotId),
+      this.userAuthRepository.findVehicleOfDriver(user.id),
+    ]);
+
+    return {
+      ...profile,
+      driver: {
+        code: `DRV-${String(user.id).padStart(4, '0')}`,
+        depot: depot?.name ?? null,
+        depotLocation:
+          depot?.lat != null && depot.lng != null
+            ? { lat: depot.lat, lng: depot.lng }
+            : null,
+        vehicle: vehicle && {
+          id: vehicle.id,
+          plate: vehicle.uniqueId,
+          type: vehicleLabel(vehicle),
+        },
+      },
+    };
   }
 
   private toMilliseconds(duration: string): number {

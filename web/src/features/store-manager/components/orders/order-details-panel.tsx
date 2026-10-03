@@ -1,56 +1,47 @@
-import { Check, Package, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/shadcn/button";
+import { Check, Package } from 'lucide-react'
+import { Button } from '@/components/ui/shadcn/button'
+import { statusStyles } from '../../order-format'
+import type { OrderTableRow } from './orders-table'
 
 export interface OrderDetailsData {
-  id: string;
-  location: string;
-  status: string;
-  statusVariant: "yellow" | "green" | "red";
-  timelineStatus: string;
-  timelineTime: string;
-  timelineMessage: string;
-  requestedDelivery: string;
-  requirement: string;
-  quantity: string;
-  totalWeight: string;
-  totalVolume: string;
-  receivingWindow: string;
-  arrivalTime: string;
+  id: string
+  location: string
+  status: string
+  statusVariant: OrderTableRow['statusVariant']
+  timelineStatus: string
+  timelineTime: string
+  timelineMessage: string
+  requestedDelivery: string
+  requirement: string
+  quantity: string
+  totalWeight: string
+  totalVolume: string
+  receivingWindow: string
+  arrivalTime: string
+  notes: string
 }
 
 interface OrderDetailsPanelProps {
-  data: OrderDetailsData | null;
+  data: OrderDetailsData | null
+  // Set while the order can still be withdrawn (confirmed, before its day closes).
+  onCancel?: () => void
+  cancelling?: boolean
+  cancelError?: string
 }
 
-export function OrderDetailsPanel({ data }: OrderDetailsPanelProps) {
-  if (!data)
-    return (
-      <div className="w-[420px] p-6 bg-white rounded-xl border border-neutral-200">
-        Select an order...
-      </div>
-    );
-
-  const statusStyles = {
-    yellow: "bg-yellow-100 text-yellow-700",
-    green: "bg-lime-100 text-lime-700",
-    red: "bg-red-100 text-red-700",
-  }[data.statusVariant];
+export function OrderDetailsPanel({ data, onCancel, cancelling = false, cancelError = '' }: OrderDetailsPanelProps) {
+  if (!data) return <div className="w-[420px] shrink-0 p-6 bg-white rounded-xl border border-neutral-200 text-stone-500 text-sm font-sans">Select an order to see its details.</div>
 
   return (
     <div className="w-[420px] shrink-0 bg-white rounded-xl border border-neutral-200 shadow-sm flex flex-col overflow-hidden">
       {/* Header */}
       <div className="p-6 border-b border-neutral-200 flex justify-between items-start">
         <div className="flex flex-col gap-1">
-          <h2 className="text-stone-900 text-3xl font-medium font-sans">
-            {data.id}
-          </h2>
+          <h2 className="text-stone-900 text-3xl font-medium font-sans">{data.id}</h2>
           <p className="text-stone-500 text-sm font-sans">{data.location}</p>
         </div>
-        <div
-          className={`px-2.5 py-1 rounded-full text-xs font-medium font-sans flex items-center gap-1.5 ${statusStyles}`}
-        >
-          <span className="text-xs">🕒</span>{" "}
-          {/* Replace with Lucide Clock if preferred */}
+        <div className={`px-2.5 py-1 rounded-full text-xs font-medium font-sans flex items-center gap-1.5 ${statusStyles[data.statusVariant]}`}>
+          <span className="text-xs">🕒</span> {/* Replace with Lucide Clock if preferred */}
           {data.status}
         </div>
       </div>
@@ -66,104 +57,78 @@ export function OrderDetailsPanel({ data }: OrderDetailsPanelProps) {
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-stone-900 text-sm font-semibold font-sans">
-                {data.timelineStatus}
-              </span>
-              <span className="text-stone-500 text-xs font-sans">
-                {data.timelineTime}
-              </span>
+              <span className="text-stone-900 text-sm font-semibold font-sans">{data.timelineStatus}</span>
+              <span className="text-stone-500 text-xs font-sans">{data.timelineTime}</span>
             </div>
           </div>
-          <p className="text-stone-500 text-sm font-sans leading-relaxed">
-            {data.timelineMessage}
-          </p>
+          <p className="text-stone-500 text-sm font-sans leading-relaxed">{data.timelineMessage}</p>
         </div>
 
         {/* Order Details List */}
         <div className="p-6 border-b border-neutral-200 flex flex-col gap-4">
-          <h3 className="text-stone-900 text-base font-semibold font-sans">
-            Order details
-          </h3>
+          <h3 className="text-stone-900 text-base font-semibold font-sans">Order details</h3>
           <div className="flex flex-col gap-3">
             <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">
-                Requested delivery
-              </span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">
-                {data.requestedDelivery}
-              </span>
+              <span className="text-stone-500 text-sm font-sans w-40">Requested delivery</span>
+              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">{data.requestedDelivery}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">
-                Requirement
-              </span>
+              <span className="text-stone-500 text-sm font-sans w-40">Requirement</span>
               <span className="text-stone-900 text-sm font-semibold font-sans flex items-center gap-2 flex-1">
                 <Package className="w-4 h-4 text-stone-700" />
                 {data.requirement}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">
-                Quantity
-              </span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">
-                {data.quantity}
-              </span>
+              <span className="text-stone-500 text-sm font-sans w-40">Quantity</span>
+              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">{data.quantity}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">
-                Total weight
-              </span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">
-                {data.totalWeight}
-              </span>
+              <span className="text-stone-500 text-sm font-sans w-40">Total weight</span>
+              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">{data.totalWeight}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">
-                Total volume
-              </span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">
-                {data.totalVolume}
-              </span>
+              <span className="text-stone-500 text-sm font-sans w-40">Total volume</span>
+              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">{data.totalVolume}</span>
             </div>
           </div>
         </div>
 
         {/* Delivery Info */}
         <div className="p-6 flex flex-col gap-4">
-          <h3 className="text-stone-900 text-base font-semibold font-sans">
-            Delivery
-          </h3>
+          <h3 className="text-stone-900 text-base font-semibold font-sans">Delivery</h3>
           <div className="flex flex-col gap-3">
             <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">
-                Receiving window
-              </span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">
-                {data.receivingWindow}
-              </span>
+              <span className="text-stone-500 text-sm font-sans w-40">Delivery window</span>
+              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">{data.receivingWindow}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">
-                Arrival time
-              </span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">
-                {data.arrivalTime}
-              </span>
+              <span className="text-stone-500 text-sm font-sans w-40">Arrival time</span>
+              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">{data.arrivalTime}</span>
             </div>
+            {data.notes && (
+              <div className="flex justify-between items-start">
+                <span className="text-stone-500 text-sm font-sans w-40">Delivery notes</span>
+                <span className="text-stone-900 text-sm font-sans flex-1">{data.notes}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Footer Action */}
-      <div className="p-6 pt-0 bg-white">
-        <Button
-          variant="outline"
-          className="w-full h-10 border-neutral-300 text-stone-900 font-semibold shadow-none flex gap-2"
-        >
-          View full order <ArrowRight className="w-4 h-4" />
-        </Button>
-      </div>
+      {onCancel && (
+        <div className="p-6 pt-0 bg-white flex flex-col gap-2">
+          {cancelError && (
+            <p role="alert" className="text-red-600 text-sm font-sans">
+              {cancelError}
+            </p>
+          )}
+          <Button variant="outline" disabled={cancelling} onClick={onCancel} className="w-full h-10 border-neutral-300 text-red-700 font-semibold shadow-none">
+            {cancelling ? 'Cancelling…' : 'Cancel order'}
+          </Button>
+        </div>
+      )}
     </div>
-  );
+  )
 }

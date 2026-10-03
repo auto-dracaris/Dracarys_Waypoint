@@ -12,11 +12,19 @@ export function StageNotice({ title, onClose, returnLabel = 'Back to overview' }
   return (
     <dialog ref={dialog} className="stage-notice" onCancel={onClose} onClose={onClose} aria-labelledby="notice-title" aria-describedby="notice-description">
       <div className="flex items-center justify-between gap-wp-space-xl">
-        <h2 id="notice-title" className="type-text-lg-semibold">{title}</h2>
-        <IconButton type="button" onClick={onClose} aria-label="Close notice" className=""><CloseRounded fontSize="inherit" /></IconButton>
+        <h2 id="notice-title" className="type-text-lg-semibold">
+          {title}
+        </h2>
+        <IconButton type="button" onClick={onClose} aria-label="Close notice" className="">
+          <CloseRounded fontSize="inherit" />
+        </IconButton>
       </div>
-      <p id="notice-description" className="mt-wp-space-lg text-wp-text-secondary type-text-sm-regular">This will be added in the next development stage.</p>
-      <Button onClick={onClose} className="mt-wp-space-3xl">{returnLabel}</Button>
+      <p id="notice-description" className="mt-wp-space-lg text-wp-text-secondary type-text-sm-regular">
+        This will be added in the next development stage.
+      </p>
+      <Button onClick={onClose} className="mt-wp-space-3xl">
+        {returnLabel}
+      </Button>
     </dialog>
   )
 }

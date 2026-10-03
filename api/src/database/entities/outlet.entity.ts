@@ -4,6 +4,7 @@ import { AutoIncBaseEntity } from '../../common/entities/autoinc-base.entity';
 import { Brand } from '../../common/enums/brand.enum';
 import { DockType } from '../../common/enums/dock-type.enum';
 import { ParkingConstraint } from '../../common/enums/parking-constraint.enum';
+import { decimalTransformer } from '../../common/utils/decimal.transformer';
 import { Depot } from './depot.entity';
 import { District } from './district.entity';
 
@@ -61,6 +62,10 @@ export class Outlet extends AutoIncBaseEntity {
   @Column({ name: 'window_close_time', type: 'time' })
   windowCloseTime: string;
 
+  // Dispatcher-controlled: an unavailable outlet is left out of planning.
+  @Column({ name: 'is_available', type: 'boolean', default: true })
+  isAvailable: boolean;
+
   @Column({ type: 'text', nullable: true })
   address: string | null;
 
@@ -71,4 +76,24 @@ export class Outlet extends AutoIncBaseEntity {
     nullable: true,
   })
   contactPhone: string | null;
+
+  // Where it is on the map. Not in the shared dataset, so seeded approximately
+  // and nullable until someone corrects it.
+  @Column({
+    type: 'decimal',
+    precision: 9,
+    scale: 6,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
+  lat: number | null;
+
+  @Column({
+    type: 'decimal',
+    precision: 9,
+    scale: 6,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
+  lng: number | null;
 }

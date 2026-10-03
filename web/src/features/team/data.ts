@@ -3,7 +3,10 @@ import type { User } from '@/features/auth/api'
 export type StaffRole = 'Dispatcher' | 'Store Manager' | 'Driver' | 'Loader'
 export type TeamFilter = 'All' | 'Dispatchers' | 'Store Managers' | 'Drivers' | 'Loaders'
 export type TeamSortKey = 'name' | 'phone' | 'role' | 'depot' | 'assignment'
-export interface TeamSort { key: TeamSortKey | null; direction: 'ascending' | 'descending' }
+export interface TeamSort {
+  key: TeamSortKey | null
+  direction: 'ascending' | 'descending'
+}
 export interface StaffTrip {
   id: string
   title: string
@@ -11,6 +14,10 @@ export interface StaffTrip {
   recordedStops: number
   totalStops: number
   nextStop?: string
+}
+export interface OutletOption {
+  id: string
+  label: string
 }
 export interface StaffMember {
   id: string
@@ -28,6 +35,8 @@ export interface StaffMember {
   vehicleId: string | null
   vehicleDbId: number | null
   vehicleLabel: string | null
+  // The outlet a store manager orders for, by its dataset id (e.g. OUT001).
+  outletId: string | null
   assignment: string
 }
 // Mirrors api/src/common/enums/depot.enum.ts; the API takes and returns a depot by this name.
@@ -40,12 +49,14 @@ const filterRoles: Record<Exclude<TeamFilter, 'All'>, StaffRole> = { Dispatchers
 const matchesFilter = (member: StaffMember, filter: TeamFilter) => filter === 'All' || member.role === filterRoles[filter]
 
 export function countTeam(members: StaffMember[], filter: TeamFilter): number {
-  return members.filter(member => matchesFilter(member, filter)).length
+  return members.filter((member) => matchesFilter(member, filter)).length
 }
 
 export function selectTeam(members: StaffMember[], filter: TeamFilter, query: string, sort: TeamSort): StaffMember[] {
   const term = query.trim().toLowerCase()
-  const visible = members.filter(member => matchesFilter(member, filter) && `${member.name} ${member.phone} ${member.role} ${member.status} ${member.depot} ${member.assignment}`.toLowerCase().includes(term))
+  const visible = members.filter(
+    (member) => matchesFilter(member, filter) && `${member.name} ${member.phone} ${member.role} ${member.status} ${member.depot} ${member.assignment}`.toLowerCase().includes(term),
+  )
   if (sort.key) {
     const key = sort.key
     visible.sort((a, b) => a[key].localeCompare(b[key]) * (sort.direction === 'ascending' ? 1 : -1))

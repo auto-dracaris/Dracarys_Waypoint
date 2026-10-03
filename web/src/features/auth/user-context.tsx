@@ -17,7 +17,9 @@ function loadSession(): Session | null {
   try {
     const raw = window.localStorage.getItem(sessionKey) ?? window.sessionStorage.getItem(sessionKey)
     return raw ? JSON.parse(raw) : null
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 function saveSession(session: Session | null, remember = false): void {
@@ -25,7 +27,9 @@ function saveSession(session: Session | null, remember = false): void {
     window.localStorage.removeItem(sessionKey)
     window.sessionStorage.removeItem(sessionKey)
     if (session) (remember ? window.localStorage : window.sessionStorage).setItem(sessionKey, JSON.stringify(session))
-  } catch { /* The session still lives in memory when browser storage is unavailable. */ }
+  } catch {
+    /* The session still lives in memory when browser storage is unavailable. */
+  }
 }
 
 export function UserProvider({ children }: { children: ReactNode }) {
@@ -33,7 +37,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   // An expired or revoked token ends the session; RequireRole then shows the login page.
   useEffect(() => {
-    setUnauthorizedHandler(() => { saveSession(null); setSession(null) })
+    setUnauthorizedHandler(() => {
+      saveSession(null)
+      setSession(null)
+    })
     return () => setUnauthorizedHandler(undefined)
   }, [])
 
@@ -54,9 +61,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setSession(null)
   }
 
-  return <UserContext.Provider value={{ user: session?.user ?? null, accessToken: session?.accessToken ?? null, login, logout }}>
-    {children}
-  </UserContext.Provider>
+  return <UserContext.Provider value={{ user: session?.user ?? null, accessToken: session?.accessToken ?? null, login, logout }}>{children}</UserContext.Provider>
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

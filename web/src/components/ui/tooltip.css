@@ -1,10 +1,56 @@
-.wp-tooltip { position: fixed; visibility: hidden; display: flex; flex-direction: column; gap: var(--wp-space-xs); z-index: 40; width: max-content; max-width: calc(100vw - var(--wp-space-xl)); padding: var(--wp-space-md) var(--wp-space-lg); border-radius: var(--wp-radius-sm); background: var(--wp-neutral-950); color: var(--wp-text-white); overflow-wrap: anywhere; text-align: left; cursor: default; box-shadow: 0 var(--wp-space-xxs) var(--wp-space-xs) rgb(from var(--wp-neutral-950) r g b / 18%); }
+.wp-tooltip {
+  position: fixed;
+  visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+  z-index: 40;
+  width: max-content;
+  max-width: calc(100vw - var(--wp-space-xl));
+  padding: var(--wp-space-md) var(--wp-space-lg);
+  border-radius: var(--wp-radius-sm);
+  background: var(--wp-neutral-950);
+  color: var(--wp-text-white);
+  overflow-wrap: anywhere;
+  text-align: left;
+  cursor: default;
+  box-shadow: 0 var(--wp-space-xxs) var(--wp-space-xs) rgb(from var(--wp-neutral-950) r g b / 18%);
+}
 /* Keep the gap hoverable when moving from the trigger onto its tooltip. */
-.wp-tooltip::before { content: ''; position: absolute; inset: calc(-1 * var(--wp-space-md)); z-index: -1; }
-.wp-tooltip--rich { width: var(--wp-spacing-64); }
-.wp-tooltip-description { color: var(--wp-neutral-300); }
-.wp-tooltip .wp-tooltip-arrow { position: absolute; width: var(--wp-space-xl); height: var(--wp-space-xl); color: var(--wp-neutral-950); }
-.wp-tooltip[data-placement="top"] .wp-tooltip-arrow { top: calc(100% - var(--wp-space-xs)); left: calc(50% - var(--wp-space-md)); }
-.wp-tooltip[data-placement="bottom"] .wp-tooltip-arrow { bottom: calc(100% - var(--wp-space-xs)); left: calc(50% - var(--wp-space-md)); transform: rotate(180deg); }
-.wp-tooltip[data-placement="left"] .wp-tooltip-arrow { left: calc(100% - var(--wp-space-xs)); top: calc(50% - var(--wp-space-md)); transform: rotate(-90deg); }
-.wp-tooltip[data-placement="right"] .wp-tooltip-arrow { right: calc(100% - var(--wp-space-xs)); top: calc(50% - var(--wp-space-md)); transform: rotate(90deg); }
+.wp-tooltip::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--wp-space-md));
+  z-index: -1;
+}
+.wp-tooltip--rich {
+  width: var(--wp-spacing-64);
+}
+.wp-tooltip-description {
+  color: var(--wp-neutral-300);
+}
+.wp-tooltip .wp-tooltip-arrow {
+  position: absolute;
+  width: var(--wp-space-xl);
+  height: var(--wp-space-xl);
+  color: var(--wp-neutral-950);
+}
+.wp-tooltip[data-placement='top'] .wp-tooltip-arrow {
+  top: calc(100% - var(--wp-space-xs));
+  left: calc(50% - var(--wp-space-md));
+}
+.wp-tooltip[data-placement='bottom'] .wp-tooltip-arrow {
+  bottom: calc(100% - var(--wp-space-xs));
+  left: calc(50% - var(--wp-space-md));
+  transform: rotate(180deg);
+}
+.wp-tooltip[data-placement='left'] .wp-tooltip-arrow {
+  left: calc(100% - var(--wp-space-xs));
+  top: calc(50% - var(--wp-space-md));
+  transform: rotate(-90deg);
+}
+.wp-tooltip[data-placement='right'] .wp-tooltip-arrow {
+  right: calc(100% - var(--wp-space-xs));
+  top: calc(50% - var(--wp-space-md));
+  transform: rotate(90deg);
+}

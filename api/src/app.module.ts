@@ -7,7 +7,12 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ImagesModule } from './modules/images/images.module';
+import { OrdersModule } from './modules/orders/orders.module';
 import { OutletsModule } from './modules/outlets/outlets.module';
+import { PlanningModule } from './modules/planning/planning.module';
+import { RoutingModule } from './modules/routing/routing.module';
+import { TripsModule } from './modules/trips/trips.module';
 import { UsersModule } from './modules/users/users.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
 
@@ -46,9 +51,14 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
     ScheduleModule.forRoot(),
     CommonModule,
     AuthModule,
+    ImagesModule,
     UsersModule,
     OutletsModule,
     VehiclesModule,
+    OrdersModule,
+    PlanningModule,
+    TripsModule,
+    RoutingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

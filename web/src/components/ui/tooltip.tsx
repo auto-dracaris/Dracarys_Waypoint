@@ -21,15 +21,24 @@ export function Tooltip({ children, content, description, placement = 'top', dis
   const focused = useRef(false)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const open = !!anchor && !disabled
-  function cancelClose() { clearTimeout(closeTimer.current) }
+  function cancelClose() {
+    clearTimeout(closeTimer.current)
+  }
   function scheduleClose() {
     cancelClose()
-    closeTimer.current = setTimeout(() => { if (!hovered.current && !focused.current) setAnchor(null) }, 150)
+    closeTimer.current = setTimeout(() => {
+      if (!hovered.current && !focused.current) setAnchor(null)
+    }, 150)
   }
   useEffect(() => () => clearTimeout(closeTimer.current), [])
   useEffect(() => {
     if (!open) return
-    function dismiss(event: KeyboardEvent) { if (event.key === 'Escape') { clearTimeout(closeTimer.current); setAnchor(null) } }
+    function dismiss(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        clearTimeout(closeTimer.current)
+        setAnchor(null)
+      }
+    }
     document.addEventListener('keydown', dismiss)
     return () => document.removeEventListener('keydown', dismiss)
   }, [open])
@@ -60,20 +69,68 @@ export function Tooltip({ children, content, description, placement = 'top', dis
     position()
     window.addEventListener('resize', position)
     window.addEventListener('scroll', position, true)
-    return () => { window.removeEventListener('resize', position); window.removeEventListener('scroll', position, true) }
+    return () => {
+      window.removeEventListener('resize', position)
+      window.removeEventListener('scroll', position, true)
+    }
   }, [open, anchor, placement, content, description])
   const original = children.props
   const Trigger = children.type
-  const trigger = <Trigger {...original} key={children.key}
-    aria-describedby={[original['aria-describedby'], open ? id : undefined].filter(Boolean).join(' ') || undefined}
-    onPointerEnter={(event: PointerEvent<HTMLElement>) => { hovered.current = true; cancelClose(); if (!disabled) setAnchor(event.currentTarget); original.onPointerEnter?.(event) }}
-    onPointerLeave={(event: PointerEvent<HTMLElement>) => { hovered.current = false; scheduleClose(); original.onPointerLeave?.(event) }}
-    onFocus={(event: FocusEvent<HTMLElement>) => { focused.current = true; cancelClose(); if (!disabled) setAnchor(event.currentTarget); original.onFocus?.(event) }}
-    onBlur={(event: FocusEvent<HTMLElement>) => { focused.current = false; scheduleClose(); original.onBlur?.(event) }} />
-  return <>{trigger}{open && createPortal(<span ref={popup} id={id} role="tooltip" data-placement={placement} className={`wp-tooltip ${description ? 'wp-tooltip--rich' : ''} type-text-xs-regular`}
-    onPointerEnter={() => { hovered.current = true; cancelClose() }} onPointerLeave={() => { hovered.current = false; scheduleClose() }}>
-    <span className={description ? 'type-text-xs-semibold' : ''}>{content}</span>
-    {description && <span className="wp-tooltip-description">{description}</span>}
-    {showArrow && <ArrowDropDownRounded className="wp-tooltip-arrow" aria-hidden="true" fontSize="inherit" />}
-  </span>, anchor.closest('dialog[open]') ?? document.body)}</>
+  const trigger = (
+    <Trigger
+      {...original}
+      key={children.key}
+      aria-describedby={[original['aria-describedby'], open ? id : undefined].filter(Boolean).join(' ') || undefined}
+      onPointerEnter={(event: PointerEvent<HTMLElement>) => {
+        hovered.current = true
+        cancelClose()
+        if (!disabled) setAnchor(event.currentTarget)
+        original.onPointerEnter?.(event)
+      }}
+      onPointerLeave={(event: PointerEvent<HTMLElement>) => {
+        hovered.current = false
+        scheduleClose()
+        original.onPointerLeave?.(event)
+      }}
+      onFocus={(event: FocusEvent<HTMLElement>) => {
+        focused.current = true
+        cancelClose()
+        if (!disabled) setAnchor(event.currentTarget)
+        original.onFocus?.(event)
+      }}
+      onBlur={(event: FocusEvent<HTMLElement>) => {
+        focused.current = false
+        scheduleClose()
+        original.onBlur?.(event)
+      }}
+    />
+  )
+  return (
+    <>
+      {trigger}
+      {open &&
+        createPortal(
+          <span
+            ref={popup}
+            id={id}
+            role="tooltip"
+            data-placement={placement}
+            className={`wp-tooltip ${description ? 'wp-tooltip--rich' : ''} type-text-xs-regular`}
+            onPointerEnter={() => {
+              hovered.current = true
+              cancelClose()
+            }}
+            onPointerLeave={() => {
+              hovered.current = false
+              scheduleClose()
+            }}
+          >
+            <span className={description ? 'type-text-xs-semibold' : ''}>{content}</span>
+            {description && <span className="wp-tooltip-description">{description}</span>}
+            {showArrow && <ArrowDropDownRounded className="wp-tooltip-arrow" aria-hidden="true" fontSize="inherit" />}
+          </span>,
+          anchor.closest('dialog[open]') ?? document.body,
+        )}
+    </>
+  )
 }

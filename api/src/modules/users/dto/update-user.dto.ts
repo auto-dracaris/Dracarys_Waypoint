@@ -23,14 +23,17 @@ export class UpdateUserDto {
   @MaxLength(20, { message: 'Phone must be at most 20 characters' })
   phone?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Avatar must be a string' })
-  avatar?: string;
-
   // By name, the same way vehicles take their depot.
   @IsOptional()
   @IsEnum(Depot, {
     message: `Depot must be one of: ${Object.values(Depot).join(', ')}`,
   })
   depot?: Depot;
+
+  // The outlet a store manager orders for, by its dataset id (e.g. OUT001);
+  // null unlinks it.
+  @IsOptional()
+  @IsString({ message: 'Outlet must be an outlet ID' })
+  @MaxLength(20, { message: 'Outlet must be at most 20 characters' })
+  outlet?: string | null;
 }
