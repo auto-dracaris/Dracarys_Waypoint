@@ -33,7 +33,7 @@ class AuthController extends AsyncNotifier<Driver?> {
           {required String phone, required String otp, required int otpId}) =>
       _repo.verifyOtp(phone: phone, otp: otp, otpId: otpId);
 
-  Future<void> resendOtp({required String phone}) =>
+  Future<int> resendOtp({required String phone}) =>
       _repo.resendOtp(phone: phone);
 
   Future<void> forgotPassword({required String phone}) =>

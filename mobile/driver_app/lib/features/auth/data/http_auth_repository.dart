@@ -94,8 +94,11 @@ class HttpAuthRepository implements AuthRepository {
           body: {'phone': phone, 'otp': otp, 'otpId': otpId}, auth: false));
 
   @override
-  Future<void> resendOtp({required String phone}) => _guard(
-      () => _api.post('/auth/resend-otp', body: {'phone': phone}, auth: false));
+  Future<int> resendOtp({required String phone}) => _guard(() async {
+        final data = await _api.post('/auth/resend-otp',
+            body: {'phone': phone}, auth: false) as Map<String, dynamic>;
+        return data['otpId'] as int;
+      });
 
   @override
   Future<void> forgotPassword({required String phone}) => _guard(() =>

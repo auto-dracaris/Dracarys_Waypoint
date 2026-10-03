@@ -31,7 +31,9 @@ abstract interface class AuthRepository {
     required String otp,
     required int otpId,
   });
-  Future<void> resendOtp({required String phone});
+  /// Sends a fresh code. The old one stops working: returns the new code's id,
+  /// which [verifyOtp] must then be given.
+  Future<int> resendOtp({required String phone});
   Future<void> forgotPassword({required String phone});
   Future<void> resetPassword({
     required String phone,

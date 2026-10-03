@@ -17,6 +17,8 @@ class MockAuthRepository implements AuthRepository {
   final Duration latency;
   final Map<String, Driver> _registered = {};
   final Set<String> _pending = {};
+  final Map<String, int> _otpIds = {};
+  int _nextOtpId = 1;
   Driver? _current;
 
   Future<void> _wait() => Future<void>.delayed(latency);
@@ -63,7 +65,7 @@ class MockAuthRepository implements AuthRepository {
       depot: 'Peliyagoda depot',
     );
     _pending.add(key);
-    return OtpChallenge(phone: phone, otpId: n);
+    return OtpChallenge(phone: phone, otpId: _otpIds[key] = _nextOtpId++);
   }
 
   @override
@@ -73,14 +75,18 @@ class MockAuthRepository implements AuthRepository {
     required int otpId,
   }) async {
     await _wait();
-    if (otp != validOtp) {
+    final key = _key(phone);
+    if (otp != validOtp || _otpIds[key] != otpId) {
       throw const AuthException('Invalid or expired code');
     }
-    _pending.remove(_key(phone));
+    _pending.remove(key);
   }
 
   @override
-  Future<void> resendOtp({required String phone}) => _wait();
+  Future<int> resendOtp({required String phone}) async {
+    await _wait();
+    return _otpIds[_key(phone)] = _nextOtpId++;
+  }
 
   @override
   Future<void> forgotPassword({required String phone}) => _wait();

@@ -22,6 +22,10 @@ class OtpScreen extends ConsumerStatefulWidget {
 class _OtpScreenState extends AuthFormState<OtpScreen> {
   final _otp = TextEditingController();
 
+  /// Starts as the sign-up's code id; a resend replaces it, because the API
+  /// voids the old code and only accepts the newest id.
+  late int _otpId = widget.otpId;
+
   @override
   void dispose() {
     _otp.dispose();
@@ -30,9 +34,10 @@ class _OtpScreenState extends AuthFormState<OtpScreen> {
 
   Future<void> _resend() async {
     try {
-      await ref
+      final id = await ref
           .read(authControllerProvider.notifier)
           .resendOtp(phone: widget.phone);
+      if (mounted) setState(() => _otpId = id);
     } on AuthException catch (e) {
       if (mounted) setState(() => error = e.message);
     }
@@ -65,7 +70,7 @@ class _OtpScreenState extends AuthFormState<OtpScreen> {
             await ref.read(authControllerProvider.notifier).verifyOtp(
                 phone: widget.phone,
                 otp: _otp.text.trim(),
-                otpId: widget.otpId);
+                otpId: _otpId);
             if (!context.mounted) return;
             context.go(Uri(path: '/login', queryParameters: {
               'message': 'Phone verified. Sign in to continue.'

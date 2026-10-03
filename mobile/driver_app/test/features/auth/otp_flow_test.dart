@@ -52,6 +52,15 @@ void main() {
     expect(find.text('Phone verified. Sign in to continue.'), findsOneWidget);
   });
 
+  testWidgets('verifying after a resend uses the new code id', (tester) async {
+    await openSignUp(tester);
+    await fillSignUp(tester);
+    await tapKey(tester, 'otp-resend');
+    await tester.enterText(find.byKey(const Key('otp')), '123456');
+    await tapKey(tester, 'otp-submit');
+    expect(find.text('Phone verified. Sign in to continue.'), findsOneWidget);
+  });
+
   testWidgets('a wrong OTP shows the error and stays', (tester) async {
     await openSignUp(tester);
     await fillSignUp(tester);

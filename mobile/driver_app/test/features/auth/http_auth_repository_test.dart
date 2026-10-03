@@ -164,7 +164,8 @@ void main() {
     final seen = <String, Object?>{};
     final t = build((req) {
       seen[req.url.path] = jsonDecode(req.body);
-      return envelope(200, 'ok', null);
+      return envelope(
+          200, 'ok', req.url.path.endsWith('/resend-otp') ? {'otpId': 8} : null);
     });
     await t.repo.verifyOtp(phone: '0771111111', otp: '123456', otpId: 7);
     await t.repo.resendOtp(phone: '0771111111');
@@ -185,6 +186,11 @@ void main() {
         'newPassword': 'Newpass1!'
       },
     });
+  });
+
+  test('resendOtp returns the new otpId the API issued', () async {
+    final t = build((_) => envelope(200, 'OTP resent successfully', {'otpId': 8}));
+    expect(await t.repo.resendOtp(phone: '0771111111'), 8);
   });
 
   test('logout calls the API and clears tokens even if the call fails',

@@ -118,13 +118,23 @@ class ApiClient {
           refresh: data['refreshToken'] as String);
       return true;
     }
-    await _signOut();
-    return false;
+    // Only a rejected token ends the session. A 5xx or a garbled reply is the
+    // server having a bad moment: keep the 30-day session and report it.
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      await _signOut();
+      return false;
+    }
+    throw ApiException(
+        response.statusCode, "Couldn't refresh the session. Try again.");
   }
 
+  /// Ends the local session. Signals only when there was one to end, so stray
+  /// late 401s on a signed-out client cannot re-trigger the sign-out handler.
   Future<void> _signOut() async {
+    final hadSession =
+        await tokens.readAccess() != null || await tokens.readRefresh() != null;
     await tokens.clear();
-    onSignedOut?.call();
+    if (hadSession) onSignedOut?.call();
   }
 
   Map<String, dynamic>? _decode(http.Response r) {

@@ -119,6 +119,53 @@ void main() {
     expect(signedOut, 1);
   });
 
+  test('a 5xx on refresh keeps the session and surfaces the error', () async {
+    final tokens = InMemoryTokenStore(access: 'old', refresh: 'R1');
+    var signedOut = 0;
+    final api = clientWith(
+      MockClient((req) async => req.url.path.endsWith('/auth/refresh')
+          ? envelope(503, 'Service unavailable')
+          : envelope(401, 'Unauthorized')),
+      tokens: tokens,
+      onSignedOut: () => signedOut++,
+    );
+    await expectLater(api.get('/trips'),
+        throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 503)));
+    expect(await tokens.readAccess(), 'old');
+    expect(await tokens.readRefresh(), 'R1');
+    expect(signedOut, 0);
+  });
+
+  test('a network drop during refresh keeps the session', () async {
+    final tokens = InMemoryTokenStore(access: 'old', refresh: 'R1');
+    var signedOut = 0;
+    final api = clientWith(
+      MockClient((req) async {
+        if (req.url.path.endsWith('/auth/refresh')) {
+          throw http.ClientException('dropped');
+        }
+        return envelope(401, 'Unauthorized');
+      }),
+      tokens: tokens,
+      onSignedOut: () => signedOut++,
+    );
+    await expectLater(api.get('/trips'),
+        throwsA(isA<ApiException>().having((e) => e.isNetwork, 'isNetwork', true)));
+    expect(await tokens.readRefresh(), 'R1');
+    expect(signedOut, 0);
+  });
+
+  test('a 401 with no stored session does not signal sign-out again', () async {
+    var signedOut = 0;
+    final api = clientWith(
+      MockClient((_) async => envelope(401, 'Unauthorized')),
+      tokens: InMemoryTokenStore(),
+      onSignedOut: () => signedOut++,
+    );
+    await expectLater(api.get('/trips'), throwsA(isA<ApiException>()));
+    expect(signedOut, 0);
+  });
+
   test('concurrent 401s trigger a single refresh', () async {
     final tokens = InMemoryTokenStore(access: 'old', refresh: 'R1');
     var refreshes = 0;

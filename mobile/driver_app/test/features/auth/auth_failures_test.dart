@@ -35,7 +35,7 @@ class BrokenAuthRepository implements AuthRepository {
       throw StateError('offline');
 
   @override
-  Future<void> resendOtp({required String phone}) async =>
+  Future<int> resendOtp({required String phone}) async =>
       throw StateError('offline');
 
   @override
