@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useLayoutEffect } from 'react'
+import { Route, Routes, useLocation } from 'react-router-dom'
+import { HubLayout } from '@/components/layout/hub-layout'
+import { HubPage } from '@/components/layout/hub-page'
 import { OverviewPage } from '@/pages/overview-page'
 import { LoginPage } from '@/pages/login-page'
 import { VehiclesPage } from '@/pages/vehicles-page'
@@ -8,89 +11,45 @@ import { OrdersPage } from '@/pages/orders-page'
 import { FinalPlanReviewPage } from '@/pages/final-plan-review-page'
 import { PublishPlanConfirmationPage } from '@/pages/publish-plan-confirmation-page'
 import { LoadingExceptionReviewPage } from '@/pages/loading-exception-review-page'
-import { initialLoadingException, confirmLoadingDecision, type LoadingAction } from '@/features/operations/data'
-import { createPublishedPlan, resendNotification, type PublishedPlan } from '@/features/planning/publication'
-import { reviewedPlan } from '@/features/planning/data'
-import { Sidebar } from '@/components/layout/sidebar'
-import { StageNotice } from '@/components/ui/stage-notice'
-import { NotificationsPanel } from '@/features/notifications/components/notifications-panel'
-import { initialNotifications, markNotificationsRead, type NotificationItem } from '@/features/notifications/data'
-import { loadSidebarCollapsed, saveSidebarCollapsed } from '@/lib/sidebar-preferences'
-import '@/styles/overview.css'
+import { NotFoundPage } from '@/pages/not-found-page'
 
-function App() {
-  const [path, setPath] = useState(window.location.pathname)
-  const [navigationOpen, setNavigationOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(loadSidebarCollapsed)
-  const [notice, setNotice] = useState<string | null>(null)
-  const [notificationsOpen, setNotificationsOpen] = useState(false)
-  const [notifications, setNotifications] = useState(initialNotifications)
-  const isLogin = path === '/login'
-  const isVehicles = path === '/vehicles'
-  const isOutlets = path === '/outlets'
-  const isTeam = path === '/team'
-  const isOrders = path === '/orders'
-  const isPlanning = path === '/planning'
-  const isPublished = path === '/planning/published'
-  const isOperations = path === '/operations' || path === '/operations/loading-exception'
-  const [loadingException, setLoadingException] = useState(initialLoadingException)
-  const [publication, setPublication] = useState<PublishedPlan | null>(() => isPublished ? createPublishedPlan(reviewedPlan.date).publication : null)
-  useEffect(() => {
-    const onPopState = () => { setPath(window.location.pathname); setNavigationOpen(false); setNotice(null); setNotificationsOpen(false) }
-    window.addEventListener('popstate', onPopState)
-    return () => window.removeEventListener('popstate', onPopState)
-  }, [])
-  useEffect(() => { document.title = `WayPoint — ${isLogin ? 'Admin Sign In' : isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isOrders ? 'Confirmed Orders' : isPlanning ? 'Final Plan Review' : isPublished ? 'Plan Published' : isOperations ? 'Loading Exception Review' : 'Delivery Overview'}` }, [isLogin, isVehicles, isOutlets, isTeam, isOrders, isPlanning, isPublished, isOperations])
-  useEffect(() => { saveSidebarCollapsed(sidebarCollapsed) }, [sidebarCollapsed])
-  function navigate(page: string, recordId?: string) {
-    setNavigationOpen(false)
-    if (page === 'Order notifications' || page === 'Notifications') { setNotice(null); setNotificationsOpen(true); return }
-    setNotificationsOpen(false)
-    const routes: Record<string, string> = { 'Log out': '/login', 'Sign in': '/login', Overview: '/', Home: '/', Dashboard: '/', Vehicles: '/vehicles', Outlets: '/outlets', Team: '/team', Orders: '/orders', Planning: '/planning', 'Delivery planning': '/planning', 'Publish plan confirmation': '/planning/published', Operations: '/operations/loading-exception', 'Loading exception review': '/operations/loading-exception' }
-    const route = routes[page]
-    const queryKey = page === 'Vehicles' ? 'vehicle' : page === 'Orders' ? 'order' : null
-    const target = route && queryKey && recordId ? `${route}?${queryKey}=${encodeURIComponent(recordId)}` : route
-    if (target === undefined) { setNotice(page); return }
-    if (target !== `${window.location.pathname}${window.location.search}`) window.history.pushState(null, '', target)
-    setPath(target.split('?')[0])
-    // Orders can already be mounted beneath the notifications panel.
-    if (page === 'Orders') window.dispatchEvent(new Event('waypoint:order-selection'))
-    setNotice(null)
-    window.scrollTo(0, 0)
-  }
-  function publish(date: string) {
-    const result = createPublishedPlan(date)
-    if (result.error) { setNotice(result.error); return }
-    setPublication(previous => previous ?? result.publication)
-    navigate('Publish plan confirmation')
-  }
-  function resend(staffId: string) {
-    if (!publication) return 'No published plan is available.'
-    const result = resendNotification(publication, staffId)
-    if (!result.error) setPublication(result.publication)
-    return result.error
-  }
-  function confirmLoading(action: LoadingAction, notes: string) {
-    const result = confirmLoadingDecision(loadingException, action, notes, new Date().toISOString())
-    if (!result.error) setLoadingException(result.exception)
-    return result.error
-  }
-  function readNotifications(id?: string) { setNotifications(previous => markNotificationsRead(previous, id)) }
-  function openNotification(item: NotificationItem) {
-    readNotifications(item.id)
-    navigate(item.target.page, item.target.orderId)
-  }
-  if (isLogin) return <>
-    <LoginPage onNotice={setNotice} />
-    <StageNotice title={notice} onClose={() => setNotice(null)} returnLabel="Back to sign in" />
-  </>
-  const pageProps = { onNavigate: navigate, onOpenNavigation: () => setNavigationOpen(true), navigationOpen }
-  return <div className="overview-shell">
-    <Sidebar open={navigationOpen} collapsed={sidebarCollapsed} onToggleCollapsed={() => setSidebarCollapsed(previous => !previous)} onClose={() => setNavigationOpen(false)} onNavigate={navigate} activePage={isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isOrders ? 'Orders' : isPlanning || isPublished ? 'Planning' : isOperations ? 'Operations' : 'Overview'} />
-    <main className="overview-main">{isVehicles ? <VehiclesPage {...pageProps} /> : isOutlets ? <OutletsPage {...pageProps} /> : isTeam ? <TeamPage {...pageProps} onViewVehicle={vehicleId => navigate('Vehicles', vehicleId)} /> : isOrders ? <OrdersPage {...pageProps} /> : isPlanning ? <FinalPlanReviewPage {...pageProps} onPublish={publish} published={!!publication} /> : isPublished && publication ? <PublishPlanConfirmationPage {...pageProps} publication={publication} onResend={resend} /> : isOperations ? <LoadingExceptionReviewPage key={loadingException.id} {...pageProps} exception={loadingException} onConfirm={confirmLoading} /> : <OverviewPage {...pageProps} />}</main>
-    <StageNotice title={notice} onClose={() => setNotice(null)} returnLabel={isPlanning || isPublished ? 'Back to plan' : isOperations ? 'Back to loading review' : undefined} />
-    {notificationsOpen && <NotificationsPanel items={notifications} onRead={readNotifications} onAction={openNotification} onClose={() => setNotificationsOpen(false)} />}
-  </div>;
+const StoreManagerLogin = lazy(() => import('@/pages/store-manager/login'))
+const StoreManagerLayout = lazy(() => import('@/components/layout/store-manager-layout').then(module => ({ default: module.StoreManagerLayout })))
+const DashboardOverviewPage = lazy(() => import('@/pages/store-manager/dashboard-overview').then(module => ({ default: module.DashboardOverviewPage })))
+const StoreOrdersPage = lazy(() => import('@/pages/store-manager/orders').then(module => ({ default: module.OrdersPage })))
+const PlaceOrderPage = lazy(() => import('@/pages/store-manager/place-order').then(module => ({ default: module.PlaceOrderPage })))
+const DeliveriesPage = lazy(() => import('@/pages/store-manager/deliveries').then(module => ({ default: module.DeliveriesPage })))
+const DeliveryTrackingPage = lazy(() => import('@/pages/store-manager/delivery-tracking').then(module => ({ default: module.DeliveryTrackingPage })))
+
+export default function App() {
+  const { pathname } = useLocation()
+  const area = /^\/store-manager(?:\/|$)/.test(pathname) ? 'store-manager' : 'hub'
+  useLayoutEffect(() => {
+    // The document also contains portaled dialogs, selects, and tooltips.
+    document.documentElement.dataset.area = area
+    if (area === 'store-manager') document.title = 'WayPoint — Store Manager'
+  }, [area])
+  return <Suspense fallback={<p role="status">Loading WayPoint…</p>}><Routes>
+    <Route element={<HubLayout />}>
+      <Route index element={<HubPage>{hub => <OverviewPage {...hub.pageProps} />}</HubPage>} />
+      <Route path="login" element={<HubPage>{hub => <LoginPage onNotice={hub.setNotice} />}</HubPage>} />
+      <Route path="vehicles" element={<HubPage>{hub => <VehiclesPage {...hub.pageProps} />}</HubPage>} />
+      <Route path="outlets" element={<HubPage>{hub => <OutletsPage {...hub.pageProps} />}</HubPage>} />
+      <Route path="team" element={<HubPage>{hub => <TeamPage {...hub.pageProps} onViewVehicle={id => hub.navigate('Vehicles', id)} />}</HubPage>} />
+      <Route path="orders" element={<HubPage>{hub => <OrdersPage {...hub.pageProps} />}</HubPage>} />
+      <Route path="planning" element={<HubPage>{hub => <FinalPlanReviewPage {...hub.pageProps} onPublish={hub.publish} published={!!hub.publication} />}</HubPage>} />
+      <Route path="planning/published" element={<HubPage>{hub => hub.publication && <PublishPlanConfirmationPage {...hub.pageProps} publication={hub.publication} onResend={hub.resend} />}</HubPage>} />
+      <Route path="operations" element={<HubPage>{hub => <LoadingExceptionReviewPage key={hub.loadingException.id} {...hub.pageProps} exception={hub.loadingException} onConfirm={hub.confirmLoading} />}</HubPage>} />
+      <Route path="operations/loading-exception" element={<HubPage>{hub => <LoadingExceptionReviewPage key={hub.loadingException.id} {...hub.pageProps} exception={hub.loadingException} onConfirm={hub.confirmLoading} />}</HubPage>} />
+    </Route>
+    <Route path="store-manager/login" element={<StoreManagerLogin />} />
+    <Route path="store-manager" element={<StoreManagerLayout />}>
+      <Route index element={<DashboardOverviewPage />} />
+      <Route path="orders" element={<StoreOrdersPage />} />
+      <Route path="orders/create" element={<PlaceOrderPage />} />
+      <Route path="deliveries" element={<DeliveriesPage />} />
+      <Route path="delivery/:id" element={<DeliveryTrackingPage />} />
+    </Route>
+    <Route path="*" element={<NotFoundPage />} />
+  </Routes></Suspense>
 }
-
-export default App;

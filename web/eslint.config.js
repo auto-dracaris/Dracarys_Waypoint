@@ -20,7 +20,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/store-manager/components/ui/button.tsx'],
+    files: ['src/components/ui/shadcn/button.tsx'],
     rules: {
       'react-refresh/only-export-components': ['error', { allowExportNames: ['buttonVariants'] }],
     },

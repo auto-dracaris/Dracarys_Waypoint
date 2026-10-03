@@ -81,7 +81,7 @@
 .plan-icon svg { width: var(--wp-space-3xl); height: var(--wp-space-3xl); }
 .stage-notice { margin: auto; width: min(var(--wp-spacing-120), calc(100% - var(--wp-space-4xl))); max-height: calc(100svh - var(--wp-space-4xl)); overflow-y: auto; padding: var(--wp-space-3xl); background: var(--wp-neutral-50); color: var(--wp-text-primary); border: 1px solid var(--wp-neutral-300); border-radius: var(--wp-radius-xl); }
 .stage-notice::backdrop { background: rgb(from var(--wp-neutral-950) r g b / 25%); }
-body:has(dialog[open]) { overflow: hidden; }
+html[data-area="hub"] body:has(dialog[open]) { overflow: hidden; }
 @media (max-width: 1279px) {
   .overview-canvas { padding: var(--wp-space-3xl); }
   .overview-header h1 { @apply type-display-md-medium; }
