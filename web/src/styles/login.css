@@ -30,8 +30,6 @@
 .login-field { display: flex; flex-direction: column; gap: var(--wp-space-xs); min-width: 0; }
 .login-field label { color: var(--wp-text-secondary); }
 .login-field label span { color: var(--wp-text-error-primary); }
-.login-field input { width: 100%; min-width: 0; height: var(--wp-space-6xl); padding-inline: var(--wp-space-lg); background: var(--wp-neutral-50); border: 1px solid var(--wp-neutral-300); border-radius: var(--wp-radius-md); color: var(--wp-text-primary); }
-.login-field input::placeholder { color: var(--wp-text-placeholder); opacity: 1; }
 .login-options { display: flex; align-items: center; justify-content: space-between; gap: var(--wp-space-lg); flex-wrap: wrap; }
 .login-remember { display: inline-flex; align-items: center; gap: var(--wp-space-md); color: var(--wp-text-secondary); cursor: pointer; }
 .login-remember input { width: var(--wp-space-xl); height: var(--wp-space-xl); margin: 0; accent-color: var(--wp-yellow-400); cursor: pointer; }

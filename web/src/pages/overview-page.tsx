@@ -1,3 +1,4 @@
+import { IconButton } from '@/components/ui/icon-button'
 import { useState } from 'react'
 import NotificationsRounded from '@mui/icons-material/NotificationsRounded'
 import MenuRounded from '@mui/icons-material/MenuRounded'
@@ -11,8 +12,8 @@ export function OverviewPage({ onNavigate, onOpenNavigation, navigationOpen }: {
   return (
         <div className="overview-canvas">
           <header className="overview-header">
-            <div><div className="flex items-center gap-wp-space-lg"><button type="button" aria-label="Open navigation" aria-expanded={navigationOpen} aria-controls="main-navigation" className="icon-button mobile-menu" onClick={onOpenNavigation}><MenuRounded fontSize="inherit" /></button><h1 className="type-display-lg-medium">Delivery Overview</h1></div><p className="mt-wp-space-md text-wp-text-tertiary type-text-sm-regular">Planning for {planningDate}</p></div>
-            <Button variant="danger" className="decision-button type-text-md-semibold" onClick={() => onNavigate('Order notifications')}><NotificationsRounded fontSize="inherit" />3 orders need a decision</Button>
+            <div><div className="flex items-center gap-wp-space-lg"><IconButton type="button" aria-label="Open navigation" aria-expanded={navigationOpen} aria-controls="main-navigation" className="mobile-menu" onClick={onOpenNavigation}><MenuRounded fontSize="inherit" /></IconButton><h1 className="type-display-lg-medium">Delivery Overview</h1></div><p className="mt-wp-space-md text-wp-text-tertiary type-text-sm-regular">Planning for {planningDate}</p></div>
+            <Button variant="danger" size="md" className="decision-button" onClick={() => onNavigate('Order notifications')}><NotificationsRounded fontSize="inherit" />3 orders need a decision</Button>
           </header>
           <ActiveRoutes onNavigate={onNavigate} />
           <PlanningSummary date={date} onDateChange={setDate} onNavigate={onNavigate} />

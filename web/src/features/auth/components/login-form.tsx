@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react'
 import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export function LoginForm({ onNotice }: { onNotice: (title: string) => void }) {
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -13,17 +14,17 @@ export function LoginForm({ onNotice }: { onNotice: (title: string) => void }) {
     <div className="login-fields">
       <div className="login-field">
         <label htmlFor="login-email" className="type-text-sm-medium">Email Address <span aria-hidden="true">*</span></label>
-        <input id="login-email" name="email" type="email" required autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="admin@deliveryplatform.com" className="type-text-sm-regular" />
+        <Input id="login-email" name="email" type="email" required autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="admin@deliveryplatform.com" />
       </div>
       <div className="login-field">
         <label htmlFor="login-password" className="type-text-sm-medium">Password <span aria-hidden="true">*</span></label>
-        <input id="login-password" name="password" type="password" required autoComplete="current-password" placeholder="••••••••••••" className="type-text-sm-regular" />
+        <Input id="login-password" name="password" type="password" required autoComplete="current-password" placeholder="••••••••••••" />
       </div>
     </div>
     <div className="login-options type-text-sm-medium">
       <label className="login-remember"><input type="checkbox" name="remember" defaultChecked />Remember me</label>
       <button type="button" className="login-recovery" onClick={() => onNotice('Password recovery is not connected')}>Forgot password?</button>
     </div>
-    <Button type="submit" variant="primary" className="login-submit"><span className="type-text-md-semibold">Log in</span><ArrowForwardRounded fontSize="inherit" /></Button>
+    <Button type="submit" variant="primary" size="md" className="login-submit" trailingIcon={<ArrowForwardRounded fontSize="inherit" />}>Log in</Button>
   </form>
 }

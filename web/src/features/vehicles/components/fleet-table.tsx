@@ -1,3 +1,4 @@
+import { StatusBadge } from '@/components/ui/status-badge'
 import SwapVertRounded from '@mui/icons-material/SwapVertRounded'
 import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded'
 import ArrowDownwardRounded from '@mui/icons-material/ArrowDownwardRounded'
@@ -24,9 +25,9 @@ export function FleetTable({ vehicles, checked, selectedId, sort, showPlaceholde
         <td className="type-text-xs-regular">{vehicle.type}</td>
         <td className="type-text-xs-regular">{vehicle.weight.toLocaleString('en-GB')} kg · {vehicle.volume} m³</td>
         <td className="type-text-xs-regular">{vehicle.plannedTrips} of 2</td>
-        <td><span className={`allocation-badge type-text-xs-medium ${vehicle.allocation === 'Unallocated' ? 'allocation-badge--unallocated' : ''}`}>{vehicle.allocation}</span></td>
+        <td><StatusBadge tone={vehicle.allocation === 'Unallocated' ? 'error' : 'success'}>{vehicle.allocation}</StatusBadge></td>
       </tr>)}
-      {Array.from({ length: placeholders }, (_, index) => <tr className="fleet-placeholder-row" key={`placeholder-${index}`}><td><div className="fleet-id-cell"><span className="fleet-checkbox"><input type="checkbox" disabled aria-label="Empty vehicle row" /></span><span>–</span></div></td><td>–</td><td>–</td><td>–</td><td><span className={`allocation-badge type-text-xs-medium ${index === 1 ? 'allocation-badge--unallocated' : ''}`}>{index === 1 ? 'Unallocated' : 'Allocated'}</span></td></tr>)}
+      {Array.from({ length: placeholders }, (_, index) => <tr className="fleet-placeholder-row" key={`placeholder-${index}`}><td><div className="fleet-id-cell"><span className="fleet-checkbox"><input type="checkbox" disabled aria-label="Empty vehicle row" /></span><span>–</span></div></td><td>–</td><td>–</td><td>–</td><td><StatusBadge tone={index === 1 ? 'error' : 'success'}>{index === 1 ? 'Unallocated' : 'Allocated'}</StatusBadge></td></tr>)}
       {vehicles.length === 0 && <tr><td colSpan={5}><div className="fleet-empty"><h3 className="type-text-lg-semibold">No matching vehicles</h3><p className="text-wp-text-secondary type-text-sm-regular">Try another search or vehicle filter.</p><Button onClick={onClear}>Clear filters</Button></div></td></tr>}
       </tbody>
       <tfoot><tr><td><button className="fleet-add-column type-text-xs-regular" onClick={onAddColumn}><AddRounded fontSize="inherit" />Add Column</button></td><td /><td /><td /><td /></tr></tfoot>

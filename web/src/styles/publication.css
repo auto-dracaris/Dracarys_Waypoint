@@ -21,9 +21,6 @@
 .publication-team-table thead th { padding: var(--wp-space-lg); }
 .publication-team-table tbody tr + tr { border-top: 1px solid var(--wp-neutral-200); }
 .publication-notification-status { display: flex; align-items: center; gap: var(--wp-space-sm); flex-wrap: wrap; }
-.publication-status--acknowledged { background: var(--wp-lime-100); color: var(--wp-lime-700); }
-.publication-status--delivered { background: var(--wp-blue-100); color: var(--wp-blue-700); }
-.publication-status--sent { background: var(--wp-yellow-100); color: var(--wp-yellow-700); }
 .publication-resend { cursor: pointer; border-radius: var(--wp-radius-xs); }
 .publication-resend:hover { text-decoration: underline; }
 .publication-sidebar, .publication-actions { display: flex; flex-direction: column; gap: var(--wp-space-xl); min-width: 0; }

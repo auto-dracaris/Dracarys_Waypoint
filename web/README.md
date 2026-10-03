@@ -37,6 +37,8 @@ src/
 
 Empty folders contain `.gitkeep` files to preserve the structure in Git.
 
+Phase 1 of modularization provides shared Button, IconButton, Input, Select, Textarea, StatusBadge and Tooltip primitives, with styles owned by those components. Existing screens consume them while feature code retains validation and business state. See the [shared UI guide](src/components/ui/README.md) for props and examples. Search/filter composition, shared page sections and feature hooks remain later phases.
+
 ## Build page by page
 
 1. Implement the first Figma screen in `pages` using plain React, Tailwind, and WayPoint tokens.

@@ -23,7 +23,7 @@ export function ActiveRoutes({ onNavigate }: { onNavigate: (title: string) => vo
   const selected = matching[0]
   return (
     <section className="active-routes" aria-labelledby="routes-title">
-      <div className="routes-header"><h2 id="routes-title" className="type-display-md-medium">Active routes</h2><Button className="type-text-md-semibold" onClick={() => onNavigate('All routes')}>View all routes <ArrowForwardRounded fontSize="inherit" /></Button></div>
+      <div className="routes-header"><h2 id="routes-title" className="type-display-md-medium">Active routes</h2><Button size="md" className="" onClick={() => onNavigate('All routes')}>View all routes <ArrowForwardRounded fontSize="inherit" /></Button></div>
       <div className="routes-toolbar">
         <div className="route-filters" role="group" aria-label="Filter routes">{filters.map(label => <button key={label} type="button" aria-pressed={label === filter} onClick={() => setFilter(label)} className={label === filter ? 'route-filter--active type-text-sm-medium' : 'type-text-sm-regular'}><span>{label}</span><span className="text-wp-text-quaternary">{routes.filter(route => label === 'All' || route.category === label).length}</span></button>)}</div>
         <div className="route-search"><SearchRounded fontSize="inherit" /><input ref={search} value={query} onChange={event => setQuery(event.target.value)} aria-label="Search routes by vehicle or outlet" placeholder="Search" className="type-text-sm-regular" /><kbd className="type-text-xs-medium">⌘K</kbd></div>

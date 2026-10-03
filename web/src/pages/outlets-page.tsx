@@ -1,3 +1,4 @@
+import { IconButton } from '@/components/ui/icon-button'
 import { useEffect, useRef, useState } from 'react'
 import NotificationsRounded from '@mui/icons-material/NotificationsRounded'
 import MenuRounded from '@mui/icons-material/MenuRounded'
@@ -43,7 +44,7 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
     setEditing(null)
   }
   return <div className="overview-canvas vehicles-canvas outlets-canvas">
-    <header className="overview-header fleet-page-header"><div className="flex items-center gap-wp-space-lg"><button type="button" aria-label="Open navigation" aria-expanded={navigationOpen} aria-controls="main-navigation" className="icon-button mobile-menu" onClick={onOpenNavigation}><MenuRounded fontSize="inherit" /></button><h1 className="type-display-lg-medium">Outlets</h1></div><div className="fleet-header-actions"><DateRangePicker /><Button variant="danger" className="decision-button type-text-md-semibold" onClick={() => onNavigate('Order notifications')}><NotificationsRounded fontSize="inherit" />3 orders need a decision</Button></div></header>
+    <header className="overview-header fleet-page-header"><div className="flex items-center gap-wp-space-lg"><IconButton type="button" aria-label="Open navigation" aria-expanded={navigationOpen} aria-controls="main-navigation" className="mobile-menu" onClick={onOpenNavigation}><MenuRounded fontSize="inherit" /></IconButton><h1 className="type-display-lg-medium">Outlets</h1></div><div className="fleet-header-actions"><DateRangePicker /><Button variant="danger" size="md" className="decision-button" onClick={() => onNavigate('Order notifications')}><NotificationsRounded fontSize="inherit" />3 orders need a decision</Button></div></header>
     <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">{['Home', 'Dashboard', 'Management'].map(label => <span key={label}><button onClick={() => onNavigate(label)}>{label}</button><span aria-hidden="true">/</span></span>)}<strong aria-current="page" className="text-wp-text-primary type-text-sm-semibold">Outlets</strong></nav>
     <section className="outlet-metrics" aria-label="Outlet summary">{outletMetrics.map((value, index) => { const Icon = metricIcons[index]; return <div className="outlet-metric" key={index}><div><Icon fontSize="inherit" /><span className="type-text-md-medium text-wp-text-secondary">Confirmed orders</span></div><strong className="type-display-xl-semibold">{value}</strong></div> })}</section>
     {message && <p role="status" className="fleet-update-message type-text-sm-medium">{message}</p>}
