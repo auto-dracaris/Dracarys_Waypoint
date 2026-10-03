@@ -5,7 +5,7 @@
   "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "src/store-manager/index.css",
+    "css": "src/index.css",
     "baseColor": "neutral",
     "cssVariables": true,
     "prefix": ""
@@ -13,11 +13,11 @@
   "iconLibrary": "lucide",
   "rtl": false,
   "aliases": {
-    "components": "@/store-manager/components",
-    "utils": "@/store-manager/lib/utils",
-    "ui": "@/store-manager/components/ui",
-    "lib": "@/store-manager/lib",
-    "hooks": "@/store-manager/hooks"
+    "components": "@/components",
+    "utils": "@/lib/shadcn-utils",
+    "ui": "@/components/ui/shadcn",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
   },
   "menuColor": "default",
   "menuAccent": "subtle",
