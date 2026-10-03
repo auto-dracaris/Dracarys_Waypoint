@@ -37,9 +37,9 @@ docs: |-
   Paginated user list. Dispatcher only (Bearer `{{dispatcherAccessToken}}` from the folder).
 
   Query params (all optional):
-  - `page` (default 1), `limit` (default 10, max 100)
+  - `page` (default 1), `limit` (default 10, max 200)
   - `role`: dispatcher | store_manager | driver | loader
   - `status`: pending | active | blocked | deleted
-  - `search`: matches first name, last name, email or phone
+  - `search`: matches first name, last name or phone
 
-  Response `data`: `{ items, meta: { total, page, limit, totalPages } }`.
+  Response `data`: `{ items, meta: { total, page, limit, totalPages } }`. Each item carries `depot` (the home depot row, for its name) or null.

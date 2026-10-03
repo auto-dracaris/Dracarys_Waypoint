@@ -10,10 +10,6 @@ export class UserAuthRepository {
     private readonly repository: Repository<User>,
   ) {}
 
-  findByEmail(email: string): Promise<User | null> {
-    return this.repository.findOneBy({ email });
-  }
-
   findByPhone(phone: string): Promise<User | null> {
     return this.repository.findOneBy({ phone });
   }

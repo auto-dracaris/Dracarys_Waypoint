@@ -41,7 +41,7 @@ export class Trip extends UuidBaseEntity {
   @Column({ name: 'vehicle_id', type: 'int' })
   vehicleId: number;
 
-  @ManyToOne(() => Vehicle)
+  @ManyToOne(() => Vehicle, (vehicle) => vehicle.trips)
   @JoinColumn({ name: 'vehicle_id' })
   vehicle?: Relation<Vehicle>;
 

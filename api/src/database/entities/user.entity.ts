@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, Unique } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import type { Relation } from 'typeorm';
 import { AutoIncBaseEntity } from '../../common/entities/autoinc-base.entity';
 import { UserRole } from '../../common/enums/user-role.enum';
@@ -7,11 +7,7 @@ import { Depot } from './depot.entity';
 import { Outlet } from './outlet.entity';
 
 @Entity('users')
-@Unique(['email'])
 export class User extends AutoIncBaseEntity {
-  @Column({ length: 150 })
-  email: string;
-
   @Column({ name: 'password_hash', type: 'text' })
   passwordHash: string;
 
@@ -42,13 +38,14 @@ export class User extends AutoIncBaseEntity {
   })
   status: UserStatus;
 
-  // Where a dispatcher, loader or driver works.
-  @Column({ name: 'depot_id', type: 'int', nullable: true })
-  depotId: number | null;
+  // Home depot. Required: registration and the dispatcher seed default it to
+  // Peliyagoda, and a dispatcher changes it through `PUT /users/:id`.
+  @Column({ name: 'depot_id', type: 'int' })
+  depotId: number;
 
-  @ManyToOne(() => Depot, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => Depot)
   @JoinColumn({ name: 'depot_id' })
-  depot?: Relation<Depot> | null;
+  depot?: Relation<Depot>;
 
   // The outlet a store manager orders for.
   @Column({ name: 'outlet_id', type: 'int', nullable: true })

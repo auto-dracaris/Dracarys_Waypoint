@@ -11,8 +11,10 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
+import { Depot } from '../../common/enums/depot.enum';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { UserStatus } from '../../common/enums/user-status.enum';
+import { DepotsRepository } from '../../common/repositories/depots.repository';
 import { SmsService } from '../../common/sms/sms.service';
 import { formatPhoneNumber } from '../../common/utils/phone.util';
 import { User } from '../../database/entities/user.entity';
@@ -46,32 +48,28 @@ export class AuthService {
     private readonly userAuthRepository: UserAuthRepository,
     private readonly userSessionRepository: UserSessionRepository,
     private readonly userOtpRepository: UserOtpRepository,
+    private readonly depotsRepository: DepotsRepository,
     private readonly smsService: SmsService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<ApiResponseDto> {
     const formattedPhone = formatPhoneNumber(registerDto.phone);
 
-    const emailExists = await this.userAuthRepository.findByEmail(
-      registerDto.email,
-    );
-    if (emailExists) {
-      throw new ConflictException('Email is already in use by another user');
-    }
-
-    const phoneExists = await this.userAuthRepository.findByPhone(
-      formattedPhone,
-    );
+    const phoneExists =
+      await this.userAuthRepository.findByPhone(formattedPhone);
     if (phoneExists) {
       throw new ConflictException(
         'Phone number is already in use by another user',
       );
     }
 
-    const passwordHash = await bcrypt.hash(
-      registerDto.password,
-      BCRYPT_ROUNDS,
-    );
+    // Everyone starts at the default depot; a dispatcher moves them later.
+    const depot = await this.depotsRepository.findByName(Depot.PELIYAGODA);
+    if (!depot) {
+      throw new BadRequestException('Default depot not found');
+    }
+
+    const passwordHash = await bcrypt.hash(registerDto.password, BCRYPT_ROUNDS);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -90,12 +88,12 @@ export class AuthService {
       const newUser = this.userAuthRepository.create({
         firstName: registerDto.firstName,
         lastName: registerDto.lastName,
-        email: registerDto.email,
         phone: formattedPhone,
         passwordHash,
         // Self-registration always creates a driver; other roles are assigned by a dispatcher.
         role: UserRole.DRIVER,
         status: UserStatus.PENDING,
+        depotId: depot.id,
       });
       savedUser = await this.userAuthRepository.save(
         newUser,
@@ -224,13 +222,13 @@ export class AuthService {
 
   async login(loginDto: LoginDto): Promise<ApiResponseDto> {
     const formattedPhone = formatPhoneNumber(loginDto.phone);
-    let user = await this.userAuthRepository.findByPhone(formattedPhone);
-    if (!user) {
-      user = await this.userAuthRepository.findByEmail(loginDto.phone);
-    }
+    const user = await this.userAuthRepository.findByPhone(formattedPhone);
 
     // One generic error message so endpoint cannot be used for user enumeration
-    if (!user || !(await bcrypt.compare(loginDto.password, user.passwordHash))) {
+    if (
+      !user ||
+      !(await bcrypt.compare(loginDto.password, user.passwordHash))
+    ) {
       throw new UnauthorizedException('Invalid phone number or password');
     }
 
@@ -381,7 +379,6 @@ export class AuthService {
 
     const payload: JwtPayload = {
       userId: user.id,
-      email: user.email,
       role: user.role,
       sid: saved.id,
     };

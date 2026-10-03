@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { OutletTable } from '@/features/outlets/components/outlet-table'
 import { OutletDetails } from '@/features/outlets/components/outlet-details'
+import { useDetailPanel } from '@/components/ui/use-detail-panel'
 import { OutletEditor } from '@/features/outlets/components/outlet-editor'
 import { initialOutlets, outletMetrics, outletFilters, selectOutlets, type DeliveryRequirements, type OutletAvailability, type OutletFilter, type OutletSort, type OutletSortKey } from '@/features/outlets/data'
 import '@/styles/vehicles.css'
@@ -23,6 +24,7 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<OutletSort>({ key: null, direction: 'ascending' })
   const [selectedId, setSelectedId] = useState('OUT014')
+  const panel = useDetailPanel()
   const [checked, setChecked] = useState(new Set(['OUT008', 'OUT031']))
   const [editing, setEditing] = useState<{ id: string; mode: 'requirements' | 'availability' } | null>(null)
   const [message, setMessage] = useState('')
@@ -48,11 +50,11 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
     <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">{['Home', 'Dashboard', 'Management'].map(label => <span key={label}><button onClick={() => onNavigate(label)}>{label}</button><span aria-hidden="true">/</span></span>)}<strong aria-current="page" className="text-wp-text-primary type-text-sm-semibold">Outlets</strong></nav>
     <section className="outlet-metrics" aria-label="Outlet summary">{outletMetrics.map((value, index) => { const Icon = metricIcons[index]; return <div className="outlet-metric" key={index}><div><Icon fontSize="inherit" /><span className="type-text-md-medium text-wp-text-secondary">Confirmed orders</span></div><strong className="type-display-xl-semibold">{value}</strong></div> })}</section>
     {message && <p role="status" className="fleet-update-message type-text-sm-medium">{message}</p>}
-    <div className="fleet-workspace outlet-workspace">
+    <div className={`fleet-workspace outlet-workspace ${panel.mode === 'modal' ? 'fleet-workspace--full' : ''}`}>
       <section className="fleet-inventory" aria-labelledby="outlet-planning-title"><h2 id="outlet-planning-title" className="fleet-inventory-title type-display-md-medium">Delivery planning</h2><div className="fleet-toolbar outlet-toolbar"><div className="route-filters outlet-filters" role="group" aria-label="Filter outlets">{outletFilters.map(label => <button key={label} aria-pressed={filter === label} className={filter === label ? 'route-filter--active type-text-sm-medium' : 'type-text-sm-regular'} onClick={() => setFilter(label)}>{label}<span className="text-wp-text-quaternary">{label === 'All' ? outlets.length : outlets.filter(outlet => outlet.allocation === label).length}</span></button>)}</div><div className="route-search fleet-search"><SearchRounded fontSize="inherit" /><input ref={search} className="type-text-sm-regular" placeholder="Search" aria-label="Search outlets" value={query} onChange={event => setQuery(event.target.value)} /><kbd className="type-text-xs-medium">⌘K</kbd></div></div>
-        <OutletTable outlets={visible} checked={checked} selectedId={selected?.id} sort={sort} showPlaceholders={filter === 'All' && !query.trim()} onSort={onSort} onCheck={toggleChecked} onSelect={setSelectedId} onClear={() => { setQuery(''); setFilter('All') }} onAddColumn={() => onNavigate('Customize outlet columns')} />
+        <OutletTable outlets={visible} checked={checked} selectedId={selected?.id} sort={sort} showPlaceholders={filter === 'All' && !query.trim()} onSort={onSort} onCheck={toggleChecked} onSelect={id => { setSelectedId(id); panel.show() }} onClear={() => { setQuery(''); setFilter('All') }} onAddColumn={() => onNavigate('Customize outlet columns')} />
       </section>
-      {selected ? <OutletDetails outlet={selected} onNavigate={onNavigate} onEdit={() => setEditing({ id: selected.id, mode: 'requirements' })} onAvailability={() => setEditing({ id: selected.id, mode: 'availability' })} /> : <aside className="fleet-no-selection text-wp-text-tertiary type-text-sm-regular">Select a matching outlet to view its details.</aside>}
+      {selected ? <OutletDetails panel={panel} outlet={selected} onNavigate={onNavigate} onEdit={() => setEditing({ id: selected.id, mode: 'requirements' })} onAvailability={() => setEditing({ id: selected.id, mode: 'availability' })} /> : panel.mode === 'side' && <aside className="fleet-no-selection text-wp-text-tertiary type-text-sm-regular">Select a matching outlet to view its details.</aside>}
     </div>
     {editing && editingOutlet && <OutletEditor key={`${editing.id}-${editing.mode}`} outlet={editingOutlet} mode={editing.mode} onSave={save} onClose={() => setEditing(null)} />}
   </div>

@@ -42,14 +42,14 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
     constructor(@InjectRepository(User) repository: Repository<User>) {
       super(repository);
     }
-    // only entity-specific queries go here, e.g. findByEmail(email)
+    // only entity-specific queries go here, e.g. findByPhone(phone)
   }
   ```
 - `BaseCrudService<T>` (`src/common/services/base-crud.service.ts`) implements
   `create`/`findAll`/`findOne`/`update` — 404 handling, pagination shaping,
   `ApiResponseDto` wrapping. Concrete services call `super(repository, 'EntityName')`
   and override the `protected beforeCreate(dto)` / `protected beforeUpdate(id, dto, entity)`
-  hooks for business-rule checks that need a DB lookup (e.g. email uniqueness) —
+  hooks for business-rule checks that need a DB lookup (e.g. phone uniqueness) —
   those hooks are no-ops by default. Anything beyond plain CRUD (an extra route
   like `PATCH /:id/status`, or a bespoke flow like `login`) stays hand-written in
   the concrete service, using the inherited `repository` and `findOrThrow(id)`.
@@ -79,7 +79,7 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
   validation in controllers or services.
 - **All input validation happens at the DTO level only.** Services must not
   re-validate what a DTO decorator can express. Service-layer checks are limited to
-  business rules needing DB/state lookups ("email already in use", "session
+  business rules needing DB/state lookups ("phone already in use", "session
   revoked") — not shape or format checks.
 - Paginated endpoints take `@Query() query: PaginationQueryDto`
   (`src/common/dto/pagination-query.dto.ts`) — never `@Query('page')` parsed by hand.
@@ -128,7 +128,7 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
   `UserRole.DISPATCHER` is the admin: user management is
   `@Roles(UserRole.DISPATCHER)`. Adding a protected route means choosing which roles
   may call it. `@Roles(A, B)` is **OR**.
-- `JwtStrategy.validate` returns the role (and email) from the `users` row it loads,
+- `JwtStrategy.validate` returns the role from the `users` row it loads,
   not from the token payload, so a role change applies on the user's next request.
   `PATCH /users/:id/role` and `/status` refuse to change the caller's own account, so a
   dispatcher cannot lock themselves out.

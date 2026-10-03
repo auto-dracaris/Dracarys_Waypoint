@@ -30,6 +30,8 @@
 .sidebar-profile:hover .sidebar-profile-label { text-decoration: underline; }
 
 @media (min-width: 768px) {
+  /* Pinned to the viewport so the profile card stays visible while the page scrolls. */
+  .sidebar { position: sticky; top: 0; align-self: flex-start; height: 100svh; overflow-y: auto; }
   .sidebar--collapsed { flex-basis: var(--wp-spacing-20); width: var(--wp-spacing-20); }
   .sidebar--collapsed .brand-header { flex-direction: column; align-items: center; padding: var(--wp-space-3xl) var(--wp-space-md) 0; }
   .sidebar--collapsed .hub-label, .sidebar--collapsed .sidebar-link-label, .sidebar--collapsed .sidebar-profile-label { display: none; }

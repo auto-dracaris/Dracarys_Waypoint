@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { FleetSummary } from '@/features/vehicles/components/fleet-summary'
 import { FleetDetails } from '@/features/vehicles/components/fleet-details'
+import { useDetailPanel } from '@/components/ui/use-detail-panel'
 import { FleetTable, type VehicleSort, type VehicleSortKey } from '@/features/vehicles/components/fleet-table'
 import { AvailabilityEditor } from '@/features/vehicles/components/availability-editor'
 import { initialVehicles, initialFleetTotals, type FleetVehicle, type VehicleFilter, type VehicleAvailability } from '@/features/vehicles/data'
@@ -21,6 +22,8 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
   const [sort, setSort] = useState<VehicleSort>({ key: null, direction: 'ascending' })
   const [selectedId, setSelectedId] = useState(() => new URLSearchParams(window.location.search).get('vehicle') ?? 'VEH021')
   const [checked, setChecked] = useState(new Set(['VEH022', 'VEH024']))
+  // A vehicle named in the URL (e.g. from the Team page) is shown straight away, even as a pop-up.
+  const panel = useDetailPanel(new URLSearchParams(window.location.search).has('vehicle'))
   const [editing, setEditing] = useState<FleetVehicle | null>(null)
   const [message, setMessage] = useState('')
   const search = useRef<HTMLInputElement>(null)
@@ -60,13 +63,13 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
     <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">{['Home', 'Dashboard', 'Management'].map(label => <span key={label}><button onClick={() => onNavigate(label)}>{label}</button><span aria-hidden="true">/</span></span>)}<strong aria-current="page" className="text-wp-text-primary type-text-sm-semibold">Vehicles</strong></nav>
     <FleetSummary totals={totals} reviewCount={1 + changes} onReview={() => onNavigate('Vehicle change impact review')} />
     {message && <p role="status" className="fleet-update-message type-text-sm-medium">{message}</p>}
-    <div className="fleet-workspace">
+    <div className={`fleet-workspace ${panel.mode === 'modal' ? 'fleet-workspace--full' : ''}`}>
       <section className="fleet-inventory" aria-labelledby="fleet-planning-title">
         <h2 id="fleet-planning-title" className="fleet-inventory-title type-display-md-medium">Delivery planning</h2>
         <div className="fleet-toolbar"><div className="route-filters fleet-filters" role="group" aria-label="Filter vehicles">{filters.map(label => <button key={label} aria-pressed={filter === label} className={filter === label ? 'route-filter--active type-text-sm-medium' : 'type-text-sm-regular'} onClick={() => setFilter(label)}>{label}</button>)}</div><div className="route-search fleet-search"><SearchRounded fontSize="inherit" /><input ref={search} className="type-text-sm-regular" placeholder="Search" aria-label="Search vehicles" value={query} onChange={event => setQuery(event.target.value)} /><kbd className="type-text-xs-medium">⌘K</kbd></div></div>
-        <FleetTable vehicles={visible} checked={checked} selectedId={selected?.id} sort={sort} showPlaceholders={!query.trim()} onSort={onSort} onCheck={toggleChecked} onSelect={setSelectedId} onClear={() => { setQuery(''); setFilter('All Vehicles') }} onAddColumn={() => onNavigate('Customize vehicle columns')} />
+        <FleetTable vehicles={visible} checked={checked} selectedId={selected?.id} sort={sort} showPlaceholders={!query.trim()} onSort={onSort} onCheck={toggleChecked} onSelect={id => { setSelectedId(id); panel.show() }} onClear={() => { setQuery(''); setFilter('All Vehicles') }} onAddColumn={() => onNavigate('Customize vehicle columns')} />
       </section>
-      {selected ? <FleetDetails vehicle={selected} onNavigate={onNavigate} onEdit={() => setEditing(selected)} /> : <aside className="fleet-no-selection text-wp-text-tertiary type-text-sm-regular">Select a matching vehicle to view its details.</aside>}
+      {selected ? <FleetDetails panel={panel} vehicle={selected} onNavigate={onNavigate} onEdit={() => setEditing(selected)} /> : panel.mode === 'side' && <aside className="fleet-no-selection text-wp-text-tertiary type-text-sm-regular">Select a matching vehicle to view its details.</aside>}
     </div>
     {editing && <AvailabilityEditor key={editing.id} vehicle={editing} onSave={saveAvailability} onClose={() => setEditing(null)} />}
   </div>
