@@ -1,8 +1,16 @@
-export type OrderStatus = 'Unallocated' | 'Allocated' | 'Deferred'
-export type OrderFilter = 'All' | OrderStatus
+// How an order stands in the run being looked at. `Unallocated` is confirmed and waiting to be planned.
+export type OrderStatus = 'Unallocated' | 'Allocated' | 'Deferred' | 'Delivered' | 'Failed' | 'Cancelled'
+export type OrderFilter = 'All' | 'Unallocated' | 'Allocated' | 'Deferred' | 'Cancelled'
+// Mirrors api/src/common/enums/deferral-reason.enum.ts.
+export type DeferralReason = 'vehicle_capacity' | 'refrigerated_capacity' | 'van_access' | 'fuel_quota' | 'time_budget' | 'vehicle_unavailable' | 'store_requested' | 'other'
 export type OrderRequirement = 'Chilled' | 'Dry' | 'Heavy Dry' | 'Ambient'
 export interface ConfirmedOrder {
+  // The reference people quote (ORD0000012); the API addresses an order by `dbId`.
   id: string
+  dbId: number
+  // Deferred onto this run from an earlier delivery day.
+  carriedOver: boolean
+  notes: string
   outlet: string
   district: string | null
   requirement: OrderRequirement
@@ -16,9 +24,9 @@ export interface ConfirmedOrder {
   assignedTrip: string | null
   requestedDelivery?: string
   reviewDescription?: string
-  deferral?: { reason: string; details: string }
+  deferral?: { reason: string; details: string; deferredTo: string | null }
 }
-export type OrderSortKey = 'id' | 'outlet' | 'requirement' | 'weight' | 'volume' | 'status'
+export type OrderSortKey = 'id' | 'outlet' | 'requestedDelivery' | 'requirement' | 'weight' | 'volume' | 'status'
 export interface OrderSort {
   key: OrderSortKey | null
   direction: 'ascending' | 'descending'
@@ -42,95 +50,39 @@ export interface AllocationOption {
   dailyTripsAfter: number | null
   dailyTripLimit: number | null
 }
-export const orderFilters: OrderFilter[] = ['All', 'Unallocated', 'Allocated', 'Deferred']
-export const initialOrders: ConfirmedOrder[] = [
-  {
-    id: 'DEMO-101',
-    outlet: 'Cargills - Negombo',
-    district: null,
-    requirement: 'Chilled',
-    weight: 340,
-    volume: 2.4,
-    status: 'Allocated',
-    vanOnly: false,
-    windowStart: null,
-    windowEnd: null,
-    assignedVehicle: null,
-    assignedTrip: null,
-  },
-  {
-    id: 'DEMO-102',
-    outlet: 'Keells - Colombo 03',
-    district: 'Colombo',
-    requirement: 'Dry',
-    weight: 120,
-    volume: 0.8,
-    status: 'Unallocated',
-    vanOnly: true,
-    windowStart: '08:00',
-    windowEnd: '12:00',
-    assignedVehicle: null,
-    assignedTrip: null,
-  },
-  {
-    id: 'DEMO-103',
-    outlet: 'Arpico - Kandy Road',
-    district: null,
-    requirement: 'Heavy Dry',
-    weight: 980,
-    volume: 3.2,
-    status: 'Allocated',
-    vanOnly: false,
-    windowStart: null,
-    windowEnd: null,
-    assignedVehicle: null,
-    assignedTrip: null,
-  },
-  {
-    id: 'DEMO-104',
-    outlet: 'Cargills - Wattala',
-    district: null,
-    requirement: 'Ambient',
-    weight: 210,
-    volume: 1.1,
-    status: 'Allocated',
-    vanOnly: false,
-    windowStart: null,
-    windowEnd: null,
-    assignedVehicle: null,
-    assignedTrip: null,
-  },
-  {
-    id: 'DEMO-106',
-    outlet: 'Fresh - Ja-Ela',
-    district: 'Gampaha',
-    requirement: 'Chilled',
-    weight: 410,
-    volume: 2.9,
-    status: 'Unallocated',
-    vanOnly: false,
-    windowStart: '06:00',
-    windowEnd: '08:00',
-    assignedVehicle: null,
-    assignedTrip: null,
-    reviewDescription: 'Fresh - Ja-Ela · Gampaha district',
-  },
-  {
-    id: 'DEMO-108',
-    outlet: 'Fresh — Biyagama',
-    district: null,
-    requirement: 'Chilled',
-    weight: 300,
-    volume: 1.2,
-    status: 'Unallocated',
-    vanOnly: true,
-    windowStart: null,
-    windowEnd: null,
-    assignedVehicle: null,
-    assignedTrip: null,
-    requestedDelivery: 'Mon, 28 Sep 2026',
-  },
-]
+export interface OrderSummary {
+  total: number
+  awaiting: number
+  allocated: number
+  deferred: number
+  cancelled: number
+  weightKg: number
+  volumeM3: number
+  chilledVolumeM3: number
+}
+export const orderFilters: OrderFilter[] = ['All', 'Unallocated', 'Allocated', 'Deferred', 'Cancelled']
+export const orderStatusTones: Record<OrderStatus, 'error' | 'warning' | 'success' | 'neutral'> = {
+  Unallocated: 'error',
+  Allocated: 'success',
+  Deferred: 'warning',
+  Delivered: 'success',
+  Failed: 'error',
+  Cancelled: 'neutral',
+}
+export const deferralReasons: Record<DeferralReason, string> = {
+  vehicle_capacity: 'No vehicle capacity',
+  refrigerated_capacity: 'No refrigerated capacity',
+  van_access: 'No van available for this outlet',
+  fuel_quota: 'Fuel quota reached',
+  time_budget: 'Could not fit the delivery window',
+  vehicle_unavailable: 'Vehicle unavailable',
+  store_requested: 'Requested by the store',
+  other: 'Other',
+}
+// Mirror api/src/common/enums/{depot,brand}.enum.ts.
+export const depots = ['Peliyagoda', 'Kandy']
+export const brands = ['Fresh', 'Style', 'Tech']
+// The allocation notices and vehicle options below are Figma's preview data, kept until the planning step supplies real ones.
 export const allocationNotices: Record<string, { title: string; description: string }> = {
   'DEMO-102': { title: 'Dry order needs a van', description: 'No van with sufficient capacity was pre-assigned. Two vans are available for manual assignment; capacity limits apply.' },
   'DEMO-106': { title: 'Chilled order needs a vehicle', description: 'Automatic planning found no available chilled capacity. Vehicle availability has since changed.' },
@@ -217,24 +169,6 @@ export const allocationOptions: AllocationOption[] = [
   },
 ]
 
-export function selectOrders(orders: ConfirmedOrder[], filter: OrderFilter, query: string, sort: OrderSort): ConfirmedOrder[] {
-  const term = query.trim().toLowerCase()
-  const visible = orders.filter(
-    (order) =>
-      (filter === 'All' || order.status === filter) &&
-      `${order.id} ${order.outlet} ${order.district ?? ''} ${order.requirement} ${order.status} ${order.assignedVehicle ?? ''}`.toLowerCase().includes(term),
-  )
-  if (sort.key) {
-    const key = sort.key
-    visible.sort((a, b) => {
-      const left = a[key],
-        right = b[key]
-      return (typeof left === 'number' && typeof right === 'number' ? left - right : String(left).localeCompare(String(right))) * (sort.direction === 'ascending' ? 1 : -1)
-    })
-  }
-  return visible
-}
-
 export function optionBlocker(order: ConfirmedOrder, option: AllocationOption): string | null {
   if (option.orderId !== order.id) return 'This option belongs to another order.'
   if (!option.supports.includes(order.requirement)) return 'This vehicle does not meet the cargo requirement.'
@@ -261,16 +195,4 @@ export function assignOrder(orders: ConfirmedOrder[], orderId: string, optionId:
   const blocker = optionBlocker(order, option)
   if (blocker) return { orders, error: blocker }
   return { orders: orders.map((item) => (item.id === orderId ? { ...item, status: 'Allocated', assignedVehicle: option.vehicleId, assignedTrip: option.trip } : item)), error: null }
-}
-
-export const deferralReason = 'No suitable vehicle capacity'
-
-export function deferOrder(orders: ConfirmedOrder[], orderId: string, reason: string, details: string): { orders: ConfirmedOrder[]; error: string | null } {
-  const order = orders.find((item) => item.id === orderId)
-  if (!order || order.status !== 'Unallocated') return { orders, error: 'Only an unallocated order can be deferred.' }
-  if (reason !== deferralReason) return { orders, error: 'Select a reason for deferral.' }
-  return {
-    orders: orders.map((item) => (item.id === orderId ? { ...item, status: 'Deferred', assignedVehicle: null, assignedTrip: null, deferral: { reason, details: details.trim() } } : item)),
-    error: null,
-  }
 }

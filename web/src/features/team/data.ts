@@ -15,6 +15,10 @@ export interface StaffTrip {
   totalStops: number
   nextStop?: string
 }
+export interface OutletOption {
+  id: string
+  label: string
+}
 export interface StaffMember {
   id: string
   name: string
@@ -31,6 +35,8 @@ export interface StaffMember {
   vehicleId: string | null
   vehicleDbId: number | null
   vehicleLabel: string | null
+  // The outlet a store manager orders for, by its dataset id (e.g. OUT001).
+  outletId: string | null
   assignment: string
 }
 // Mirrors api/src/common/enums/depot.enum.ts; the API takes and returns a depot by this name.

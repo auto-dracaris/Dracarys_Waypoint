@@ -32,9 +32,10 @@ export function DetailPanel({ panel, label, className = '', children }: { panel:
     </div>
   )
   // `fleet-details` keeps the existing panel styles of the pages that adopt this.
+  // Keyed by its label, so the panel slides in again for each record it shows.
   if (!modal)
     return (
-      <aside className={`wp-detail-panel fleet-details ${className}`} aria-label={label}>
+      <aside key={label} className={`wp-detail-panel fleet-details ${className}`} aria-label={label}>
         {toolbar}
         {children}
       </aside>

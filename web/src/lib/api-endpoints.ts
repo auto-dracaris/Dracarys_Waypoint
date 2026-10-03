@@ -18,6 +18,15 @@ export const API_ENDPOINTS = {
     role: (id: number) => `/users/${id}/role`,
     status: (id: number) => `/users/${id}/status`,
   },
+  orders: {
+    list: '/orders',
+    mine: '/orders/my',
+    placementOptions: '/orders/placement-options',
+    summary: '/orders/summary',
+    detail: (id: number) => `/orders/${id}`,
+    cancel: (id: number) => `/orders/${id}/cancel`,
+    defer: (id: number) => `/orders/${id}/defer`,
+  },
   outlets: {
     list: '/outlets',
     summary: '/outlets/summary',

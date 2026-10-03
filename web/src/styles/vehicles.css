@@ -552,7 +552,7 @@
   justify-content: space-between;
   gap: var(--wp-space-md);
   flex-wrap: wrap;
-  padding-top: var(--wp-space-md);
+  padding: var(--wp-space-md) var(--wp-space-xl);
 }
 .fleet-pager > div {
   display: flex;

@@ -54,6 +54,10 @@
 .order-review-content > .order-allocation-panel {
   width: var(--orders-panel-width);
 }
+/* The slot already slides the docked review open, so the panel inside it does not animate as well. */
+.order-review-slot .order-review-content > .wp-detail-panel {
+  animation: none;
+}
 .orders-filters {
   flex-shrink: 0;
 }
@@ -340,12 +344,69 @@
   padding: var(--wp-space-lg);
   border-radius: var(--wp-radius-md);
 }
-.order-assignment-summary--deferred {
-  border-color: var(--wp-yellow-300);
-  background: var(--wp-yellow-50);
+/* A deferral reads as a record: what moved, from which day to which, and why. */
+.order-deferral {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xl);
+  padding: var(--wp-space-xl);
+  border: 1px solid var(--wp-neutral-200);
+  border-radius: var(--wp-radius-md);
+  background: var(--wp-neutral-50);
 }
-.order-assignment-summary--deferred > svg {
+.order-deferral > header {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-lg);
+}
+.order-deferral-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--wp-space-5xl);
+  height: var(--wp-space-5xl);
+  flex-shrink: 0;
+  border-radius: var(--wp-radius-full);
+  background: var(--wp-yellow-100);
   color: var(--wp-yellow-700);
+}
+.order-deferral-icon svg {
+  width: var(--wp-space-2xl);
+  height: var(--wp-space-2xl);
+}
+.order-deferral-move {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--wp-space-lg);
+  padding: var(--wp-space-lg);
+  border-radius: var(--wp-radius-sm);
+  background: var(--wp-neutral-100);
+}
+.order-deferral-move > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+  min-width: 0;
+}
+.order-deferral-move > svg {
+  width: var(--wp-space-2xl);
+  height: var(--wp-space-2xl);
+  color: var(--wp-text-tertiary);
+}
+.order-deferral-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-md);
+}
+.order-deferral-rows > div {
+  display: grid;
+  grid-template-columns: var(--wp-spacing-16) minmax(0, 1fr);
+  gap: var(--wp-space-lg);
+  align-items: baseline;
+}
+.order-deferral-rows dd {
+  overflow-wrap: anywhere;
 }
 .order-defer-dialog {
   width: min(var(--wp-spacing-140), calc(100% - var(--wp-space-4xl)));
@@ -525,5 +586,30 @@
   }
   .order-defer-dialog[open] {
     animation: none;
+  }
+}
+.orders-run-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wp-space-lg);
+  /* In line with the title above and the table's first column below. */
+  padding-inline: var(--wp-space-xl);
+}
+.orders-run-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+  min-width: 0;
+}
+.orders-day-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+}
+/* Four cards and no review box beside them, unlike the fleet summary this borrows.
+   Only the widest layout reserves that fifth column; narrower ones already use four or two. */
+@media (min-width: 1536px) {
+  .orders-canvas .fleet-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

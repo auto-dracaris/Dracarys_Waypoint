@@ -76,6 +76,10 @@ export class OutletsRepository extends BaseRepository<Outlet> {
     });
   }
 
+  findByUniqueId(uniqueId: string): Promise<Outlet | null> {
+    return this.repository.findOneBy({ uniqueId, isActive: true });
+  }
+
   findDistrictByName(name: string): Promise<District | null> {
     return this.repository.manager.getRepository(District).findOneBy({ name });
   }
@@ -199,7 +203,7 @@ export class OutletsRepository extends BaseRepository<Outlet> {
       .createQueryBuilder('o')
       .select("TO_CHAR(o.requestedDate, 'YYYY-MM-DD')", 'date')
       .addSelect('COUNT(*)', 'orders')
-      .addSelect('ARRAY_AGG(DISTINCT o.tempRequirement)', 'temps')
+      .addSelect('ARRAY_AGG(DISTINCT CAST(o.tempRequirement AS text))', 'temps')
       .where('o.outletId = :outletId AND o.requestedDate >= :fromDate', {
         outletId,
         fromDate,

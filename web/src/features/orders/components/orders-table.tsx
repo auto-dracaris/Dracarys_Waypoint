@@ -2,14 +2,14 @@ import { StatusBadge } from '@/components/ui/status-badge'
 import SwapVertRounded from '@mui/icons-material/SwapVertRounded'
 import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded'
 import ArrowDownwardRounded from '@mui/icons-material/ArrowDownwardRounded'
-import AddRounded from '@mui/icons-material/AddRounded'
-import CheckRounded from '@mui/icons-material/CheckRounded'
 import { Button } from '@/components/ui/button'
-import type { ConfirmedOrder, OrderSort, OrderSortKey } from '../data'
+import type { Paginated } from '@/lib/api-client'
+import { orderStatusTones, type ConfirmedOrder, type OrderSort, type OrderSortKey } from '../data'
 
 const columns: { label: string; key: OrderSortKey }[] = [
   { label: 'ORDER ID', key: 'id' },
   { label: 'OUTLET / DISTRICT', key: 'outlet' },
+  { label: 'DELIVERY DAY', key: 'requestedDelivery' },
   { label: 'REQUIREMENT', key: 'requirement' },
   { label: 'WEIGHT', key: 'weight' },
   { label: 'VOLUME', key: 'volume' },
@@ -18,92 +18,131 @@ const columns: { label: string; key: OrderSortKey }[] = [
 
 export function OrdersTable({
   orders,
-  checked,
   selectedId,
   sort,
+  loading,
+  error,
+  hasOrders,
+  meta,
+  onPage,
   onSort,
-  onCheck,
   onSelect,
   onClear,
-  onAddColumn,
+  onRetry,
 }: {
   orders: ConfirmedOrder[]
-  checked: Set<string>
   selectedId?: string
   sort: OrderSort
+  loading: boolean
+  error: string
+  hasOrders: boolean
+  meta: Paginated<unknown>['meta'] | null
+  onPage: (page: number) => void
   onSort: (key: OrderSortKey) => void
-  onCheck: (id: string) => void
   onSelect: (id: string) => void
   onClear: () => void
-  onAddColumn: () => void
+  onRetry: () => void
 }) {
+  const first = meta ? (meta.page - 1) * meta.limit + 1 : 0
   return (
-    <div className="fleet-table-scroll" role="region" aria-label="Confirmed orders" tabIndex={0}>
-      <table className="fleet-table orders-table">
-        <caption className="sr-only">Confirmed orders. Select an order to review vehicle options; use column headings to sort.</caption>
-        <thead>
-          <tr>
-            {columns.map(({ label, key }) => (
-              <th key={key} scope="col" aria-sort={sort.key === key ? sort.direction : 'none'}>
-                <button className="type-text-sm-medium" onClick={() => onSort(key)}>
-                  {label}
-                  {sort.key === key ? sort.direction === 'ascending' ? <ArrowUpwardRounded fontSize="inherit" /> : <ArrowDownwardRounded fontSize="inherit" /> : <SwapVertRounded fontSize="inherit" />}
-                </button>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order.id} className={`${checked.has(order.id) ? 'fleet-row-checked' : ''} ${selectedId === order.id ? 'orders-row-selected' : ''}`} onClick={() => onSelect(order.id)}>
-              <td>
-                <div className="fleet-id-cell">
-                  <span className="fleet-checkbox">
-                    <input type="checkbox" aria-label={`Select ${order.id}`} checked={checked.has(order.id)} onClick={(event) => event.stopPropagation()} onChange={() => onCheck(order.id)} />
-                    {checked.has(order.id) && <CheckRounded fontSize="inherit" />}
-                  </span>
-                  <button id={`order-select-${order.id}`} aria-pressed={selectedId === order.id} onClick={() => onSelect(order.id)}>
-                    {order.id}
-                  </button>
-                </div>
-              </td>
-              <td title={order.outlet}>{order.outlet}</td>
-              <td>{order.requirement}</td>
-              <td>{order.weight} kg</td>
-              <td>{order.volume} m³</td>
-              <td>
-                <StatusBadge tone={order.status === 'Unallocated' ? 'error' : order.status === 'Deferred' ? 'warning' : 'success'}>{order.status}</StatusBadge>
-              </td>
-            </tr>
-          ))}
-          {!orders.length && (
+    <>
+      <div className="fleet-table-scroll" role="region" aria-label="Confirmed orders" tabIndex={0}>
+        <table className="fleet-table orders-table">
+          <caption className="sr-only">Confirmed orders. Select an order to review vehicle options; use column headings to sort.</caption>
+          <thead>
             <tr>
-              <td colSpan={6}>
-                <div className="fleet-empty">
-                  <h3 className="type-text-lg-semibold">No matching orders</h3>
-                  <p className="type-text-sm-regular text-wp-text-secondary">Try another search or allocation filter.</p>
-                  <Button onClick={onClear}>Clear filters</Button>
-                </div>
-              </td>
+              {columns.map(({ label, key }) => (
+                <th key={key} scope="col" aria-sort={sort.key === key ? sort.direction : 'none'}>
+                  <button className="type-text-sm-medium" onClick={() => onSort(key)}>
+                    {label}
+                    {sort.key === key ? (
+                      sort.direction === 'ascending' ? (
+                        <ArrowUpwardRounded fontSize="inherit" />
+                      ) : (
+                        <ArrowDownwardRounded fontSize="inherit" />
+                      )
+                    ) : (
+                      <SwapVertRounded fontSize="inherit" />
+                    )}
+                  </button>
+                </th>
+              ))}
             </tr>
-          )}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td>
-              <button className="fleet-add-column type-text-xs-regular" onClick={onAddColumn}>
-                <AddRounded fontSize="inherit" />
-                Add Column
-              </button>
-            </td>
-            <td />
-            <td />
-            <td />
-            <td />
-            <td />
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {orders.map((order) => (
+              <tr key={order.id} className={selectedId === order.id ? 'orders-row-selected' : ''} onClick={() => onSelect(order.id)}>
+                <td>
+                  <div className="fleet-id-cell">
+                    <button id={`order-select-${order.id}`} aria-pressed={selectedId === order.id} onClick={() => onSelect(order.id)}>
+                      {order.id}
+                    </button>
+                  </div>
+                </td>
+                <td title={order.outlet}>{order.outlet}</td>
+                <td>{order.requestedDelivery}</td>
+                <td>{order.requirement}</td>
+                <td>{order.weight} kg</td>
+                <td>{order.volume} m³</td>
+                <td>
+                  <StatusBadge tone={orderStatusTones[order.status]}>{order.status}</StatusBadge>
+                  {order.carriedOver && <StatusBadge tone="info">Carried over</StatusBadge>}
+                </td>
+              </tr>
+            ))}
+            {!orders.length && (
+              <tr>
+                <td colSpan={7}>
+                  <div className="fleet-empty">
+                    {loading ? (
+                      <p role="status" className="type-text-sm-regular text-wp-text-secondary">
+                        Loading orders…
+                      </p>
+                    ) : error ? (
+                      <>
+                        <h3 className="type-text-lg-semibold">Could not load orders</h3>
+                        <p role="alert" className="type-text-sm-regular text-wp-text-secondary">
+                          {error}
+                        </p>
+                        <Button onClick={onRetry}>Try again</Button>
+                      </>
+                    ) : !hasOrders ? (
+                      <>
+                        <h3 className="type-text-lg-semibold">No orders yet</h3>
+                        <p className="type-text-sm-regular text-wp-text-secondary">Orders appear here as store managers place them.</p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="type-text-lg-semibold">No matching orders</h3>
+                        <p className="type-text-sm-regular text-wp-text-secondary">Try another search or filter.</p>
+                        <Button onClick={onClear}>Clear filters</Button>
+                      </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      {meta && meta.total > 0 && (
+        <nav className="fleet-pager type-text-sm-regular" aria-label="Order pages">
+          <span className="text-wp-text-secondary" role="status">
+            Showing {first}–{Math.min(first + orders.length - 1, meta.total)} of {meta.total}
+          </span>
+          <div>
+            <Button disabled={meta.page <= 1} onClick={() => onPage(meta.page - 1)}>
+              Previous
+            </Button>
+            <span>
+              Page {meta.page} of {meta.totalPages}
+            </span>
+            <Button disabled={meta.page >= meta.totalPages} onClick={() => onPage(meta.page + 1)}>
+              Next
+            </Button>
+          </div>
+        </nav>
+      )}
+    </>
   )
 }

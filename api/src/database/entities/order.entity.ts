@@ -16,6 +16,13 @@ import { User } from './user.entity';
 @Entity('orders')
 @Index(['requestedDate', 'status'])
 @Index(['outletId', 'requestedDate'])
+// An outlet orders each temperature once per delivery day; a cancelled order
+// frees the slot again.
+@Index(
+  'uq_orders_outlet_date_temp',
+  ['outletId', 'requestedDate', 'tempRequirement'],
+  { unique: true, where: `"status" <> 'cancelled'` },
+)
 export class Order extends AutoIncBaseEntity {
   @Column({ name: 'outlet_id', type: 'int' })
   outletId: number;
@@ -72,4 +79,8 @@ export class Order extends AutoIncBaseEntity {
 
   @Column({ name: 'confirmed_at', type: 'timestamptz', nullable: true })
   confirmedAt: Date | null;
+
+  // The store manager's instructions for this delivery.
+  @Column({ type: 'text', nullable: true })
+  notes: string | null;
 }

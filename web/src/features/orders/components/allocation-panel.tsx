@@ -9,10 +9,14 @@ import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded'
 import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
 import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
 import { Button } from '@/components/ui/button'
+import { DetailPanel } from '@/components/ui/detail-panel'
+import type { DetailPanelState } from '@/components/ui/use-detail-panel'
 import { VehicleOption } from './vehicle-option'
+import { formatDay } from '../api'
 import { allocationNotices, allocationOptions, optionBlocker, type ConfirmedOrder } from '../data'
 
 export function AllocationPanel({
+  panel,
   order,
   optionId,
   onSelectOption,
@@ -20,6 +24,7 @@ export function AllocationPanel({
   onClose,
   onDefer,
 }: {
+  panel: DetailPanelState
   order: ConfirmedOrder
   optionId: string | null
   onSelectOption: (id: string) => void
@@ -32,14 +37,17 @@ export function AllocationPanel({
   const canAssign = order.status === 'Unallocated' && selected && !optionBlocker(order, selected)
   const notice = allocationNotices[order.id]
   return (
-    <aside className="fleet-details order-allocation-panel" aria-labelledby="order-allocation-title">
+    <DetailPanel panel={panel} label={`Allocation review for ${order.id}`} className="order-allocation-panel">
       <header className="order-allocation-heading">
         <h2 id="order-allocation-title" className="type-display-md-medium">
           Allocation Review
         </h2>
-        <button className="order-panel-close" onClick={onClose} aria-label="Close allocation review">
-          <CloseRounded fontSize="inherit" />
-        </button>
+        {/* The pop-up has its own close button in the panel toolbar. */}
+        {panel.mode === 'side' && (
+          <button className="order-panel-close" onClick={onClose} aria-label="Close allocation review">
+            <CloseRounded fontSize="inherit" />
+          </button>
+        )}
       </header>
       <div className="order-allocation-body">
         <section className={`order-summary ${order.reviewDescription ? 'order-summary--detailed' : ''}`}>
@@ -52,6 +60,11 @@ export function AllocationPanel({
           <p className="type-text-sm-regular text-wp-text-secondary">
             {order.reviewDescription ?? `${order.requirement} - ${order.outlet.replace(/^.* - /, '')}${order.district ? ` · ${order.district} district` : ''}`}
           </p>
+          <p className="type-text-xs-regular text-wp-text-tertiary">
+            {order.outlet} · Requested for {order.requestedDelivery}
+            {order.carriedOver && ' · carried over from that run'}
+          </p>
+          {order.notes && <p className="type-text-sm-regular text-wp-text-secondary">Store note: {order.notes}</p>}
           <div className="order-detail-tags">
             <span className="order-detail-tag order-detail-tag--cargo type-text-xs-medium">
               <AcUnitRounded fontSize="inherit" />
@@ -100,30 +113,62 @@ export function AllocationPanel({
                 ))}
               </fieldset>
             ) : (
-              <p className="type-text-sm-regular text-wp-text-secondary">No vehicle options have been supplied for this order.</p>
+              <p className="type-text-sm-regular text-wp-text-secondary">Vehicle options arrive with the planning step. You can defer this order now.</p>
             )}
           </>
+        ) : order.status === 'Deferred' ? (
+          <section className="order-deferral" aria-labelledby="order-deferral-title">
+            <header>
+              <span className="order-deferral-icon">
+                <CalendarMonthOutlined fontSize="inherit" />
+              </span>
+              <div>
+                <h3 id="order-deferral-title" className="type-text-md-semibold">
+                  Order deferred
+                </h3>
+                <p className="type-text-xs-regular text-wp-text-tertiary">Left off its run and moved to a later one.</p>
+              </div>
+            </header>
+            <div className="order-deferral-move">
+              <div>
+                <span className="type-text-xs-regular text-wp-text-tertiary">Requested for</span>
+                <strong className="type-text-sm-semibold">{order.requestedDelivery}</strong>
+              </div>
+              <ArrowForwardRounded fontSize="inherit" />
+              <div>
+                <span className="type-text-xs-regular text-wp-text-tertiary">Moved to</span>
+                <strong className="type-text-sm-semibold">{order.deferral?.deferredTo ? formatDay(order.deferral.deferredTo) : 'Not confirmed yet'}</strong>
+              </div>
+            </div>
+            <dl className="order-deferral-rows type-text-sm-regular">
+              <div>
+                <dt className="text-wp-text-tertiary">Reason</dt>
+                <dd className="type-text-sm-medium">{order.deferral?.reason ?? 'Not recorded'}</dd>
+              </div>
+              {order.deferral?.details && (
+                <div>
+                  <dt className="text-wp-text-tertiary">Note</dt>
+                  <dd>{order.deferral.details}</dd>
+                </div>
+              )}
+            </dl>
+          </section>
         ) : (
-          <div className={`order-assignment-summary ${order.status === 'Deferred' ? 'order-assignment-summary--deferred' : ''}`}>
-            {order.status === 'Deferred' ? <CalendarMonthOutlined fontSize="inherit" /> : <CheckCircleRounded fontSize="inherit" />}
+          <div className="order-assignment-summary">
+            <CheckCircleRounded fontSize="inherit" />
             <div>
-              <h3 className="type-text-md-semibold">{order.status === 'Allocated' ? 'Order allocated' : 'Order deferred'}</h3>
+              <h3 className="type-text-md-semibold">Order {order.status.toLowerCase()}</h3>
               <p className="type-text-sm-regular text-wp-text-secondary">
-                {order.status === 'Deferred'
-                  ? order.deferral?.reason
-                  : order.assignedVehicle
-                    ? `${order.assignedVehicle} · ${order.assignedTrip}`
-                    : 'Assignment details will be added in the next development stage.'}
+                {order.assignedVehicle ? `${order.assignedVehicle} · ${order.assignedTrip}` : order.status === 'Allocated' ? 'Assigned to a trip in Planning.' : ''}
               </p>
-              {order.deferral?.details && <p className="type-text-sm-regular text-wp-text-secondary">{order.deferral.details}</p>}
-              {order.status === 'Deferred' && <p className="type-text-xs-regular text-wp-text-tertiary">Revised delivery date not confirmed.</p>}
             </div>
           </div>
         )}
       </div>
       {order.status === 'Unallocated' && (
         <footer className="fleet-details-footer order-allocation-actions">
-          <Button id={`defer-order-${order.id}`} onClick={onDefer}>
+          {/* An order already carried over from an earlier run is re-deferred by the planning run, not here. */}
+          <Button id={`defer-order-${order.id}`} onClick={onDefer} disabled={order.carriedOver}>
             Defer order
           </Button>
           <Button variant="primary" disabled={!canAssign} onClick={onAssign}>
@@ -132,6 +177,6 @@ export function AllocationPanel({
           </Button>
         </footer>
       )}
-    </aside>
+    </DetailPanel>
   )
 }
