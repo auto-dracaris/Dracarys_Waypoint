@@ -1,4 +1,11 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import type { Relation } from 'typeorm';
 import { AutoIncBaseEntity } from '../../common/entities/autoinc-base.entity';
 import { FuelType } from '../../common/enums/fuel-type.enum';
@@ -6,6 +13,7 @@ import { VehicleStatus } from '../../common/enums/vehicle-status.enum';
 import { VehicleType } from '../../common/enums/vehicle-type.enum';
 import { decimalTransformer } from '../../common/utils/decimal.transformer';
 import { Depot } from './depot.entity';
+import { Trip } from './trip.entity';
 import { User } from './user.entity';
 
 @Entity('vehicles')
@@ -78,7 +86,8 @@ export class Vehicle extends AutoIncBaseEntity {
   })
   weeklyFuelQuotaL: number;
 
-  @Column({ name: 'driver_id', type: 'int', nullable: true })
+  // Unique: a driver is on one vehicle at a time.
+  @Column({ name: 'driver_id', type: 'int', nullable: true, unique: true })
   driverId: number | null;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
@@ -99,13 +108,6 @@ export class Vehicle extends AutoIncBaseEntity {
     default: VehicleStatus.AVAILABLE,
   })
   status: VehicleStatus;
-
-  @Column({
-    name: 'expected_available_at',
-    type: 'timestamptz',
-    nullable: true,
-  })
-  expectedAvailableAt: Date | null;
 
   // Latest point from `vehicle_locations`, kept here for cheap map reads.
   @Column({
@@ -130,4 +132,11 @@ export class Vehicle extends AutoIncBaseEntity {
 
   @Column({ name: 'last_location_at', type: 'timestamptz', nullable: true })
   lastLocationAt: Date | null;
+
+  @OneToMany(() => Trip, (trip) => trip.vehicle)
+  trips?: Relation<Trip[]>;
+
+  // Not a column: filled by `VehiclesRepository.findWithFilters` with the
+  // vehicle's trip count for the requested date.
+  plannedTrips?: number;
 }

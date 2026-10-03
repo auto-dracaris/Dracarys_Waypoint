@@ -8,3 +8,5 @@ variables:
     value: "111111"
   - name: userId
     value: "6"
+  - name: vehicleId
+    value: "1"

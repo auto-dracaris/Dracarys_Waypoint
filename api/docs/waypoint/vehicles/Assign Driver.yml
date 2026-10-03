@@ -1,0 +1,28 @@
+info:
+  name: Assign Driver
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/vehicles/{{vehicleId}}/driver"
+  body:
+    type: json
+    data: |-
+      {
+        "driverId": {{userId}}
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Assign a driver to a vehicle, or send `"driverId": null` to unassign. Dispatcher only.
+
+  The user must be an active driver (404 if not found, 400 otherwise). A driver can be on one vehicle only: assigning one who already has another vehicle returns 409, so unassign there first.
+
+  Pick from `GET /users?role=driver&status=active`. Response `data` is the same shape as Get Vehicle.

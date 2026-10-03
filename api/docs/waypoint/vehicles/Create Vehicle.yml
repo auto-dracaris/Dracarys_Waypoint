@@ -1,0 +1,37 @@
+info:
+  name: Create Vehicle
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/vehicles"
+  body:
+    type: json
+    data: |-
+      {
+        "uniqueId": "VEH099",
+        "registrationNo": "WP-1234",
+        "type": "van",
+        "depot": "Peliyagoda",
+        "isRefrigerated": false,
+        "fuelType": "diesel",
+        "weightCapKg": 1500,
+        "volumeCapM3": 9.5,
+        "kmPerL": 9.5,
+        "weeklyFuelQuotaL": 300
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Create a vehicle. Dispatcher only.
+
+  `registrationNo`, `isRefrigerated` (default false) and `fuelType` (default diesel) are optional. The vehicle starts `available` with no driver; assign one with Assign Driver.
+
+  400 for an unknown depot or invalid fields, 409 if `uniqueId` or `registrationNo` is already taken. Response `data` is the same shape as Get Vehicle.
