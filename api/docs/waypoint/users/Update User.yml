@@ -12,7 +12,8 @@ http:
       {
         "firstName": "Jane",
         "lastName": "Silva",
-        "phone": "0712345678"
+        "phone": "0712345678",
+        "depot": "Peliyagoda"
       }
   auth: inherit
 
@@ -23,6 +24,6 @@ settings:
   maxRedirects: 5
 
 docs: |-
-  Update a user's profile fields (firstName, lastName, phone, avatar — all optional). Dispatcher only (Bearer `{{dispatcherAccessToken}}` from the folder).
+  Update a user's profile fields (firstName, lastName, phone, avatar) and home depot (`depot`: Peliyagoda | Kandy) — all optional. The response carries the `depot` row. Dispatcher only (Bearer `{{dispatcherAccessToken}}` from the folder).
 
   Role and status have their own endpoints; password changes via Auth → Change Password.

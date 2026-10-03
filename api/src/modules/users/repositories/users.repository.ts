@@ -26,6 +26,14 @@ export class UsersRepository extends BaseRepository<User> {
     return this.repository.findOneBy({ phone });
   }
 
+  /** One user with the depot row, so a response carries its name. */
+  findWithDepot(id: number): Promise<User | null> {
+    return this.repository.findOne({
+      where: { id },
+      relations: { depot: true },
+    });
+  }
+
   /**
    * Paginated list narrowed by role/status. `search` is an OR across name
    * and phone — TypeORM expresses OR as an array of where-objects, each one
@@ -53,6 +61,10 @@ export class UsersRepository extends BaseRepository<User> {
         }))
       : base;
 
-    return this.findAndCount(page, limit, { where });
+    // Ids are numeric, so the roster carries the depot row for its name.
+    return this.findAndCount(page, limit, {
+      where,
+      relations: { depot: true },
+    });
   }
 }

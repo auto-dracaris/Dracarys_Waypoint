@@ -79,8 +79,9 @@ export class VehiclesRepository extends BaseRepository<Vehicle> {
 
   /**
    * The vehicle with its depot, driver and live trips on `date`, each trip
-   * with its stops. Only the driver's public columns are selected, so the
-   * password hash never leaves the database.
+   * with its stops in unloading order and the outlet each one serves. Only the
+   * driver's public columns are selected, so the password hash never leaves
+   * the database.
    */
   findDetail(vehicleId: number, date: string): Promise<Vehicle | null> {
     return this.repository
@@ -102,10 +103,13 @@ export class VehiclesRepository extends BaseRepository<Vehicle> {
       .leftJoinAndSelect('trip.stops', 'stop')
       .leftJoin('stop.order', 'order')
       .addSelect(['order.id', 'order.outletId'])
+      .leftJoin('order.outlet', 'outlet')
+      .addSelect(['outlet.id', 'outlet.uniqueId', 'outlet.name'])
       .where('vehicle.id = :vehicleId AND vehicle.isActive = true', {
         vehicleId,
       })
       .orderBy('trip.tripNo', 'ASC')
+      .addOrderBy('stop.seq', 'ASC')
       .getOne();
   }
 

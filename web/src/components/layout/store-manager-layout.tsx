@@ -1,9 +1,11 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useUser } from "@/features/auth/user-context";
 import { Sidebar } from "@/components/layout/store-manager-sidebar"; // Path based on your structure
 
 export function StoreManagerLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useUser();
 
   const getActiveNavId = () => {
     if (location.pathname.includes("/deliveries")) return "deliveries";
@@ -27,6 +29,9 @@ export function StoreManagerLayout() {
     },
   ];
 
+  // RequireRole only renders this layout for a signed-in store manager.
+  if (!user) return null;
+
   return (
     <div className="w-full min-h-screen bg-stone-50 flex justify-start items-start">
       {/* Fixed Sidebar */}
@@ -35,16 +40,17 @@ export function StoreManagerLayout() {
         activeNavId={getActiveNavId()}
         navItems={navConfig}
         user={{
-          name: "Dispatcher User",
-          initials: "DJ",
-          role: "Dispatcher",
+          name: `${user.firstName} ${user.lastName}`,
+          initials: `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase(),
+          // store_manager -> Store Manager
+          role: user.role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
           status: "Signed in",
         }}
         onNavSelect={(id) => {
           const target = navConfig.find((n) => n.id === id);
           if (target) navigate(target.path);
         }}
-        onLogout={() => navigate("/store-manager/login")}
+        onLogout={logout}
       />
 
       {/* Dynamic Page Content */}

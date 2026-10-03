@@ -12,6 +12,8 @@ const server = await createServer({ root, server: { middlewareMode: true, hmr: f
 const render = (Component, props) => renderToStaticMarkup(createElement(Component, props))
 const noop = () => {}
 const originalWindow = globalThis.window
+// Leaflet needs a DOM, so the lazily imported maps reject here and render their Suspense fallback; anything else still fails the run.
+process.on('unhandledRejection', reason => { if (!/document is not defined/.test(String(reason))) throw reason })
 
 try {
   const { Button } = await server.ssrLoadModule('/src/components/ui/button.tsx')
@@ -60,21 +62,25 @@ try {
   console.log('Shared control props, refs, loading guards and semantic output passed.')
 
   const { default: App } = await server.ssrLoadModule('/src/app/App.tsx')
-  const renderRoute = (url) => new Promise((resolve, reject) => {
+  const { UserProvider } = await server.ssrLoadModule('/src/features/auth/user-context.tsx')
+  const session = (role) => JSON.stringify({ accessToken: 'token', refreshToken: 'token', user: { id: 1, firstName: 'Test', lastName: 'User', phone: '94770000000', avatar: null, role, status: 'active', depotId: 1, outletId: null } })
+  // Each portal is only reachable by its own role, so routes render as the role that owns them unless told otherwise.
+  const renderRoute = (url, role = url.startsWith('/store-manager') ? 'store_manager' : 'dispatcher') => new Promise((resolve, reject) => {
     const { pathname, search } = new URL(url, 'http://waypoint.test')
-    globalThis.window = { location: { pathname, search }, localStorage: { getItem: () => null } }
-    const element = createElement(MemoryRouter, { initialEntries: [url] }, createElement(App))
-    // Hub's existing map intentionally renders its Suspense fallback during SSR.
-    if (!url.startsWith('/store-manager')) { resolve(renderToStaticMarkup(element)); return }
+    const getItem = (key) => role && key === 'waypoint:session' ? session(role) : null
+    globalThis.window = { location: { pathname, search }, localStorage: { getItem }, sessionStorage: { getItem: () => null } }
+    const element = createElement(MemoryRouter, { initialEntries: [url] }, createElement(UserProvider, null, createElement(App)))
+    // Hub's existing map intentionally renders its Suspense fallback during SSR; lazy pages need the streamed render.
+    if (role === 'dispatcher') { resolve(renderToStaticMarkup(element)); return }
     let markup = ''
     const output = new Writable({ write(chunk, encoding, next) { markup += chunk.toString(); next() } })
     output.on('finish', () => resolve(markup))
     const stream = renderToPipeableStream(element, {
-      onAllReady() { stream.pipe(output) }, onError: reject,
+      onAllReady() { stream.pipe(output) }, onError: error => reject(new Error(`${url} failed to render`, { cause: error })),
     })
   })
   const routes = [
-    ['/', 'Delivery Overview'], ['/login', 'Sign in to manage'], ['/vehicles', 'Vehicles'],
+    ['/', 'Delivery Overview'], ['/vehicles', 'Vehicles'],
     ['/outlets', 'Outlets'], ['/team', 'Team'], ['/orders', 'Confirmed Orders'],
     ['/planning', 'Final Plan Review'], ['/planning/published', 'Plan Published'],
     ['/operations/loading-exception', 'Loading Exception Review'],
@@ -82,10 +88,7 @@ try {
   for (const [pathname, title] of routes) {
     const markup = await renderRoute(pathname)
     assert.match(markup, new RegExp(`<h1[^>]*>${title}</h1>`))
-    if (pathname === '/login') {
-      assert.match(markup, /id="login-email"[^>]*type="email"[^>]*required=""/)
-      assert.match(markup, /id="login-password"[^>]*type="password"[^>]*required=""/)
-    } else assert.match(markup, /aria-label="Open navigation"/)
+    assert.match(markup, /aria-label="Open navigation"/)
     if (pathname === '/orders') assert.match(markup, /orders-workspace\s/, 'Orders must retain full-width planning without a selected order')
   }
   assert.match(await renderRoute('/orders?order=DEMO-108'), /orders-workspace--review-open/, 'URL order selection must still open allocation review')
@@ -99,7 +102,31 @@ try {
       assert.doesNotMatch(markup, /role="tooltip"/, 'Sidebar tooltips must initially stay closed')
     }
   }
-  console.log('Nine routes, order selection and four sidebar variants rendered successfully.')
+  console.log('Eight hub routes, order selection and four sidebar variants rendered successfully.')
+
+  const login = await renderRoute('/login', null)
+  assert.match(login, /<h1[^>]*>Sign in to WayPoint<\/h1>/)
+  assert.match(login, /type="tel"/)
+  assert.match(login, /type="password"/)
+  assert.match(await renderRoute('/register', null), /<h1[^>]*>Create an account<\/h1>/)
+  for (const [url, role] of [['/', null], ['/store-manager', null], ['/', 'store_manager'], ['/store-manager', 'dispatcher']]) {
+    const markup = await renderRoute(url, role)
+    assert.doesNotMatch(markup, /overview-shell|Loading dashboard data/, `${url} must stay closed to ${role ?? 'a signed-out visitor'}`)
+  }
+  console.log('Sign-in, registration and role-guarded portals rendered successfully.')
+
+  const { DetailPanel } = await server.ssrLoadModule('/src/components/ui/detail-panel.tsx')
+  const panelState = (mode) => ({ mode, setMode: noop, open: true, show: noop, close: noop })
+  const sidePanel = render(DetailPanel, { panel: panelState('side'), label: 'Details for VEH021', children: 'Body' })
+  assert.match(sidePanel, /^<aside[^>]*aria-label="Details for VEH021"/)
+  assert.match(sidePanel, /aria-label="Show as side panel"[^>]*aria-pressed="true"/)
+  assert.match(sidePanel, /aria-label="Show as pop-up"[^>]*aria-pressed="false"/)
+  assert.doesNotMatch(sidePanel, /aria-label="Close details"/, 'A docked panel has nothing to close')
+  const modalPanel = render(DetailPanel, { panel: panelState('modal'), label: 'Details for VEH021', children: 'Body' })
+  assert.match(modalPanel, /^<dialog[^>]*aria-label="Details for VEH021"/)
+  assert.match(modalPanel, /aria-label="Show as pop-up"[^>]*aria-pressed="true"/)
+  assert.match(modalPanel, /aria-label="Close details"/)
+  console.log('Detail panel side and pop-up variants passed.')
 
   for (const [url, content] of [
     ['/store-manager', /Loading dashboard data/],
@@ -107,7 +134,6 @@ try {
     ['/store-manager/orders/create', /Place an order/],
     ['/store-manager/deliveries', /<h1[^>]*>Deliveries</],
     ['/store-manager/delivery/VEH012', /Ambient Delivery/],
-    ['/store-manager/login', /type="password"/],
     ['/store-manager/unknown', /Page not found/],
     ['/unknown', /Page not found/],
   ]) {
@@ -120,7 +146,7 @@ try {
   const deliveries = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(TodayDeliveries, { deliveries: mockApiData.todayDeliveries })))
   assert.match(deliveries, /href="\/store-manager\/delivery\/VEH012"/)
   assert.doesNotMatch(deliveries, /src="\/store-manager\//, 'Artwork must use bundled asset imports')
-  console.log('Six Store Manager routes, delivery links and both not-found routes rendered successfully.')
+  console.log('Five Store Manager routes, delivery links and both not-found routes rendered successfully.')
 
   const { OrdersTable } = await server.ssrLoadModule('/src/features/orders/components/orders-table.tsx')
   const { initialOrders } = await server.ssrLoadModule('/src/features/orders/data.ts')

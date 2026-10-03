@@ -33,6 +33,6 @@ settings:
 docs: |-
   Register a new user and send a registration OTP by SMS. Public.
 
-  The account is always created with the `driver` role; `role` is not accepted in the body.
+  The account is always created with the `driver` role and the Peliyagoda home depot; neither is accepted in the body. A dispatcher changes them afterwards (Users → Update User Role / Update User).
 
   Response `data`: `{ userId, otpId, otp? }` (`otp` only outside production). `otpId` and `otp` are saved to the selected environment for Verify OTP.

@@ -21,6 +21,8 @@
 .fleet-review-link { display: inline-flex; gap: var(--wp-space-sm); align-items: center; color: var(--wp-blue-500); cursor: pointer; margin-top: var(--wp-space-xs); }
 .fleet-review-link svg { width: var(--wp-space-xl); height: var(--wp-space-xl); }
 .fleet-workspace { display: grid; grid-template-columns: minmax(0, 1fr) var(--wp-spacing-120); gap: var(--wp-space-xl); align-items: start; flex: 1; margin-top: var(--wp-space-md); }
+/* The detail panel is a pop-up, so the table takes the whole row. */
+.fleet-workspace.fleet-workspace--full { grid-template-columns: minmax(0, 1fr); }
 .fleet-inventory { min-width: 0; border: 1px solid var(--wp-neutral-300); border-radius: var(--wp-radius-md); overflow: hidden; container-type: inline-size; }
 .fleet-inventory-title { padding: var(--wp-space-xl); min-height: var(--wp-space-8xl); }
 .fleet-toolbar { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--wp-space-xl); padding: var(--wp-space-xl) var(--wp-space-md) var(--wp-space-lg); }

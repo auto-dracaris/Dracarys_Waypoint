@@ -5,17 +5,18 @@ import { createPublishedPlan, resendNotification, type PublishedPlan } from '@/f
 import { reviewedPlan } from '@/features/planning/data'
 import { initialNotifications, markNotificationsRead, type NotificationItem } from '@/features/notifications/data'
 import { loadSidebarCollapsed, saveSidebarCollapsed } from '@/lib/sidebar-preferences'
+import { useUser } from '@/features/auth/user-context'
 
 export function useHubController() {
   const location = useLocation()
   const path = location.pathname
   const navigateTo = useNavigate()
+  const { logout } = useUser()
   const [navigationOpen, setNavigationOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(loadSidebarCollapsed)
   const [notice, setNotice] = useState<string | null>(null)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [notifications, setNotifications] = useState(initialNotifications)
-  const isLogin = path === '/login'
   const isVehicles = path === '/vehicles'
   const isOutlets = path === '/outlets'
   const isTeam = path === '/team'
@@ -30,13 +31,15 @@ export function useHubController() {
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
-  useEffect(() => { document.title = `WayPoint — ${isLogin ? 'Admin Sign In' : isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isOrders ? 'Confirmed Orders' : isPlanning ? 'Final Plan Review' : isPublished ? 'Plan Published' : isOperations ? 'Loading Exception Review' : 'Delivery Overview'}` }, [isLogin, isVehicles, isOutlets, isTeam, isOrders, isPlanning, isPublished, isOperations])
+  useEffect(() => { document.title = `WayPoint — ${isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isOrders ? 'Confirmed Orders' : isPlanning ? 'Final Plan Review' : isPublished ? 'Plan Published' : isOperations ? 'Loading Exception Review' : 'Delivery Overview'}` }, [isVehicles, isOutlets, isTeam, isOrders, isPlanning, isPublished, isOperations])
   useEffect(() => { saveSidebarCollapsed(sidebarCollapsed) }, [sidebarCollapsed])
   function navigate(page: string, recordId?: string) {
     setNavigationOpen(false)
+    // RequireRole sends the signed-out user to /login.
+    if (page === 'Log out') { void logout(); return }
     if (page === 'Order notifications' || page === 'Notifications') { setNotice(null); setNotificationsOpen(true); return }
     setNotificationsOpen(false)
-    const routes: Record<string, string> = { 'Log out': '/login', 'Sign in': '/login', Overview: '/', Home: '/', Dashboard: '/', Vehicles: '/vehicles', Outlets: '/outlets', Team: '/team', Orders: '/orders', Planning: '/planning', 'Delivery planning': '/planning', 'Publish plan confirmation': '/planning/published', Operations: '/operations/loading-exception', 'Loading exception review': '/operations/loading-exception' }
+    const routes: Record<string, string> = { Overview: '/', Home: '/', Dashboard: '/', Vehicles: '/vehicles', Outlets: '/outlets', Team: '/team', Orders: '/orders', Planning: '/planning', 'Delivery planning': '/planning', 'Publish plan confirmation': '/planning/published', Operations: '/operations/loading-exception', 'Loading exception review': '/operations/loading-exception' }
     const route = routes[page]
     const queryKey = page === 'Vehicles' ? 'vehicle' : page === 'Orders' ? 'order' : null
     const target = route && queryKey && recordId ? `${route}?${queryKey}=${encodeURIComponent(recordId)}` : route
@@ -73,7 +76,7 @@ export function useHubController() {
   return { pageProps, navigate, notice, setNotice, navigationOpen, setNavigationOpen,
     sidebarCollapsed, setSidebarCollapsed, notificationsOpen, setNotificationsOpen,
     notifications, readNotifications, openNotification, publication, publish, resend,
-    loadingException, confirmLoading, isLogin, isVehicles, isOutlets, isTeam,
+    loadingException, confirmLoading, isVehicles, isOutlets, isTeam,
     isOrders, isPlanning, isPublished, isOperations }
 }
 

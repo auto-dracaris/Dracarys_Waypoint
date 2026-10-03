@@ -3,20 +3,26 @@ import {
   ConflictException,
   HttpStatus,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { DeepPartial } from 'typeorm';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
+import { DepotsRepository } from '../../common/repositories/depots.repository';
 import { BaseCrudService } from '../../common/services/base-crud.service';
 import { formatPhoneNumber } from '../../common/utils/phone.util';
 import { User } from '../../database/entities/user.entity';
 import { PatchUserRoleDto } from './dto/patch-user-role.dto';
 import { PatchUserStatusDto } from './dto/patch-user-status.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UserListQueryDto } from './dto/user-list-query.dto';
 import { UsersRepository } from './repositories/users.repository';
 
 @Injectable()
 export class UsersService extends BaseCrudService<User> {
-  constructor(private readonly usersRepository: UsersRepository) {
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly depotsRepository: DepotsRepository,
+  ) {
     super(usersRepository, 'User');
   }
 
@@ -55,7 +61,7 @@ export class UsersService extends BaseCrudService<User> {
   }
 
   async findOne(id: string | number): Promise<ApiResponseDto> {
-    const user = await this.findOrThrow(id);
+    const user = await this.findWithDepotOrThrow(Number(id));
     return new ApiResponseDto(
       HttpStatus.OK,
       'User retrieved successfully',
@@ -82,6 +88,33 @@ export class UsersService extends BaseCrudService<User> {
       HttpStatus.OK,
       'User updated successfully',
       this.toPublic(saved),
+    );
+  }
+
+  /**
+   * `PUT /users/:id` — profile fields plus the home depot. The depot arrives
+   * by name, so it is resolved to its row before the plain update runs.
+   */
+  async updateProfile(
+    id: number,
+    dto: UpdateUserDto,
+    actorId: number,
+  ): Promise<ApiResponseDto> {
+    const { depot: depotName, ...fields } = dto;
+    const changes: DeepPartial<User> = fields;
+    if (depotName) {
+      const depot = await this.depotsRepository.findByName(depotName);
+      if (!depot) {
+        throw new BadRequestException('Depot not found');
+      }
+      changes.depotId = depot.id;
+    }
+    await this.update(id, changes, actorId);
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'User updated successfully',
+      this.toPublic(await this.findWithDepotOrThrow(id)),
     );
   }
 
@@ -157,6 +190,15 @@ export class UsersService extends BaseCrudService<User> {
         'Phone number is already in use by another user',
       );
     }
+  }
+
+  /** With the depot row, so the response carries the depot's name. */
+  private async findWithDepotOrThrow(id: number): Promise<User> {
+    const user = await this.usersRepository.findWithDepot(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return user;
   }
 
   private toPublic(user: User) {

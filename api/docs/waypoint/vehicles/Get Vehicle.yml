@@ -21,4 +21,4 @@ docs: |-
   - `depot`: the home depot
   - `driver`: `{ id, firstName, lastName, phone }` or null
   - `fuelQuotaRemainingL`: the weekly quota minus the planned fuel of the vehicle's non-cancelled trips in the ISO week containing `date`
-  - `trips`: the non-cancelled trips on `date`, each `{ id, tripNo, status, plannedDepartAt, plannedEndAt, stops, orders }` (`stops` counts outlets, `orders` counts orders)
+  - `trips`: the non-cancelled trips on `date`, each `{ id, tripNo, status, plannedDepartAt, plannedEndAt, stops, recordedStops, nextStop, orders }` (`stops` counts outlets, `recordedStops` the outlets where every order has an outcome, `nextStop` is the next outlet's name or null, `orders` counts orders)

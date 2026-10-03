@@ -43,7 +43,7 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
     @CurrentUser('userId') actorId: number,
   ): Promise<ApiResponseDto> {
-    return this.usersService.update(id, updateUserDto, actorId);
+    return this.usersService.updateProfile(id, updateUserDto, actorId);
   }
 
   @Patch(':id/role')

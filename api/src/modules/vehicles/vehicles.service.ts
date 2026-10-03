@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
+import { DepotsRepository } from '../../common/repositories/depots.repository';
 import { UserRole } from '../../common/enums/user-role.enum';
+import { TripStopStatus } from '../../common/enums/trip-stop-status.enum';
 import { UserStatus } from '../../common/enums/user-status.enum';
 import { VehicleStatus } from '../../common/enums/vehicle-status.enum';
 import { Vehicle } from '../../database/entities/vehicle.entity';
@@ -18,11 +20,17 @@ import { PatchVehicleStatusDto } from './dto/patch-vehicle-status.dto';
 import { QueryVehicleDto } from './dto/query-vehicle.dto';
 import { VehicleDateQueryDto } from './dto/vehicle-date-query.dto';
 import { VehicleSummaryQueryDto } from './dto/vehicle-summary-query.dto';
-import { DepotsRepository } from './repositories/depots.repository';
 import { VehiclesRepository } from './repositories/vehicles.repository';
 
 // Postgres's unique-violation code; `vehicles.driver_id` is unique.
 const UNIQUE_VIOLATION = '23505';
+
+// The outcomes a driver records; anything else is still ahead of the vehicle.
+const RECORDED_STOP = new Set([
+  TripStopStatus.DELIVERED,
+  TripStopStatus.PARTIAL,
+  TripStopStatus.FAILED,
+]);
 
 /** Today's date (YYYY-MM-DD) where Waypoint operates, whatever the server's clock zone. */
 const today = (): string =>
@@ -221,6 +229,11 @@ export class VehiclesService {
         Math.round((vehicle.weeklyFuelQuotaL - plannedFuel) * 100) / 100,
       trips: trips.map((trip) => {
         const stops = trip.stops ?? [];
+        // Stops arrive in unloading order, so the first open one is next.
+        const open = stops.filter((stop) => !RECORDED_STOP.has(stop.status));
+        const openOutlets = new Set(open.map((stop) => stop.order?.outletId));
+        const outlets = new Set(stops.map((stop) => stop.order?.outletId));
+        const nextOutlet = open[0]?.order?.outlet;
         return {
           id: trip.id,
           tripNo: trip.tripNo,
@@ -230,7 +243,12 @@ export class VehiclesService {
             trip.plannedDepartAt.getTime() + trip.plannedMinutes * 60_000,
           ),
           // Each order is its own stop row; a "stop" on the page is an outlet.
-          stops: new Set(stops.map((stop) => stop.order?.outletId)).size,
+          stops: outlets.size,
+          // An outlet counts once every order for it has an outcome.
+          recordedStops: outlets.size - openOutlets.size,
+          nextStop: nextOutlet
+            ? (nextOutlet.name ?? nextOutlet.uniqueId)
+            : null,
           orders: stops.length,
         };
       }),
