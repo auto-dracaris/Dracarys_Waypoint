@@ -3,11 +3,25 @@ import { useEffect, useRef, useState } from 'react'
 import CloseRounded from '@mui/icons-material/CloseRounded'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
-import type { FleetVehicle, VehicleAvailability } from '../data'
+import type { Driver, FleetVehicle } from '../data'
 
-export function AvailabilityEditor({ vehicle, onSave, onClose }: { vehicle: FleetVehicle; onSave: (status: VehicleAvailability) => Promise<void>; onClose: () => void }) {
+const NONE = ''
+
+export function DriverEditor({
+  vehicle,
+  currentDriverId,
+  drivers,
+  onSave,
+  onClose,
+}: {
+  vehicle: FleetVehicle
+  currentDriverId: number | null
+  drivers: Driver[]
+  onSave: (driverId: number | null) => Promise<void>
+  onClose: () => void
+}) {
   const dialog = useRef<HTMLDialogElement>(null)
-  const [status, setStatus] = useState(vehicle.availability)
+  const [driverId, setDriverId] = useState(currentDriverId === null ? NONE : String(currentDriverId))
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   useEffect(() => {
@@ -16,14 +30,14 @@ export function AvailabilityEditor({ vehicle, onSave, onClose }: { vehicle: Flee
   async function submit() {
     setSaving(true)
     try {
-      await onSave(status)
+      await onSave(driverId === NONE ? null : Number(driverId))
     } catch (reason) {
       setError((reason as Error).message)
       setSaving(false)
     }
   }
   return (
-    <dialog ref={dialog} className="stage-notice availability-editor" aria-labelledby="availability-title" onCancel={onClose}>
+    <dialog ref={dialog} className="stage-notice availability-editor" aria-labelledby="driver-title" onCancel={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault()
@@ -31,22 +45,25 @@ export function AvailabilityEditor({ vehicle, onSave, onClose }: { vehicle: Flee
         }}
       >
         <div className="flex items-center justify-between gap-wp-space-lg">
-          <h2 id="availability-title" className="type-text-lg-semibold">
-            Update {vehicle.id} availability
+          <h2 id="driver-title" className="type-text-lg-semibold">
+            Assign driver · {vehicle.id}
           </h2>
           <IconButton type="button" className="" aria-label="Close editor" onClick={onClose}>
             <CloseRounded fontSize="inherit" />
           </IconButton>
         </div>
         <label className="availability-field type-text-sm-medium">
-          Availability
-          <Select controlSize="sm" value={status} onChange={(event) => setStatus(event.target.value as VehicleAvailability)}>
-            {(['Available', 'In workshop', 'Unavailable'] as const).map((value) => (
-              <option key={value}>{value}</option>
+          Driver
+          <Select controlSize="sm" value={driverId} onChange={(event) => setDriverId(event.target.value)}>
+            <option value={NONE}>Not assigned</option>
+            {drivers.map((driver) => (
+              <option key={driver.id} value={driver.id}>
+                {driver.name}
+              </option>
             ))}
           </Select>
         </label>
-        <p className="text-wp-text-secondary type-text-sm-regular">Review affected draft trips before publishing the plan.</p>
+        <p className="text-wp-text-secondary type-text-sm-regular">A driver can be on one vehicle at a time.</p>
         {error && (
           <p role="alert" className="type-text-sm-regular text-wp-red-700">
             {error}
@@ -55,7 +72,7 @@ export function AvailabilityEditor({ vehicle, onSave, onClose }: { vehicle: Flee
         <div className="availability-actions">
           <Button onClick={onClose}>Cancel</Button>
           <Button type="submit" variant="primary" disabled={saving}>
-            {saving ? 'Saving…' : 'Save availability'}
+            {saving ? 'Saving…' : 'Save driver'}
           </Button>
         </div>
       </form>

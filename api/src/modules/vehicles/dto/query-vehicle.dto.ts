@@ -9,13 +9,43 @@ import {
 } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { Depot } from '../../../common/enums/depot.enum';
+import { VehicleStatus } from '../../../common/enums/vehicle-status.enum';
 import { VehicleType } from '../../../common/enums/vehicle-type.enum';
+
+export const VEHICLE_SORT_KEYS = [
+  'uniqueId',
+  'type',
+  'weightCapKg',
+  'status',
+] as const;
+export type VehicleSortKey = (typeof VEHICLE_SORT_KEYS)[number];
 
 export class QueryVehicleDto extends PaginationQueryDto {
   // The dataset identifier, e.g. VEH001.
   @IsOptional()
   @IsString()
   uniqueId?: string;
+
+  // Matches the vehicle id or registration number, case-insensitively.
+  @IsOptional()
+  @IsString({ message: 'search must be a string' })
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(VehicleStatus, {
+    message: `status must be one of: ${Object.values(VehicleStatus).join(', ')}`,
+  })
+  status?: VehicleStatus;
+
+  @IsOptional()
+  @IsEnum(VEHICLE_SORT_KEYS, {
+    message: `sortBy must be one of: ${VEHICLE_SORT_KEYS.join(', ')}`,
+  })
+  sortBy?: VehicleSortKey;
+
+  @IsOptional()
+  @IsEnum(['asc', 'desc'], { message: 'sortDir must be asc or desc' })
+  sortDir?: 'asc' | 'desc';
 
   @IsOptional()
   @IsEnum(Depot)

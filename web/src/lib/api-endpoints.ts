@@ -28,6 +28,9 @@ export const API_ENDPOINTS = {
   },
   vehicles: {
     list: '/vehicles',
+    summary: '/vehicles/summary',
     detail: (id: number) => `/vehicles/${id}`,
+    status: (id: number) => `/vehicles/${id}/status`,
+    driver: (id: number) => `/vehicles/${id}/driver`,
   },
 } as const
