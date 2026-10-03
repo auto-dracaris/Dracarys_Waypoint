@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/trips_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(const TripsApp());
@@ -16,7 +16,7 @@ class TripsApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF3F4F6),
         fontFamily: 'Roboto',
       ),
-      home: const TripsScreen(),
+      home: const LoginScreen(),
     );
   }
 }

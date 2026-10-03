@@ -13,16 +13,11 @@ class AppHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 48,
-                height: 32,
-                color: const Color(0xFFFACC15),
-                child: const Center(
-                  child: Text(
-                    'W',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                  ),
-                ),
+              // Display the logo image here
+              Image.asset(
+                'assets/images/logo.png',
+                height: 32, // Fits nicely in the top bar
+                fit: BoxFit.contain,
               ),
               const SizedBox(width: 16),
               const Text(
