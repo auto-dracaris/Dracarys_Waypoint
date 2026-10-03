@@ -12,6 +12,7 @@ import { UserRole } from '../../common/enums/user-role.enum';
 import { TripStopStatus } from '../../common/enums/trip-stop-status.enum';
 import { UserStatus } from '../../common/enums/user-status.enum';
 import { VehicleStatus } from '../../common/enums/vehicle-status.enum';
+import { today } from '../../common/utils/date.util';
 import { Vehicle } from '../../database/entities/vehicle.entity';
 import { UsersRepository } from '../users/repositories/users.repository';
 import { AssignDriverDto } from './dto/assign-driver.dto';
@@ -31,12 +32,6 @@ const RECORDED_STOP = new Set([
   TripStopStatus.PARTIAL,
   TripStopStatus.FAILED,
 ]);
-
-/** Today's date (YYYY-MM-DD) where Waypoint operates, whatever the server's clock zone. */
-const today = (): string =>
-  new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Colombo' }).format(
-    new Date(),
-  );
 
 @Injectable()
 export class VehiclesService {

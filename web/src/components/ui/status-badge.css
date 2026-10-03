@@ -1,11 +1,53 @@
-.wp-status-badge { display: inline-flex; align-items: center; justify-content: center; gap: var(--wp-space-xs); min-height: var(--wp-space-2xl); padding-inline: var(--wp-space-md); border-radius: var(--wp-radius-lg); white-space: nowrap; }
-.wp-status-badge--neutral { color: var(--wp-neutral-600); background: var(--wp-neutral-100); }
-.wp-status-badge--info { color: var(--wp-blue-700); background: var(--wp-blue-100); }
-.wp-status-badge--success { color: var(--wp-lime-700); background: var(--wp-lime-100); }
-.wp-status-badge--warning { color: var(--wp-yellow-700); background: var(--wp-yellow-100); }
-.wp-status-badge--error { color: var(--wp-red-700); background: var(--wp-red-100); }
-.wp-status-badge--md { min-height: var(--wp-space-3xl); padding-inline: var(--wp-space-lg); border-radius: var(--wp-radius-xl); }
-.wp-status-badge--lg { min-height: var(--wp-space-4xl); padding-inline: var(--wp-space-xl); border-radius: var(--wp-radius-2xl); gap: var(--wp-space-md); }
-.wp-status-badge-icon { display: inline-flex; align-items: center; }
-.wp-status-badge svg { width: var(--wp-space-lg); height: var(--wp-space-lg); }
-.wp-status-badge--lg svg { width: var(--wp-space-xl); height: var(--wp-space-xl); }
+.wp-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--wp-space-xs);
+  min-height: var(--wp-space-2xl);
+  padding-inline: var(--wp-space-md);
+  border-radius: var(--wp-radius-lg);
+  white-space: nowrap;
+}
+.wp-status-badge--neutral {
+  color: var(--wp-neutral-600);
+  background: var(--wp-neutral-100);
+}
+.wp-status-badge--info {
+  color: var(--wp-blue-700);
+  background: var(--wp-blue-100);
+}
+.wp-status-badge--success {
+  color: var(--wp-lime-700);
+  background: var(--wp-lime-100);
+}
+.wp-status-badge--warning {
+  color: var(--wp-yellow-700);
+  background: var(--wp-yellow-100);
+}
+.wp-status-badge--error {
+  color: var(--wp-red-700);
+  background: var(--wp-red-100);
+}
+.wp-status-badge--md {
+  min-height: var(--wp-space-3xl);
+  padding-inline: var(--wp-space-lg);
+  border-radius: var(--wp-radius-xl);
+}
+.wp-status-badge--lg {
+  min-height: var(--wp-space-4xl);
+  padding-inline: var(--wp-space-xl);
+  border-radius: var(--wp-radius-2xl);
+  gap: var(--wp-space-md);
+}
+.wp-status-badge-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.wp-status-badge svg {
+  width: var(--wp-space-lg);
+  height: var(--wp-space-lg);
+}
+.wp-status-badge--lg svg {
+  width: var(--wp-space-xl);
+  height: var(--wp-space-xl);
+}

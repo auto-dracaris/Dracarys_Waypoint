@@ -22,24 +22,87 @@ export function StaffAccessEditor({ member, self, onSave }: { member: StaffMembe
   async function submit() {
     setSaving(true)
     setError('')
-    try { await onSave({ depot, role, status }) }
-    catch (reason) { setError((reason as Error).message) }
-    finally { setSaving(false) }
+    try {
+      await onSave({ depot, role, status })
+    } catch (reason) {
+      setError((reason as Error).message)
+    } finally {
+      setSaving(false)
+    }
   }
-  function reset() { setDepot(member.depot); setRole(member.roleKey); setStatus(member.statusKey); setError('') }
-  return <form className="team-access-form" onSubmit={event => { event.preventDefault(); void submit() }}>
-    <div className="team-detail-rows type-text-md-regular">
-      <label><span className="text-wp-text-tertiary">Depot</span><Select controlSize="sm" required value={depot} onChange={event => setDepot(event.target.value)}>{!depots.includes(member.depot) && <option value={member.depot} disabled>Not set</option>}{depots.map(value => <option key={value}>{value}</option>)}</Select></label>
-      <label><span className="text-wp-text-tertiary">Role</span><Select controlSize="sm" disabled={self} value={role} onChange={event => setRole(event.target.value as User['role'])}>{roles.map(value => <option key={value} value={value}>{staffRoleLabels[value]}</option>)}</Select></label>
-      <label><span className="text-wp-text-tertiary">Status</span><span className="team-access-status"><Select controlSize="sm" disabled={self} value={status} onChange={event => setStatus(event.target.value as User['status'])}>{statuses.map(value => <option key={value} value={value}>{staffStatusLabels[value]}</option>)}</Select><StatusBadge tone={staffStatusTones[status]}>{staffStatusLabels[status]}</StatusBadge></span></label>
-    </div>
-    {self && <p className="team-callout team-callout--neutral type-text-sm-regular">You can’t change your own role or status.</p>}
-    {status !== member.statusKey && status === 'deleted' && <p className="team-callout team-callout--error type-text-sm-regular">A deleted account leaves this list and can no longer sign in.</p>}
-    {status !== member.statusKey && status === 'blocked' && <p className="team-callout team-callout--warning type-text-sm-regular">A blocked account stays on the list but cannot sign in.</p>}
-    {error && <p role="alert" className="team-callout team-callout--error type-text-sm-regular">{error}</p>}
-    <div className="team-access-actions">
-      {changed && <div className="team-access-dirty type-text-sm-regular text-wp-text-tertiary"><span>Unsaved changes</span><Button variant="link" onClick={reset}>Reset</Button></div>}
-      <Button type="submit" variant="primary" className="w-full" disabled={saving || !changed}>{saving ? 'Saving…' : 'Save changes'}</Button>
-    </div>
-  </form>
+  function reset() {
+    setDepot(member.depot)
+    setRole(member.roleKey)
+    setStatus(member.statusKey)
+    setError('')
+  }
+  return (
+    <form
+      className="team-access-form"
+      onSubmit={(event) => {
+        event.preventDefault()
+        void submit()
+      }}
+    >
+      <div className="team-detail-rows type-text-md-regular">
+        <label>
+          <span className="text-wp-text-tertiary">Depot</span>
+          <Select controlSize="sm" required value={depot} onChange={(event) => setDepot(event.target.value)}>
+            {!depots.includes(member.depot) && (
+              <option value={member.depot} disabled>
+                Not set
+              </option>
+            )}
+            {depots.map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </Select>
+        </label>
+        <label>
+          <span className="text-wp-text-tertiary">Role</span>
+          <Select controlSize="sm" disabled={self} value={role} onChange={(event) => setRole(event.target.value as User['role'])}>
+            {roles.map((value) => (
+              <option key={value} value={value}>
+                {staffRoleLabels[value]}
+              </option>
+            ))}
+          </Select>
+        </label>
+        <label>
+          <span className="text-wp-text-tertiary">Status</span>
+          <span className="team-access-status">
+            <Select controlSize="sm" disabled={self} value={status} onChange={(event) => setStatus(event.target.value as User['status'])}>
+              {statuses.map((value) => (
+                <option key={value} value={value}>
+                  {staffStatusLabels[value]}
+                </option>
+              ))}
+            </Select>
+            <StatusBadge tone={staffStatusTones[status]}>{staffStatusLabels[status]}</StatusBadge>
+          </span>
+        </label>
+      </div>
+      {self && <p className="team-callout team-callout--neutral type-text-sm-regular">You can’t change your own role or status.</p>}
+      {status !== member.statusKey && status === 'deleted' && <p className="team-callout team-callout--error type-text-sm-regular">A deleted account leaves this list and can no longer sign in.</p>}
+      {status !== member.statusKey && status === 'blocked' && <p className="team-callout team-callout--warning type-text-sm-regular">A blocked account stays on the list but cannot sign in.</p>}
+      {error && (
+        <p role="alert" className="team-callout team-callout--error type-text-sm-regular">
+          {error}
+        </p>
+      )}
+      <div className="team-access-actions">
+        {changed && (
+          <div className="team-access-dirty type-text-sm-regular text-wp-text-tertiary">
+            <span>Unsaved changes</span>
+            <Button variant="link" onClick={reset}>
+              Reset
+            </Button>
+          </div>
+        )}
+        <Button type="submit" variant="primary" className="w-full" disabled={saving || !changed}>
+          {saving ? 'Saving…' : 'Save changes'}
+        </Button>
+      </div>
+    </form>
+  )
 }

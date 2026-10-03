@@ -1,21 +1,94 @@
-.wp-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--wp-space-md); padding: var(--wp-space-lg); border: 1px solid transparent; border-radius: var(--wp-radius-xs); color: var(--wp-text-primary); cursor: pointer; white-space: nowrap; transition: background 150ms; }
-.wp-button svg { width: var(--wp-space-2xl); height: var(--wp-space-2xl); flex-shrink: 0; }
-.wp-button-icon { display: inline-flex; align-items: center; }
-.wp-button--outline { background: var(--wp-neutral-50); border-color: var(--wp-neutral-200); }
-.wp-button--outline:hover:not(:disabled) { background: var(--wp-neutral-100); }
-.wp-button--primary { background: var(--wp-yellow-400); }
-.wp-button--primary:hover:not(:disabled) { background: var(--wp-yellow-500); }
-.wp-button--danger { background: var(--wp-red-500); color: var(--wp-text-white); }
-.wp-button--danger:hover:not(:disabled) { background: var(--wp-red-600); }
-.wp-button--link { color: var(--wp-blue-600); background: transparent; }
-.wp-button--link:hover:not(:disabled) { text-decoration: underline; }
-.wp-button:disabled { opacity: 0.5; cursor: not-allowed; }
-.wp-button--xs { min-height: var(--wp-space-4xl); padding: var(--wp-space-xs) var(--wp-space-md); }
-.wp-button--sm { min-height: var(--wp-space-5xl); padding: var(--wp-space-md) var(--wp-space-lg); }
-.wp-button--md { min-height: var(--wp-space-5xl); padding: var(--wp-space-sm) var(--wp-space-lg); }
-.wp-button--lg { min-height: var(--wp-space-6xl); padding: var(--wp-space-md) var(--wp-space-xl); }
-.wp-button--xl { min-height: var(--wp-space-7xl); padding: var(--wp-space-xl); gap: var(--wp-space-lg); }
-.wp-button:is(.wp-button--md, .wp-button--lg, .wp-button--xl) svg { width: var(--wp-space-3xl); height: var(--wp-space-3xl); }
-.wp-button-spinner { animation: wp-button-spin 1s linear infinite; }
-@keyframes wp-button-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .wp-button { transition: none; } .wp-button-spinner { animation: none; } }
+.wp-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--wp-space-md);
+  padding: var(--wp-space-lg);
+  border: 1px solid transparent;
+  border-radius: var(--wp-radius-xs);
+  color: var(--wp-text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 150ms;
+}
+.wp-button svg {
+  width: var(--wp-space-2xl);
+  height: var(--wp-space-2xl);
+  flex-shrink: 0;
+}
+.wp-button-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.wp-button--outline {
+  background: var(--wp-neutral-50);
+  border-color: var(--wp-neutral-200);
+}
+.wp-button--outline:hover:not(:disabled) {
+  background: var(--wp-neutral-100);
+}
+.wp-button--primary {
+  background: var(--wp-yellow-400);
+}
+.wp-button--primary:hover:not(:disabled) {
+  background: var(--wp-yellow-500);
+}
+.wp-button--danger {
+  background: var(--wp-red-500);
+  color: var(--wp-text-white);
+}
+.wp-button--danger:hover:not(:disabled) {
+  background: var(--wp-red-600);
+}
+.wp-button--link {
+  color: var(--wp-blue-600);
+  background: transparent;
+}
+.wp-button--link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.wp-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.wp-button--xs {
+  min-height: var(--wp-space-4xl);
+  padding: var(--wp-space-xs) var(--wp-space-md);
+}
+.wp-button--sm {
+  min-height: var(--wp-space-5xl);
+  padding: var(--wp-space-md) var(--wp-space-lg);
+}
+.wp-button--md {
+  min-height: var(--wp-space-5xl);
+  padding: var(--wp-space-sm) var(--wp-space-lg);
+}
+.wp-button--lg {
+  min-height: var(--wp-space-6xl);
+  padding: var(--wp-space-md) var(--wp-space-xl);
+}
+.wp-button--xl {
+  min-height: var(--wp-space-7xl);
+  padding: var(--wp-space-xl);
+  gap: var(--wp-space-lg);
+}
+.wp-button:is(.wp-button--md, .wp-button--lg, .wp-button--xl) svg {
+  width: var(--wp-space-3xl);
+  height: var(--wp-space-3xl);
+}
+.wp-button-spinner {
+  animation: wp-button-spin 1s linear infinite;
+}
+@keyframes wp-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wp-button {
+    transition: none;
+  }
+  .wp-button-spinner {
+    animation: none;
+  }
+}
