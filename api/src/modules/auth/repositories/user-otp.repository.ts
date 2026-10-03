@@ -13,6 +13,14 @@ export class UserOtpRepository extends BaseRepository<UserOtp> {
     super(repository);
   }
 
+  /** A user's code for one purpose; issuing a new one replaces the old, so there is at most one. */
+  findByUserIdAndPurpose(
+    userId: number,
+    purpose: UserOtp['purpose'],
+  ): Promise<UserOtp | null> {
+    return this.repository.findOneBy({ userId, purpose });
+  }
+
   async deleteById(id: number, manager?: EntityManager): Promise<void> {
     if (manager) {
       await manager.delete(UserOtp, { id });

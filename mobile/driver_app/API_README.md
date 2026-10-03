@@ -96,6 +96,8 @@ Replaces `AuthRepository`.
 | `POST /auth/verify-otp` | `{ phone, otp, otpId }` | Activates the account |
 | `POST /auth/resend-otp` | `{ phone }` | |
 | `POST /auth/login` | `{ phone, password }` | → `{ accessToken, refreshToken, user }` |
+| `POST /auth/forgot-password` | `{ phone }` | Texts a 6-digit reset code if the number has an active account. Always `200` with the same message, whether or not it does. At most one code a minute |
+| `POST /auth/reset-password` | `{ phone, otp, newPassword }` | Sets the new password and signs the user out everywhere; sign in again. `400` for a wrong, expired or used code; the code is void after 5 wrong tries |
 | `POST /auth/refresh` | `{ refreshToken }` | → new `accessToken`, `refreshToken`, `user` |
 | `POST /auth/logout` | — | Revokes the session |
 | `GET /auth/me` | — | The `user` below |

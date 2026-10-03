@@ -13,10 +13,12 @@ import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 
@@ -41,6 +43,20 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   resendOtp(@Body() resendOtpDto: ResendOtpDto): Promise<ApiResponseDto> {
     return this.authService.resendOtp(resendOtpDto);
+  }
+
+  // A password forgotten is reset in two steps: ask for a code by SMS, then
+  // set a new password with it. Both are public, like login.
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  forgotPassword(@Body() dto: ForgotPasswordDto): Promise<ApiResponseDto> {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  resetPassword(@Body() dto: ResetPasswordDto): Promise<ApiResponseDto> {
+    return this.authService.resetPassword(dto);
   }
 
   @Post('login')

@@ -9,7 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { Depot } from '../../common/enums/depot.enum';
 import { ImagePurpose } from '../../common/enums/image-purpose.enum';
@@ -20,14 +20,15 @@ import { SmsService } from '../../common/sms/sms.service';
 import { formatPhoneNumber } from '../../common/utils/phone.util';
 import { vehicleLabel } from '../../common/utils/vehicle.util';
 import { User } from '../../database/entities/user.entity';
-import { UserOtp } from '../../database/entities/user-otp.entity';
 import { UserSession } from '../../database/entities/user-session.entity';
 import { ImagesService } from '../images/images.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { OtpPurpose } from './enums/otp-purpose.enum';
@@ -38,6 +39,20 @@ import { UserSessionRepository } from './repositories/user-session.repository';
 
 const BCRYPT_ROUNDS = 10;
 const INVALID_OTP_MESSAGE = 'Invalid or expired OTP';
+
+// A 6-digit code has a million values, so guesses at one are capped.
+const MAX_OTP_ATTEMPTS = 5;
+
+// How soon a second reset code may be asked for, so the endpoint cannot be
+// used to flood a phone with messages.
+const RESET_CODE_COOLDOWN_MS = 60_000;
+
+/** A code just issued: the code to text, its row and how long it lasts. */
+interface IssuedOtp {
+  otp: string;
+  otpId: number;
+  expireMinutes: number;
+}
 
 /**
  * Handles all authentication, registration, session management, and OTP verification flows.
@@ -80,13 +95,7 @@ export class AuthService {
     await queryRunner.startTransaction();
 
     let savedUser: User;
-    let savedOtp: UserOtp;
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expireMinutes = parseInt(
-      this.configService.get<string>('OTP_EXPIRE_MINUTES', '10'),
-      10,
-    );
-    const expiresAt = new Date(Date.now() + expireMinutes * 60 * 1000);
+    let issued: IssuedOtp;
 
     try {
       const newUser = this.userAuthRepository.create({
@@ -104,21 +113,11 @@ export class AuthService {
         queryRunner.manager,
       );
 
-      // Clean up any existing registration OTPs for this user
-      await this.userOtpRepository.deleteByUserIdAndPurpose(
+      issued = await this.issueOtp(
         savedUser.id,
         OtpPurpose.REGISTRATION,
         queryRunner.manager,
       );
-
-      const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
-      const newOtp = this.userOtpRepository.create({
-        userId: savedUser.id,
-        otpHash,
-        purpose: OtpPurpose.REGISTRATION,
-        expiresAt,
-      });
-      savedOtp = await this.userOtpRepository.save(newOtp, queryRunner.manager);
 
       await queryRunner.commitTransaction();
     } catch (error: any) {
@@ -131,18 +130,15 @@ export class AuthService {
     }
 
     // Queue the OTP SMS; delivery happens in SmsConsumer, off the request path
-    await this.smsService.sendSms(
-      formattedPhone,
-      `Your Waypoint verification code is: ${otp}. Valid for ${expireMinutes} minutes.`,
-    );
+    await this.sendOtp(formattedPhone, issued, 'verification');
 
     return new ApiResponseDto(
       HttpStatus.CREATED,
       'User registered successfully. Please verify your OTP.',
       {
         userId: savedUser.id,
-        otpId: savedOtp.id,
-        ...(process.env.NODE_ENV !== 'production' ? { otp } : {}),
+        otpId: issued.otpId,
+        ...this.otpForTesting(issued),
       },
     );
   }
@@ -192,36 +188,104 @@ export class AuthService {
       throw new BadRequestException('User is already verified');
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expireMinutes = parseInt(
-      this.configService.get<string>('OTP_EXPIRE_MINUTES', '10'),
-      10,
-    );
-    const expiresAt = new Date(Date.now() + expireMinutes * 60 * 1000);
-    const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
-
-    await this.userOtpRepository.deleteByUserIdAndPurpose(
-      user.id,
-      OtpPurpose.REGISTRATION,
-    );
-
-    const newOtp = this.userOtpRepository.create({
-      userId: user.id,
-      otpHash,
-      purpose: OtpPurpose.REGISTRATION,
-      expiresAt,
-    });
-    const savedOtp = await this.userOtpRepository.save(newOtp);
-
-    await this.smsService.sendSms(
-      formattedPhone,
-      `Your Waypoint verification code is: ${otp}. Valid for ${expireMinutes} minutes.`,
-    );
+    const issued = await this.issueOtp(user.id, OtpPurpose.REGISTRATION);
+    await this.sendOtp(formattedPhone, issued, 'verification');
 
     return new ApiResponseDto(HttpStatus.OK, 'OTP resent successfully', {
-      otpId: savedOtp.id,
-      ...(process.env.NODE_ENV !== 'production' ? { otp } : {}),
+      otpId: issued.otpId,
+      ...this.otpForTesting(issued),
     });
+  }
+
+  /**
+   * Texts a reset code to an active account. The answer is the same whether
+   * or not the number has one, so this cannot be used to find out which
+   * numbers are registered.
+   */
+  async forgotPassword(dto: ForgotPasswordDto): Promise<ApiResponseDto> {
+    const formattedPhone = formatPhoneNumber(dto.phone);
+    const user = await this.userAuthRepository.findByPhone(formattedPhone);
+
+    let issued: IssuedOtp | undefined;
+    if (user?.status === UserStatus.ACTIVE) {
+      const previous = await this.userOtpRepository.findByUserIdAndPurpose(
+        user.id,
+        OtpPurpose.PASSWORD_RESET,
+      );
+      const tooSoon =
+        !!previous &&
+        Date.now() - previous.createdAt.getTime() < RESET_CODE_COOLDOWN_MS;
+      if (!tooSoon) {
+        issued = await this.issueOtp(user.id, OtpPurpose.PASSWORD_RESET);
+        await this.sendOtp(formattedPhone, issued, 'password reset');
+      }
+    }
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'If that number has an account, a code has been sent.',
+      issued ? this.otpForTesting(issued) : {},
+    );
+  }
+
+  /**
+   * Sets a new password with the code from `forgotPassword`, and signs the
+   * user out everywhere, since anyone using the old password should be.
+   */
+  async resetPassword(dto: ResetPasswordDto): Promise<ApiResponseDto> {
+    const user = await this.userAuthRepository.findByPhone(
+      formatPhoneNumber(dto.phone),
+    );
+    const userOtp =
+      user?.status === UserStatus.ACTIVE
+        ? await this.userOtpRepository.findByUserIdAndPurpose(
+            user.id,
+            OtpPurpose.PASSWORD_RESET,
+          )
+        : null;
+    // One message for every way this can fail, so nothing is learned from it.
+    if (!user || !userOtp || new Date() > userOtp.expiresAt) {
+      throw new BadRequestException(INVALID_OTP_MESSAGE);
+    }
+
+    if (!(await bcrypt.compare(dto.otp, userOtp.otpHash))) {
+      userOtp.attempts += 1;
+      if (userOtp.attempts >= MAX_OTP_ATTEMPTS) {
+        await this.userOtpRepository.deleteById(userOtp.id);
+      } else {
+        await this.userOtpRepository.save(userOtp);
+      }
+      throw new BadRequestException(INVALID_OTP_MESSAGE);
+    }
+
+    user.passwordHash = await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS);
+    user.updatedById = user.id;
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      await this.userAuthRepository.save(user, queryRunner.manager);
+      await this.userOtpRepository.deleteById(userOtp.id, queryRunner.manager);
+      await this.userSessionRepository.revokeAllForUser(
+        user.id,
+        queryRunner.manager,
+      );
+      await queryRunner.commitTransaction();
+    } catch (error: any) {
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException(
+        error.message || 'Password reset failed due to an internal error',
+      );
+    } finally {
+      await queryRunner.release();
+    }
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'Password reset successfully. Sign in with your new password.',
+      null,
+    );
   }
 
   async login(loginDto: LoginDto): Promise<ApiResponseDto> {
@@ -419,6 +483,57 @@ export class AuthService {
     await this.userSessionRepository.save(saved, manager);
 
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * Gives the user a fresh 6-digit code for `purpose`, replacing any earlier
+   * one. Only its hash is stored; the code itself goes back to the caller to
+   * be texted.
+   */
+  private async issueOtp(
+    userId: number,
+    purpose: OtpPurpose,
+    manager?: EntityManager,
+  ): Promise<IssuedOtp> {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expireMinutes = parseInt(
+      this.configService.get<string>('OTP_EXPIRE_MINUTES', '10'),
+      10,
+    );
+
+    await this.userOtpRepository.deleteByUserIdAndPurpose(
+      userId,
+      purpose,
+      manager,
+    );
+    const saved = await this.userOtpRepository.save(
+      this.userOtpRepository.create({
+        userId,
+        otpHash: await bcrypt.hash(otp, BCRYPT_ROUNDS),
+        purpose,
+        expiresAt: new Date(Date.now() + expireMinutes * 60 * 1000),
+      }),
+      manager,
+    );
+    return { otp, otpId: saved.id, expireMinutes };
+  }
+
+  /** Queues the code's SMS; delivery happens in SmsConsumer, off the request path. */
+  private sendOtp(
+    phone: string,
+    { otp, expireMinutes }: IssuedOtp,
+    kind: 'verification' | 'password reset',
+  ): Promise<void> {
+    return this.smsService.sendSms(
+      phone,
+      `Your Waypoint ${kind} code is: ${otp}. Valid for ${expireMinutes} minutes.`,
+    );
+  }
+
+  // Outside production the code is also returned, so a flow can be tried
+  // without a phone to receive the SMS.
+  private otpForTesting({ otp }: IssuedOtp): { otp?: string } {
+    return process.env.NODE_ENV !== 'production' ? { otp } : {};
   }
 
   private async findUserOrThrow(userId: number): Promise<User> {

@@ -15,6 +15,7 @@ import { RequireRole } from '@/features/auth/require-role'
 
 const LoginPage = lazy(() => import('@/pages/login-page'))
 const RegisterPage = lazy(() => import('@/pages/register-page'))
+const ForgotPasswordPage = lazy(() => import('@/pages/forgot-password-page'))
 const StoreManagerLayout = lazy(() => import('@/components/layout/store-manager-layout').then((module) => ({ default: module.StoreManagerLayout })))
 const DashboardOverviewPage = lazy(() => import('@/pages/store-manager/dashboard-overview').then((module) => ({ default: module.DashboardOverviewPage })))
 const StoreOrdersPage = lazy(() => import('@/pages/store-manager/orders').then((module) => ({ default: module.OrdersPage })))
@@ -24,7 +25,7 @@ const DeliveryTrackingPage = lazy(() => import('@/pages/store-manager/delivery-t
 
 export default function App() {
   const { pathname } = useLocation()
-  const isAuthPage = pathname === '/login' || pathname === '/register'
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password'
   // The sign-in screens use the shadcn kit, whose theme is scoped to the store-manager area.
   const area = isAuthPage || /^\/store-manager(?:\/|$)/.test(pathname) ? 'store-manager' : 'hub'
   useLayoutEffect(() => {
@@ -37,6 +38,7 @@ export default function App() {
       <Routes>
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route element={<RequireRole role="dispatcher" />}>
           <Route element={<HubLayout />}>
             <Route index element={<HubPage>{(hub) => <OverviewPage {...hub.pageProps} />}</HubPage>} />

@@ -36,6 +36,18 @@ export class UserSessionRepository {
     return manager ? manager.save(session) : this.repository.save(session);
   }
 
+  /** Signs the user out everywhere, e.g. after their password was reset. */
+  async revokeAllForUser(
+    userId: number,
+    manager: EntityManager,
+  ): Promise<void> {
+    await manager.update(
+      UserSession,
+      { userId, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
+  }
+
   /** Housekeeping: drop sessions that can no longer authenticate anything. */
   async purgeExpired(): Promise<number> {
     const result = await this.repository.delete({
