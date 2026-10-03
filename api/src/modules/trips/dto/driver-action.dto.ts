@@ -6,7 +6,9 @@ import {
   IsLongitude,
   IsObject,
   IsOptional,
+  IsString,
   IsUUID,
+  Length,
   Min,
 } from 'class-validator';
 
@@ -23,6 +25,11 @@ export class StartTripDto extends DriverActionDto {
   // The handset's clock, not the time the server heard about it.
   @IsDateString({}, { message: 'startedAt must be an ISO timestamp' })
   startedAt: string;
+
+  // The start code the loader gave the driver once the vehicle was loaded.
+  @IsString({ message: 'otp must be a string' })
+  @Length(6, 6, { message: 'otp must be exactly 6 digits long' })
+  otp: string;
 }
 
 /** An action at a stop names the route version the driver was looking at. */
@@ -54,4 +61,11 @@ export class CompleteStopDto extends StopActionDto {
   // Cases handed over per order, keyed by order reference: { "ORD0000012": 12 }.
   @IsObject({ message: 'deliveredCases must map each order to a number' })
   deliveredCases: Record<string, number>;
+
+  // The code the outlet's store manager gave the driver. Left out only when
+  // the store could not give one and a proof of delivery was recorded instead.
+  @IsOptional()
+  @IsString({ message: 'deliveryCode must be a string' })
+  @Length(6, 6, { message: 'deliveryCode must be exactly 6 digits long' })
+  deliveryCode?: string;
 }

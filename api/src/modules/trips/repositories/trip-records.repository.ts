@@ -27,6 +27,11 @@ export class TripRecordsRepository extends BaseRepository<DeliveryProof> {
     });
   }
 
+  /** Whether a proof of delivery is on record for one stop of a trip. */
+  async hasProof(tripId: string, outletId: number): Promise<boolean> {
+    return (await this.repository.countBy({ tripId, outletId })) > 0;
+  }
+
   findProofs(tripId: string): Promise<DeliveryProof[]> {
     return this.repository.find({
       where: { tripId },
@@ -34,19 +39,7 @@ export class TripRecordsRepository extends BaseRepository<DeliveryProof> {
     });
   }
 
-  /** An issue with its photo, so a response can carry its URL. */
-  findIssueById(id: string): Promise<Issue | null> {
-    return this.issues.findOne({
-      where: { id },
-      relations: { photoImage: true },
-    });
-  }
-
   findIssues(tripId: string): Promise<Issue[]> {
     return this.issues.findBy({ tripId });
-  }
-
-  saveIssue(data: Partial<Issue>): Promise<Issue> {
-    return this.issues.save(this.issues.create(data));
   }
 }

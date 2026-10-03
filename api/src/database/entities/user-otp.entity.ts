@@ -13,8 +13,11 @@ import { Trip } from './trip.entity';
  */
 @Entity('otps')
 export class UserOtp extends AutoIncBaseEntity {
-  @Column({ name: 'user_id' })
-  userId: number;
+  // Whose code it is. Null for a trip's codes when nobody stands behind them:
+  // a dispatch code for a trip with no driver yet, a delivery code for an
+  // outlet with no store manager account.
+  @Column({ name: 'user_id', type: 'int', nullable: true })
+  userId: number | null;
 
   @Column({ name: 'otp_hash', length: 255 })
   otpHash: string;

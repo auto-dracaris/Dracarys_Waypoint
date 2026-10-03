@@ -17,7 +17,6 @@ import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { CompleteLoadingDto } from './dto/complete-loading.dto';
 import {
   ArriveStopDto,
   CompleteStopDto,
@@ -67,10 +66,19 @@ export class TripsController {
   @Roles(UserRole.LOADER, UserRole.DISPATCHER)
   completeLoading(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: CompleteLoadingDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ApiResponseDto> {
-    return this.tripsService.completeLoading(id, dto, user);
+    return this.tripsService.completeLoading(id, user);
+  }
+
+  //resend loading code
+  @Post(':id/loading/code')
+  @Roles(UserRole.LOADER, UserRole.DISPATCHER)
+  issueDispatchCode(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ApiResponseDto> {
+    return this.tripsService.issueDispatchCode(id, user);
   }
 
   @Post(':id/start')
@@ -103,6 +111,16 @@ export class TripsController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ApiResponseDto> {
     return this.tripsService.complete(id, stopId, dto, user);
+  }
+
+  @Post(':id/stops/:stopId/delivery-code')
+  @Roles(UserRole.DRIVER, UserRole.DISPATCHER)
+  issueDeliveryCode(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('stopId', ParseIntPipe) stopId: number,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ApiResponseDto> {
+    return this.tripsService.issueDeliveryCode(id, stopId, user);
   }
 
   @Patch(':id/stops/sequence')

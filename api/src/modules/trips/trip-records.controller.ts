@@ -17,11 +17,12 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { DeliveryIssueDto, DeliveryProofDto } from './dto/record.dto';
+import { DeliveryProofDto } from './dto/record.dto';
 import { TripRecordsService } from './trip-records.service';
 
-// What the driver puts on record at a stop. A signature or photo is uploaded
-// first with `POST /images` and named here by its id.
+// The proof a driver records at a stop, and the list of everything recorded
+// on the trip. A signature or photo is uploaded first with `POST /images` and
+// named here by its id. Issues are reported through the issues API.
 @Controller('trips/:id')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class TripRecordsController {
@@ -36,19 +37,6 @@ export class TripRecordsController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ApiResponseDto> {
     return this.recordsService.addProof(id, stopId, dto, user);
-  }
-
-  @Post('stops/:stopId/orders/:orderId/issues')
-  @Roles(UserRole.DRIVER)
-  addIssue(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('stopId', ParseIntPipe) stopId: number,
-    // An order reference, e.g. ORD0000012.
-    @Param('orderId') orderId: string,
-    @Body() dto: DeliveryIssueDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<ApiResponseDto> {
-    return this.recordsService.addIssue(id, stopId, orderId, dto, user);
   }
 
   @Get('records')

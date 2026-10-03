@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, LessThan, Repository } from 'typeorm';
+import { EntityManager, In, IsNull, LessThan, Repository } from 'typeorm';
 import { BaseRepository } from '../../../common/repositories/base.repository';
 import { UserOtp } from '../../../database/entities/user-otp.entity';
 
@@ -19,6 +19,32 @@ export class UserOtpRepository extends BaseRepository<UserOtp> {
     purpose: UserOtp['purpose'],
   ): Promise<UserOtp | null> {
     return this.repository.findOneBy({ userId, purpose });
+  }
+
+  /** Every code of one purpose issued for a trip, used ones included. */
+  findForTrip(tripId: string, purpose: UserOtp['purpose']): Promise<UserOtp[]> {
+    return this.repository.find({
+      where: { tripId, purpose },
+      order: { id: 'ASC' },
+    });
+  }
+
+  /**
+   * Drops a trip's codes of one purpose that have not been used yet, before a
+   * new one is issued. `tripStopIds` narrows it to one stop's.
+   */
+  async deleteUnusedForTrip(
+    tripId: string,
+    purpose: UserOtp['purpose'],
+    tripStopIds?: string[],
+    manager?: EntityManager,
+  ): Promise<void> {
+    await (manager ?? this.repository.manager).delete(UserOtp, {
+      tripId,
+      purpose,
+      usedAt: IsNull(),
+      ...(tripStopIds && { tripStopId: In(tripStopIds) }),
+    });
   }
 
   async deleteById(id: number, manager?: EntityManager): Promise<void> {

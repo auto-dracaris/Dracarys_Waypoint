@@ -6,10 +6,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DataSource, EntityManager } from 'typeorm';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
-import { IssueType } from '../../common/enums/issue-type.enum';
 import { OrderStatus } from '../../common/enums/order-status.enum';
 import { TempRequirement } from '../../common/enums/temp-requirement.enum';
 import { TripStatus } from '../../common/enums/trip-status.enum';
@@ -30,7 +30,6 @@ import {
 import { TripStop } from '../../database/entities/trip-stop.entity';
 import { Trip } from '../../database/entities/trip.entity';
 import { UsersRepository } from '../users/repositories/users.repository';
-import { CompleteLoadingDto } from './dto/complete-loading.dto';
 import {
   ArriveStopDto,
   CompleteStopDto,
@@ -38,7 +37,9 @@ import {
 } from './dto/driver-action.dto';
 import { ResequenceStopsDto } from './dto/resequence-stops.dto';
 import { TripListQueryDto } from './dto/trip-list-query.dto';
+import { TripRecordsRepository } from './repositories/trip-records.repository';
 import { TripsRepository } from './repositories/trips.repository';
+import { TripCodesService } from './trip-codes.service';
 
 // The driver app's names for a trip's stages.
 const TRIP_STATUS: Record<TripStatus, string> = {
@@ -109,6 +110,9 @@ export class TripsService {
   constructor(
     private readonly tripsRepository: TripsRepository,
     private readonly usersRepository: UsersRepository,
+    private readonly recordsRepository: TripRecordsRepository,
+    private readonly codes: TripCodesService,
+    private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -145,7 +149,7 @@ export class TripsService {
     return new ApiResponseDto(
       HttpStatus.OK,
       'Trip retrieved successfully',
-      await this.toView(await this.loadFor(tripId, user)),
+      await this.toView(await this.loadFor(tripId, user), user),
     );
   }
 
@@ -170,26 +174,28 @@ export class TripsService {
       throw await this.conflict(
         'Loading can only start on a planned trip',
         trip,
+        user,
       );
     }
 
     return new ApiResponseDto(
       HttpStatus.OK,
       'Loading started',
-      await this.viewOf(tripId),
+      await this.viewOf(tripId, user),
     );
   }
 
   /**
-   * The vehicle is loaded and the trip is ready for its driver. An order that
-   * went on short is put on record as a load shortfall for the dispatcher.
+   * The vehicle is loaded and the trip is ready for its driver, who gets a
+   * start code. Anything that went on short or damaged is reported separately,
+   * through the issues API.
    */
   async completeLoading(
     tripId: string,
-    dto: CompleteLoadingDto,
     user: AuthenticatedUser,
   ): Promise<ApiResponseDto> {
     const trip = await this.loadFor(tripId, user);
+    let dispatchCode: string | undefined;
     // Marking a trip loaded twice changes nothing the second time.
     if (trip.status !== TripStatus.LOADED) {
       if (
@@ -199,19 +205,10 @@ export class TripsService {
         throw await this.conflict(
           'Only a planned or loading trip can be marked loaded',
           trip,
+          user,
         );
       }
       const rows = trip.stops ?? [];
-      const short =
-        dto.shortfall && this.rowOfOrder(rows, dto.shortfall.orderId);
-      if (
-        dto.shortfall &&
-        short!.order!.orderUnits < dto.shortfall.shortCases
-      ) {
-        throw new BadRequestException(
-          `${dto.shortfall.orderId} has only ${short!.order!.orderUnits} cases`,
-        );
-      }
 
       await this.inTransaction(async (manager) => {
         await this.tripsRepository.updateTrip(
@@ -230,43 +227,53 @@ export class TripsService {
           user.userId,
           manager,
         );
-        if (dto.shortfall && short) {
-          await this.tripsRepository.saveIssue(
-            {
-              type: IssueType.LOAD_SHORTFALL,
-              reportedById: user.userId,
-              tripId: trip.id,
-              tripStopId: short.id,
-              orderId: short.orderId,
-              vehicleId: trip.vehicleId,
-              affectedUnits: dto.shortfall.shortCases,
-              description:
-                dto.shortfall.dispatcherNote?.trim() ||
-                `${dto.shortfall.shortCases} cases short at loading`,
-              recordedAt: new Date(),
-              createdById: user.userId,
-              updatedById: user.userId,
-            },
-            manager,
-          );
-        }
+        dispatchCode = await this.codes.issueDispatchCode(trip, manager);
       });
+      await this.codes.sendDispatchCode(trip, dispatchCode!);
     }
 
-    return new ApiResponseDto(
-      HttpStatus.OK,
-      'Trip loaded and ready',
-      await this.viewOf(tripId),
-    );
+    // The code is for the loader to hand to the driver. A repeat of this call
+    // has none to give; `issueDispatchCode` makes a new one.
+    return new ApiResponseDto(HttpStatus.OK, 'Trip loaded and ready', {
+      ...(await this.viewOf(tripId, user)),
+      ...(dispatchCode && { dispatchCode }),
+    });
   }
 
-  /** The driver leaves the depot. */
+  /** A fresh dispatch code for a loaded trip, when the first was lost or guessed out. */
+  async issueDispatchCode(
+    tripId: string,
+    user: AuthenticatedUser,
+  ): Promise<ApiResponseDto> {
+    const trip = await this.loadFor(tripId, user);
+    if (trip.status !== TripStatus.LOADED) {
+      throw await this.conflict(
+        'A start code is only issued for a trip that is loaded and waiting',
+        trip,
+        user,
+      );
+    }
+    const dispatchCode = await this.codes.issueDispatchCode(trip);
+    await this.codes.sendDispatchCode(trip, dispatchCode);
+
+    return new ApiResponseDto(HttpStatus.OK, 'Start code issued', {
+      ...(await this.viewOf(tripId, user)),
+      dispatchCode,
+    });
+  }
+
+  /**
+   * The driver leaves the depot, with the start code the loader gave them.
+   * Each outlet on the trip is then texted its delivery code, and the trip
+   * that comes back carries the hashes the handset checks them against.
+   */
   async start(
     tripId: string,
     dto: StartTripDto,
     user: AuthenticatedUser,
   ): Promise<ApiResponseDto> {
     const trip = await this.loadFor(tripId, user);
+    let issued: Map<number, string> | undefined;
     // A start that already happened (a retry from the handset) is answered
     // with the trip as it stands.
     if (
@@ -277,21 +284,28 @@ export class TripsService {
         throw await this.conflict(
           'The trip can only start once it is loaded and ready',
           trip,
+          user,
         );
       }
+      const dispatchCode = await this.codes.verifyDispatchCode(
+        trip.id,
+        dto.otp,
+      );
+      const stops = stopsOf(trip);
       await this.inTransaction(async (manager) => {
+        await this.codes.markUsed(dispatchCode, manager);
+        issued = await this.codes.issueDeliveryCodes(trip, stops, manager);
         await this.tripsRepository.updateTrip(
           trip.id,
           {
             status: TripStatus.DISPATCHED,
             actualDepartAt: new Date(dto.startedAt),
-            // Whoever drives it is who drove it, whatever the vehicle's
-            // assignment becomes later.
             driverId: user.userId,
             updatedById: user.userId,
           },
           manager,
         );
+        //update all the orders as dispatched under the trip
         await this.tripsRepository.setOrderStatus(
           (trip.stops ?? []).map((row) => row.orderId),
           OrderStatus.DISPATCHED,
@@ -299,12 +313,13 @@ export class TripsService {
           manager,
         );
       });
+      await this.codes.sendDeliveryCodes(trip, stops, issued!);
     }
 
     return new ApiResponseDto(
       HttpStatus.OK,
       'Trip started',
-      await this.viewOf(tripId),
+      await this.viewOf(tripId, user, issued),
     );
   }
 
@@ -320,6 +335,7 @@ export class TripsService {
       trip,
       stopId,
       dto.planVersion,
+      user,
     );
 
     if (stop.state === 'pending') {
@@ -328,6 +344,7 @@ export class TripsService {
         throw await this.conflict(
           `Complete the stop at ${outletName(waiting.outlet)} first`,
           trip,
+          user,
         );
       }
       await this.inTransaction(async (manager) => {
@@ -359,7 +376,7 @@ export class TripsService {
     return new ApiResponseDto(
       HttpStatus.OK,
       'Arrival recorded',
-      await this.viewOf(tripId),
+      await this.viewOf(tripId, user),
     );
   }
 
@@ -378,17 +395,45 @@ export class TripsService {
       trip,
       stopId,
       dto.planVersion,
+      user,
     );
 
     if (stop.state === 'pending') {
-      throw await this.conflict('Record the arrival at this stop first', trip);
+      throw await this.conflict(
+        'Record the arrival at this stop first',
+        trip,
+        user,
+      );
     }
     if (stop.state === 'arrived') {
       const delivered = this.deliveredPerRow(stop, dto.deliveredCases);
       const completedAt = new Date(dto.completedAt);
       const last = others.every((other) => other.state === 'completed');
 
+      // The outlet confirms the handover with its code. The handset has
+      // already checked it against the hash; this is the server's own check.
+      // Where the store could not give a code, a proof of delivery stands in
+      // and the stop is left marked as not code-verified.
+      const deliveryCode = dto.deliveryCode
+        ? await this.codes.verifyDeliveryCode(
+            trip.id,
+            stop.rows,
+            dto.deliveryCode,
+          )
+        : null;
+      if (
+        !deliveryCode &&
+        !(await this.recordsRepository.hasProof(trip.id, stop.outletId))
+      ) {
+        throw new BadRequestException(
+          'Enter the delivery code, or record a proof of delivery first',
+        );
+      }
+
       await this.inTransaction(async (manager) => {
+        if (deliveryCode) {
+          await this.codes.markUsed(deliveryCode, manager);
+        }
         for (const [row, units] of delivered) {
           const total = row.order!.orderUnits;
           await this.tripsRepository.updateStops(
@@ -441,7 +486,40 @@ export class TripsService {
     return new ApiResponseDto(
       HttpStatus.OK,
       'Stop completed',
-      await this.viewOf(tripId),
+      await this.viewOf(tripId, user),
+    );
+  }
+
+  /**
+   * A new delivery code for one stop, texted to the outlet again: for when
+   * the first never arrived or was guessed out. The driver has to fetch the
+   * trip afterwards (so, be online) to get the new hash.
+   */
+  async issueDeliveryCode(
+    tripId: string,
+    stopId: number,
+    user: AuthenticatedUser,
+  ): Promise<ApiResponseDto> {
+    const trip = await this.loadFor(tripId, user);
+    if (trip.status !== TripStatus.DISPATCHED) {
+      throw await this.conflict('The trip is not on the road', trip, user);
+    }
+    const stop = stopsOf(trip).find(
+      (candidate) => candidate.outletId === stopId,
+    );
+    if (!stop) {
+      throw new NotFoundException('This trip has no such stop');
+    }
+    if (stop.state === 'completed') {
+      throw await this.conflict('This stop is already completed', trip, user);
+    }
+    const issued = await this.codes.issueDeliveryCodes(trip, [stop]);
+    await this.codes.sendDeliveryCodes(trip, [stop], issued);
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'Delivery code issued',
+      await this.viewOf(tripId, user, issued),
     );
   }
 
@@ -464,6 +542,7 @@ export class TripsService {
       throw await this.conflict(
         'Stops can only be reordered on a published trip that is not finished',
         trip,
+        user,
       );
     }
 
@@ -587,7 +666,7 @@ export class TripsService {
     return new ApiResponseDto(
       HttpStatus.OK,
       'Stops reordered',
-      await this.viewOf(tripId),
+      await this.viewOf(tripId, user),
     );
   }
 
@@ -664,7 +743,12 @@ export class TripsService {
    * the rest. Refused while the trip is not on the road, and when the driver
    * was looking at a route that has since been reordered.
    */
-  private async stopForAction(trip: Trip, stopId: number, planVersion: number) {
+  private async stopForAction(
+    trip: Trip,
+    stopId: number,
+    planVersion: number,
+    user: AuthenticatedUser,
+  ) {
     if (trip.status === TripStatus.COMPLETED) {
       // Every stop is already recorded, so a late retry has nothing to change.
       const stops = stopsOf(trip);
@@ -674,12 +758,13 @@ export class TripsService {
       }
     }
     if (trip.status !== TripStatus.DISPATCHED) {
-      throw await this.conflict('The trip is not on the road', trip);
+      throw await this.conflict('The trip is not on the road', trip, user);
     }
     if (planVersion !== trip.planVersion) {
       throw await this.conflict(
         'The stop order has changed. Review the route update first',
         trip,
+        user,
       );
     }
     const stops = stopsOf(trip);
@@ -729,25 +814,35 @@ export class TripsService {
     );
   }
 
-  private rowOfOrder(rows: TripStop[], reference: string): TripStop {
-    const orderId = orderIdFromReference(reference);
-    const row = rows.find((candidate) => candidate.orderId === orderId);
-    if (!row) {
-      throw new BadRequestException(`${reference} is not on this trip`);
-    }
-    return row;
-  }
-
   /** A 409 that carries the trip as it stands, so the handset can catch up. */
   private async conflict(
     message: string,
     trip: Trip,
+    user: AuthenticatedUser,
   ): Promise<ConflictException> {
-    return new ConflictException({ message, data: await this.toView(trip) });
+    return new ConflictException({
+      message,
+      data: await this.toView(trip, user),
+    });
   }
 
-  private async viewOf(tripId: string) {
-    return this.toView((await this.tripsRepository.findDetail(tripId))!);
+  /** The trip as it now stands. `issued` are delivery codes just created, by outlet id. */
+  private async viewOf(
+    tripId: string,
+    user: AuthenticatedUser,
+    issued?: Map<number, string>,
+  ) {
+    return this.toView(
+      (await this.tripsRepository.findDetail(tripId))!,
+      user,
+      issued,
+    );
+  }
+
+  // Outside production a code just issued is also returned, so the flow can
+  // be tried without phones to receive the SMS.
+  private get returnsCodes(): boolean {
+    return this.configService.get<string>('NODE_ENV') !== 'production';
   }
 
   private async inTransaction(
@@ -791,8 +886,15 @@ export class TripsService {
   }
 
   /** The whole trip, in the shape the driver app's trip screen reads. */
-  private async toView(trip: Trip) {
-    const shortfall = await this.tripsRepository.findShortfall(trip.id);
+  private async toView(
+    trip: Trip,
+    viewer: AuthenticatedUser,
+    issued?: Map<number, string>,
+  ) {
+    const [shortfall, codeStates] = await Promise.all([
+      this.tripsRepository.findShortfall(trip.id),
+      this.codes.deliveryCodeStates(trip.id),
+    ]);
     const travel = trip.district!;
 
     return {
@@ -808,6 +910,10 @@ export class TripsService {
       stops: stopsOf(trip).map((stop, i) => {
         const { outlet, rows } = stop;
         const window = deliveryWindow(outlet);
+        const codeState = rows
+          .map((row) => codeStates.get(row.id))
+          .find((state) => state);
+        const testCode = this.returnsCodes ? issued?.get(outlet.id) : undefined;
         return {
           id: String(outlet.id),
           sequence: i + 1,
@@ -820,6 +926,19 @@ export class TripsService {
           contactPhone: outlet.contactPhone,
           status: stop.state,
           arrivedAt: rows[0].actualArrivalAt,
+          // What the driver's handset checks the outlet's code against, with
+          // no connection. Only the driver gets it, and only until the stop
+          // is done.
+          deliveryCode:
+            viewer.role === UserRole.DRIVER &&
+            stop.state !== 'completed' &&
+            codeState?.hash
+              ? { ...codeState.hash, ...(testCode && { code: testCode }) }
+              : null,
+          // Once completed: whether the outlet's code confirmed it, or a
+          // proof of delivery stood in. Null until then.
+          codeVerified:
+            stop.state === 'completed' ? !!codeState?.verified : null,
           // Clear-road planning figures from the previous point: the depot for
           // the first stop, the stop before for the rest.
           etaMinutes:

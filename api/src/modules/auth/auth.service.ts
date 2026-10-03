@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { DataSource, EntityManager } from 'typeorm';
+import { MAX_OTP_ATTEMPTS } from '../../common/constants/otp.constant';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { Depot } from '../../common/enums/depot.enum';
 import { ImagePurpose } from '../../common/enums/image-purpose.enum';
@@ -39,9 +40,6 @@ import { UserSessionRepository } from './repositories/user-session.repository';
 
 const BCRYPT_ROUNDS = 10;
 const INVALID_OTP_MESSAGE = 'Invalid or expired OTP';
-
-// A 6-digit code has a million values, so guesses at one are capped.
-const MAX_OTP_ATTEMPTS = 5;
 
 // How soon a second reset code may be asked for, so the endpoint cannot be
 // used to flood a phone with messages.
@@ -147,7 +145,12 @@ export class AuthService {
     const formattedPhone = formatPhoneNumber(verifyOtpDto.phone);
 
     const userOtp = await this.userOtpRepository.findById(verifyOtpDto.otpId);
-    if (!userOtp || userOtp.purpose !== OtpPurpose.REGISTRATION) {
+    // A registration code always belongs to the user who is registering.
+    if (
+      !userOtp ||
+      userOtp.purpose !== OtpPurpose.REGISTRATION ||
+      userOtp.userId === null
+    ) {
       throw new BadRequestException(INVALID_OTP_MESSAGE);
     }
 
