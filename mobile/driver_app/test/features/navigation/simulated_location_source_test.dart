@@ -34,6 +34,15 @@ void main() {
     expect(w.at(1e9).remainingMeters, 0);
   });
 
+  test('segment lengths are exact, not rounded to whole metres', () {
+    // 20 steps of 0.4 m north: rounding each step to metres would drop them all.
+    const step = 0.4 / 111320;
+    final pts = [for (var i = 0; i <= 20; i++) LatLng(6.0 + i * step, 80.0)];
+    final w = PolylineWalker(pts);
+    expect(w.totalMeters, closeTo(8.0, 0.1));
+    expect(w.at(4).remainingMeters, closeTo(4.0, 0.1));
+  });
+
   test('duplicate points do not produce NaN', () {
     final w = PolylineWalker(const [a, a, b, b]);
     expect(w.at(w.totalMeters / 2).heading.isNaN, isFalse);

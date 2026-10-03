@@ -5,7 +5,9 @@ import 'package:latlong2/latlong.dart';
 import 'location_source.dart';
 import 'route_smoothing.dart';
 
-const _dist = Distance();
+// Unrounded: the default rounds every result to whole metres, which wrecks the
+// sub-metre segments of a corner arc.
+const _dist = Distance(roundResult: false);
 
 /// Walks a polyline by distance, giving the point and heading at any offset.
 class PolylineWalker {

@@ -14,11 +14,14 @@ const _cargoColor = '#FACC15'; // AppColors.primary
 const _cabColor = '#2B2422'; // AppColors.ink
 
 /// How long the van should be, in metres, so it measures about [pixels] on
-/// screen at [zoom] (clamped so it never vanishes or balloons).
-double vehicleLengthFor(double zoom, double latitude, {double pixels = 22}) {
+/// screen at [zoom]. Map tiles are 512 px, so a screen pixel spans
+/// 78271.5 * cos(latitude) / 2^(zoom + 1) metres. Sizing by pixels (not by a
+/// real-world minimum) keeps the van from ballooning over the road when the
+/// camera is close, because the map style draws roads at a fixed pixel width.
+double vehicleLengthFor(double zoom, double latitude, {double pixels = 64}) {
   final metersPerPixel =
-      78271.517 * math.cos(latitude * math.pi / 180) / math.pow(2, zoom);
-  return (pixels * metersPerPixel).clamp(2.5, 60.0).toDouble();
+      78271.517 * math.cos(latitude * math.pi / 180) / math.pow(2, zoom + 1);
+  return (pixels * metersPerPixel).clamp(0.3, 60.0).toDouble();
 }
 
 /// A delivery van as two extruded boxes (a tall cargo box behind a lower cab)

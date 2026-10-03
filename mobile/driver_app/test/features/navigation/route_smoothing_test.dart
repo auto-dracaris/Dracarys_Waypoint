@@ -5,7 +5,7 @@ import 'package:driver_app/features/navigation/data/simulated_location_source.da
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 
-const _dist = Distance();
+const _dist = Distance(roundResult: false);
 
 double _length(List<LatLng> r) {
   var sum = 0.0;

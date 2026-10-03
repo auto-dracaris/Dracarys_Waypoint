@@ -60,8 +60,17 @@ void main() {
     final far = vehicleLengthFor(15, 7);
     final near = vehicleLengthFor(19, 7);
     expect(far, greaterThan(near));
-    expect(vehicleLengthFor(30, 7), 2.5); // never smaller than a small van
+    expect(vehicleLengthFor(30, 7), 0.3); // never vanishes
     expect(vehicleLengthFor(1, 7), 60); // never absurdly large
+  });
+
+  test('the van keeps one on-screen size (about 64 px) at any chase zoom', () {
+    // Metres per screen pixel halve with each zoom level, so the length does
+    // too: zoomed in close the van is physically tiny but never balloons over
+    // the road, which the map style draws at a fixed pixel width.
+    expect(vehicleLengthFor(19, 7), closeTo(4.74, 0.05));
+    expect(vehicleLengthFor(21.5, 7), closeTo(0.84, 0.02));
+    expect(vehicleLengthFor(20, 7) / vehicleLengthFor(21, 7), closeTo(2, 0.01));
   });
 
   test('proportions follow the length', () {

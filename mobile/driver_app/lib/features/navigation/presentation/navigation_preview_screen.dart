@@ -60,12 +60,12 @@ class NavigationPreviewScreen extends ConsumerStatefulWidget {
 
 /// Where the camera sits while following the van. Tilted mode is a close chase
 /// view: low pitch, tight zoom, aimed a few metres ahead of the van along its
-/// heading so you see the road you are about to take.
+/// heading so you see a little more road ahead than behind.
 @visibleForTesting
 CameraTarget followTarget(LatLng point, double heading, MapMode mode) =>
     mode == MapMode.tilted
     ? CameraTarget(
-        point: const Distance().offset(point, 5, heading),
+        point: const Distance(roundResult: false).offset(point, 1.5, heading),
         bearing: heading,
         zoom: 21.5,
         pitch: 70,

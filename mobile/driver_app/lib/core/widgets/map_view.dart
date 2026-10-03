@@ -8,6 +8,7 @@ import '../theme/app_colors.dart';
 import 'camera_target.dart';
 import 'map_mode.dart';
 import 'map_style.dart';
+import 'route_line.dart';
 import 'vehicle_box.dart';
 
 /// Whether to load the map (vector tiles). Tests turn this off (no network).
@@ -79,6 +80,7 @@ class _MapViewState extends ConsumerState<MapView> {
   Size _size = Size.zero;
   bool _fitted = false;
   bool _vehicleReady = false;
+  bool _routeReady = false;
 
   static const _tiltPitch = 70.0;
   static const _tiltBearing = 20.0;
@@ -171,23 +173,29 @@ class _MapViewState extends ConsumerState<MapView> {
         previous != null &&
         previous.zoom == t.zoom &&
         previous.pitch == t.pitch;
+    // A newer camera call cancels the one in flight and its future errors with
+    // "Map camera movement cancelled"; that is expected while following.
     if (steady) {
-      c.moveCamera(
-        center: _geo(t.point),
-        bearing: t.bearing,
-        pitch: t.pitch,
-        zoom: t.zoom,
-        padding: padding,
-      );
+      c
+          .moveCamera(
+            center: _geo(t.point),
+            bearing: t.bearing,
+            pitch: t.pitch,
+            zoom: t.zoom,
+            padding: padding,
+          )
+          .catchError((Object _) {});
     } else {
-      c.animateCamera(
-        center: _geo(t.point),
-        bearing: t.bearing,
-        pitch: t.pitch,
-        zoom: t.zoom,
-        padding: padding,
-        nativeDuration: const Duration(milliseconds: 700),
-      );
+      c
+          .animateCamera(
+            center: _geo(t.point),
+            bearing: t.bearing,
+            pitch: t.pitch,
+            zoom: t.zoom,
+            padding: padding,
+            nativeDuration: const Duration(milliseconds: 700),
+          )
+          .catchError((Object _) {});
     }
   }
 
@@ -197,6 +205,38 @@ class _MapViewState extends ConsumerState<MapView> {
       widget.onUserMoved?.call();
     }
     if (e is ml.MapEventCameraIdle) _scheduleVehicleUpdate();
+  }
+
+  Future<void> _installRoute() async {
+    final style = _controller?.style;
+    if (style == null) return;
+    await style.addSource(
+      ml.GeoJsonSource(id: routeSourceId, data: routeLineGeoJson(widget.route)),
+    );
+    await style.addLayer(
+      const ml.LineStyleLayer(
+        id: routeLayerId,
+        sourceId: routeSourceId,
+        layout: {'line-cap': 'round', 'line-join': 'round'},
+        paint: {'line-color': '#365314', 'line-width': 6}, // AppColors.mapRoute
+      ),
+    );
+    _routeReady = true;
+  }
+
+  final _routeUpdates = LatestOnly();
+
+  Future<void> _updateRoute() async {
+    final style = _controller?.style;
+    if (!_routeReady || style == null) return;
+    try {
+      await style.updateGeoJsonSource(
+        id: routeSourceId,
+        data: routeLineGeoJson(widget.route),
+      );
+    } catch (_) {
+      _routeReady = false; // the style was replaced; the next load re-adds it
+    }
   }
 
   Future<void> _installVehicle() async {
@@ -230,10 +270,24 @@ class _MapViewState extends ConsumerState<MapView> {
 
   void _scheduleVehicleUpdate() => _vehicleUpdates.run(_updateVehicle);
 
-  Future<void> _updateVehicle() async {
+  /// The last follow target the camera was actually moved to.
+  CameraTarget? _lastFollowed;
+
+  /// One follow frame: put the van where it belongs, THEN move the camera to
+  /// the same spot. The van goes through an async style update while the camera
+  /// moves at once, so moving both together would leave the van lagging behind
+  /// the view by however long that update takes (metres, at driving speed).
+  Future<void> _followFrame(CameraTarget t, Vehicle3D? van) async {
+    await _updateVehicle(van);
+    if (!mounted) return;
+    _follow(t, _lastFollowed);
+    _lastFollowed = t;
+  }
+
+  Future<void> _updateVehicle([Vehicle3D? van]) async {
     final style = _controller?.style;
     if (!_vehicleReady || style == null) return;
-    final v = widget.vehicle3d;
+    final v = van ?? widget.vehicle3d;
     try {
       final zoom = _controller?.camera?.zoom ?? widget.cameraTarget?.zoom ?? 15;
       await style.updateGeoJsonSource(
@@ -278,21 +332,33 @@ class _MapViewState extends ConsumerState<MapView> {
   @override
   void didUpdateWidget(MapView old) {
     super.didUpdateWidget(old);
-    if (old.vehicle3d != widget.vehicle3d) _scheduleVehicleUpdate();
+    if (!identical(old.route, widget.route)) _routeUpdates.run(_updateRoute);
     final t = widget.cameraTarget;
+    final van = widget.vehicle3d;
     if (t != null && t != old.cameraTarget) {
-      _follow(t, old.cameraTarget);
-    } else if (old.mode != widget.mode) {
-      _applyMode();
+      // Van and camera move as one frame, newest frame wins.
+      _vehicleUpdates.run(() => _followFrame(t, van));
+    } else {
+      if (old.vehicle3d != widget.vehicle3d) _scheduleVehicleUpdate();
+      if (t == null) _lastFollowed = null;
+      if (old.mode != widget.mode) _applyMode();
     }
   }
 
   Future<void> _onStyleLoaded() async {
     _vehicleReady = false; // a new style has none of our sources yet
+    _routeReady = false;
     try {
       await _installBuildings();
     } catch (_) {
       // Another style may not have that layer; the map still works flat.
+    }
+    // The route goes in before the van: layers added later draw on top, so the
+    // van always sits over the line instead of under it.
+    try {
+      await _installRoute();
+    } catch (_) {
+      // Without the line the map and van still work.
     }
     try {
       await _installVehicle();
@@ -315,32 +381,6 @@ class _MapViewState extends ConsumerState<MapView> {
     );
   }
 
-  List<ml.Layer<ml.Feature<ml.Geometry>>>? _cachedLayers;
-  List<LatLng>? _cachedLayersFor;
-
-  /// Same list instance until the route changes, so frequent rebuilds (the van
-  /// moving) don't make the map re-add the route line.
-  List<ml.Layer<ml.Feature<ml.Geometry>>> _routeLayers() {
-    if (!identical(_cachedLayersFor, widget.route)) {
-      _cachedLayersFor = widget.route;
-      _cachedLayers = [
-        if (widget.route.length > 1)
-          ml.PolylineLayer(
-            polylines: [
-              ml.Feature(
-                geometry: ml.LineString.from([
-                  for (final p in widget.route) _geo(p),
-                ]),
-              ),
-            ],
-            color: AppColors.mapRoute,
-            width: 6,
-          ),
-      ];
-    }
-    return _cachedLayers!;
-  }
-
   Widget _map() {
     return ClipRect(
       child: ml.MapLibreMap(
@@ -353,7 +393,6 @@ class _MapViewState extends ConsumerState<MapView> {
         onMapCreated: (c) => _controller = c,
         onStyleLoaded: (_) => _onStyleLoaded(),
         onEvent: _onEvent,
-        layers: _routeLayers(),
         children: [
           ml.WidgetLayer(
             markers: [

@@ -17,7 +17,7 @@ List<LatLng> roundCorners(
   double radiusMeters = 10,
   int steps = 8,
 }) {
-  const distance = Distance();
+  const distance = Distance(roundResult: false);
   final pts = <LatLng>[];
   for (final p in route) {
     if (pts.isEmpty || distance(pts.last, p) > 0) pts.add(p);
