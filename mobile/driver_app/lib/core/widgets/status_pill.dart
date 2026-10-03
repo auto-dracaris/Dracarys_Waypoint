@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_text.dart';
 
 enum StatusKind { success, danger, warning, neutral }
 
+/// Rounded status label (Figma "Label", size L).
 class StatusPill extends StatelessWidget {
   const StatusPill({
     super.key,
@@ -29,13 +31,14 @@ class StatusPill extends StatelessWidget {
     return GestureDetector(
       onLongPress: onLongPress,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Text(label,
-            style: TextStyle(color: fg, fontWeight: FontWeight.w600)),
+        child: Text(label, style: AppText.label.copyWith(color: fg)),
       ),
     );
   }

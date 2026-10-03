@@ -18,6 +18,7 @@ class MockNotificationsRepository implements NotificationsRepository {
     return [
       AppNotification(
         id: 'n1',
+        kind: NotificationKind.stopSequenceChanged,
         title: 'Trip 1 stop sequence updated',
         body: 'The dispatcher changed the delivery order. '
             'Review the latest sequence before departure.',
@@ -28,6 +29,7 @@ class MockNotificationsRepository implements NotificationsRepository {
       ),
       AppNotification(
         id: 'n2',
+        kind: NotificationKind.loadingStarted,
         title: 'Loading started for Trip 1',
         body: 'The loading team is preparing your 4 stops. '
             'Loading is still in progress.',
@@ -38,6 +40,7 @@ class MockNotificationsRepository implements NotificationsRepository {
       ),
       AppNotification(
         id: 'n3',
+        kind: NotificationKind.tripAssigned,
         title: 'Trip 2 assigned',
         body: 'Fresh deliveries · Gampaha',
         footnote: '2 stops · Planned departure 07:00 AM',
@@ -49,6 +52,7 @@ class MockNotificationsRepository implements NotificationsRepository {
       ),
       AppNotification(
         id: 'n4',
+        kind: NotificationKind.savedOffline,
         title: 'Latest trip saved offline',
         body: 'Trip 2 details are available on this device without a connection.',
         footnote: 'Map availability depends on downloaded map data.',

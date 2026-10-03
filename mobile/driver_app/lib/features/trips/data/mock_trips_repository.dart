@@ -1,4 +1,5 @@
 import '../domain/order.dart';
+import '../domain/shortfall_report.dart';
 import '../domain/stop.dart';
 import '../domain/trip.dart';
 import '../domain/vehicle.dart';
@@ -8,12 +9,14 @@ class MockTripsRepository implements TripsRepository {
   MockTripsRepository({
     this.latency = const Duration(milliseconds: 400),
     DateTime? today,
-  }) {
-    final now = today ?? DateTime.now();
-    _trips = _seed(DateTime(now.year, now.month, now.day));
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now {
+    final base = today ?? DateTime.now();
+    _trips = _seed(DateTime(base.year, base.month, base.day), _now());
   }
 
   final Duration latency;
+  final DateTime Function() _now;
   late List<Trip> _trips;
 
   Future<void> _wait() => Future<void>.delayed(latency);
@@ -37,23 +40,74 @@ class MockTripsRepository implements TripsRepository {
   }
 
   @override
+  Future<Trip> simulateLoadingComplete(String tripId) async {
+    await _wait();
+    final i = _indexOf(tripId);
+    final trip = _trips[i];
+    if (trip.status != TripStatus.loading) return trip;
+    return _store(i, trip.copyWith(status: TripStatus.ready));
+  }
+
+  @override
+  Future<Trip> startTrip(String tripId) async {
+    await _wait();
+    final i = _indexOf(tripId);
+    final trip = _trips[i];
+    if (trip.status == TripStatus.completed) return trip;
+    return _store(i, trip.copyWith(status: TripStatus.inProgress));
+  }
+
+  @override
   Future<Trip> markArrived(String tripId) async {
     await _wait();
     final i = _indexOf(tripId);
     final trip = _trips[i];
-    final next = trip.nextStop;
-    if (next == null) return trip;
+    final active = trip.activeStop;
+    if (active == null || active.status != StopStatus.pending) return trip;
 
-    final stops = [
-      for (final s in trip.stops)
-        s.id == next.id ? s.copyWith(status: StopStatus.completed) : s,
-    ];
-    var updated = trip.copyWith(stops: stops);
-    if (updated.nextStop == null) {
+    return _store(
+      i,
+      _replaceStop(
+          trip, active.copyWith(status: StopStatus.arrived, arrivedAt: _now())),
+    );
+  }
+
+  @override
+  Future<Trip> completeStop(
+    String tripId,
+    String stopId, {
+    Map<String, int> deliveredCases = const {},
+  }) async {
+    await _wait();
+    final i = _indexOf(tripId);
+    final trip = _trips[i];
+    final stop = trip.stops.where((s) => s.id == stopId).firstOrNull;
+    if (stop == null || stop.status != StopStatus.arrived) return trip;
+
+    final delivered = stop.copyWith(
+      status: StopStatus.completed,
+      orders: [
+        for (final o in stop.orders)
+          o.copyWith(
+            status: OrderStatus.delivered,
+            deliveredCases: deliveredCases[o.id] ?? o.cases,
+          ),
+      ],
+    );
+    var updated = _replaceStop(trip, delivered);
+    if (updated.activeStop == null) {
       updated = updated.copyWith(status: TripStatus.completed);
     }
-    _trips = [..._trips]..[i] = updated;
-    return updated;
+    return _store(i, updated);
+  }
+
+  Trip _replaceStop(Trip trip, Stop replacement) => trip.copyWith(stops: [
+        for (final s in trip.stops) s.id == replacement.id ? replacement : s,
+      ]);
+
+  Trip _store(int index, Trip trip) {
+    _trips = [..._trips]..[index] = trip;
+    return trip;
   }
 
   int _indexOf(String id) {
@@ -62,68 +116,119 @@ class MockTripsRepository implements TripsRepository {
     return i;
   }
 
-  static List<Trip> _seed(DateTime day) {
+  static List<Trip> _seed(DateTime day, DateTime now) {
     DateTime at(int h, int m) => DateTime(day.year, day.month, day.day, h, m);
 
-    Stop stop(int seq, String name, String window, DateTime eta, double lat,
-            double lng,
-            {List<Order> orders = const [],
-            StopStatus status = StopStatus.pending,
-            String tripId = 'trip-1'}) =>
+    Order order(String id, String store, int cases, Temperature t,
+            {String? handling}) =>
+        Order(
+            id: id,
+            storeName: store,
+            cases: cases,
+            temperature: t,
+            handling: handling);
+
+    Stop stop(
+      String tripId,
+      int seq,
+      String name,
+      String window,
+      DateTime eta,
+      double lat,
+      double lng,
+      List<Order> orders, {
+      String dock = 'Rear loading dock',
+      int etaMinutes = 15,
+      double distanceKm = 5,
+      StopStatus status = StopStatus.pending,
+    }) =>
         Stop(
           id: '$tripId-stop-$seq',
           sequence: seq,
           name: name,
           deliveryWindow: window,
           plannedArrival: eta,
-          dock: 'Rear loading dock',
+          dock: dock,
           lat: lat,
           lng: lng,
           orders: orders,
+          contactPhone: '+94 11 234 5678',
+          etaMinutes: etaMinutes,
+          distanceKm: distanceKm,
           status: status,
         );
 
+    const chilled = Temperature.chilled;
+    const ambient = Temperature.ambient;
+    const t1 = 'trip-1';
+    const t2 = 'trip-2';
+
     return [
       Trip(
-        id: 'trip-1',
+        id: t1,
         name: 'Trip 1',
         subtitle: 'Fresh deliveries · Gampaha',
         departure: at(5, 30),
         status: TripStatus.loading,
+        planVersion: 3,
+        updatedAt: now.subtract(const Duration(minutes: 2)),
+        shortfall: const ShortfallReport(
+          orderId: 'ORD-4521',
+          storeName: 'Waypoint Fresh — Ja-Ela',
+          shortCases: 2,
+          plannedCases: 12,
+          dispatcherNote: 'Proceed with partial load.',
+        ),
         stops: [
-          stop(1, 'Waypoint Fresh - Kiribathgoda', '05:30-06:30', at(5, 50),
-              7.0000, 79.9280, status: StopStatus.completed),
-          stop(2, 'Waypoint Fresh - Wattala', '05:45-07:00', at(6, 30),
-              6.9890, 79.8900, status: StopStatus.completed),
-          stop(3, 'Waypoint Fresh - Ja-Ela', '06:00-08:00', at(7, 10),
-              7.0744, 79.8919,
-              orders: const [
-                Order(
-                    id: 'ORD-4521',
-                    storeName: 'Waypoint Fresh - Ja-Ela',
-                    cases: 12,
-                    temperature: Temperature.chilled),
-                Order(
-                    id: 'ORD-4522',
-                    storeName: 'Waypoint Fresh - Ja-Ela',
-                    cases: 8,
-                    temperature: Temperature.ambient),
-              ]),
-          stop(4, 'Waypoint Fresh - Gampaha', '07:00-09:00', at(7, 50),
-              7.0917, 79.9925),
+          stop(t1, 1, 'Cargills Food City — Kadawatha', '05:45-07:00',
+              at(5, 50), 7.0011, 79.9503, [
+            order('ORD-4511', 'Cargills Food City — Kadawatha', 10, chilled),
+            order('ORD-4512', 'Cargills Food City — Kadawatha', 6, ambient),
+            order('ORD-4513', 'Cargills Food City — Kadawatha', 4, ambient),
+          ],
+              dock: 'Front receiving bay',
+              etaMinutes: 15,
+              distanceKm: 6.1,
+              status: StopStatus.completed),
+          stop(t1, 2, 'Keells Super — Kiribathgoda', '06:00-07:30', at(6, 25),
+              6.9805, 79.9243, [
+            order('ORD-4516', 'Keells Super — Kiribathgoda', 8, ambient),
+            order('ORD-4517', 'Keells Super — Kiribathgoda', 5, ambient),
+          ],
+              dock: 'Side entrance',
+              etaMinutes: 10,
+              distanceKm: 3.4,
+              status: StopStatus.completed),
+          stop(t1, 3, 'Waypoint Fresh — Ja-Ela', '06:00-08:00', at(7, 10),
+              7.0744, 79.8919, [
+            order('ORD-4521', 'Waypoint Fresh — Ja-Ela', 12, chilled,
+                handling: 'Keep cold chain intact.'),
+            order('ORD-4522', 'Waypoint Fresh — Ja-Ela', 8, ambient),
+          ], etaMinutes: 18, distanceKm: 7.2),
+          stop(t1, 4, 'Lanka Sathosa — Ragama', '07:00-09:00', at(7, 45),
+              7.0299, 79.9226, [
+            order('ORD-4530', 'Lanka Sathosa — Ragama', 6, ambient),
+          ],
+              dock: 'Check receiving entrance',
+              etaMinutes: 12,
+              distanceKm: 4.5),
         ],
       ),
       Trip(
-        id: 'trip-2',
+        id: t2,
         name: 'Trip 2',
         subtitle: 'Fresh deliveries · Gampaha',
         departure: at(7, 0),
-        status: TripStatus.assigned,
+        status: TripStatus.loading,
         stops: [
-          stop(1, 'Waypoint Fresh - Minuwangoda', '08:00-10:00', at(8, 30),
-              7.1730, 79.9530, tripId: 'trip-2'),
-          stop(2, 'Waypoint Fresh - Veyangoda', '09:00-11:00', at(9, 30),
-              7.1600, 80.0980, tripId: 'trip-2'),
+          stop(t2, 1, 'Waypoint Fresh — Minuwangoda', '08:00-10:00',
+              at(8, 30), 7.1730, 79.9530, [
+            order('ORD-4601', 'Waypoint Fresh — Minuwangoda', 9, ambient),
+          ]),
+          stop(t2, 2, 'Waypoint Fresh — Veyangoda', '09:00-11:00', at(9, 30),
+              7.1600, 80.0980, [
+            order('ORD-4602', 'Waypoint Fresh — Veyangoda', 7, chilled),
+          ]),
         ],
       ),
     ];
