@@ -16,6 +16,7 @@ export class CloudinaryService {
         cloud_name: cloudName,
         api_key: apiKey,
         api_secret: apiSecret,
+        secure: true,
       });
     } else {
       const cloudinaryUrl =
@@ -31,6 +32,7 @@ export class CloudinaryService {
             api_key: match[1],
             api_secret: match[2],
             cloud_name: match[3],
+            secure: true,
           });
         } else {
           throw new Error('Invalid CLOUDINARY_URL format');
@@ -48,6 +50,7 @@ export class CloudinaryService {
    * @param buffer - The file buffer
    * @param publicId - The Cloudinary public_id (no extension)
    * @param folder - The Cloudinary folder path (e.g. 'waypoint/avatars')
+   * @param overwrite - Whether a matching public ID may be replaced
    * @returns The secure_url of the uploaded image
    */
   async uploadImage(
@@ -103,6 +106,7 @@ export class CloudinaryService {
       this.logger.warn(
         `Failed to delete image from Cloudinary (${publicId}): ${(error as Error)?.message}`,
       );
+      throw error;
     }
   }
 }

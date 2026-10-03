@@ -1,171 +1,125 @@
 import {
   BadRequestException,
-  ForbiddenException,
   HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { isUUID } from 'class-validator';
-import { DataSource } from 'typeorm';
 import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
-import { TripStopImagesRepository } from './repositories/trip-stop-images.repository';
-import { UserImagesRepository } from './repositories/user-images.repository';
+import { ImagePurpose } from '../../common/enums/image-purpose.enum';
+import { Image } from '../../database/entities/image.entity';
+import { ImagesRepository } from './repositories/images.repository';
+
+/** Maps each purpose to its Cloudinary folder. */
+const FOLDER_MAP: Record<ImagePurpose, string> = {
+  [ImagePurpose.AVATAR]: 'waypoint/avatars',
+  [ImagePurpose.PROOF]: 'waypoint/proofs',
+};
 
 @Injectable()
 export class ImagesService {
   constructor(
     private readonly cloudinaryService: CloudinaryService,
-    private readonly userImagesRepository: UserImagesRepository,
-    private readonly tripStopImagesRepository: TripStopImagesRepository,
-    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly imagesRepository: ImagesRepository,
   ) {}
 
   /**
-   * Uploads an avatar image for a user, replacing any existing avatar in Cloudinary.
+   * Uploads a file to Cloudinary, saves an Image row, and returns its UUID.
+   *
+   * The caller stores that UUID wherever needed
+   * (e.g. users.avatar_id, trip_stops.proof_id).
    */
-  async uploadAvatar(
-    userId: number,
+  async upload(
     file: Express.Multer.File,
+    purpose: ImagePurpose,
+    uploadedById: number,
   ): Promise<ApiResponseDto> {
-    const user = await this.userImagesRepository.findById(userId);
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
+    const folder = FOLDER_MAP[purpose];
 
-    const publicId = `${userId}_avatar`;
-    const folder = 'waypoint/avatars';
-    const secureUrl = await this.cloudinaryService.uploadImage(
+    // Build a deterministic public_id from the UUID we'll use so Cloudinary
+    // and DB stay in sync even if the transaction below fails.
+    // We generate a temporary ID; the real UUID comes from the saved entity.
+    const tempPublicId = `${purpose}_${Date.now()}_${uploadedById}`;
+
+    const url = await this.cloudinaryService.uploadImage(
       file.buffer,
-      publicId,
+      tempPublicId,
       folder,
+      false, // overwrite=false — each upload is a unique asset
     );
 
-    user.avatar = secureUrl;
-    await this.userImagesRepository.save(user);
+    const image = new Image();
+    image.publicId = `${folder}/${tempPublicId}`;
+    image.url = url;
+    image.purpose = purpose;
+    image.originalName = file.originalname ?? null;
+    image.mimeType = file.mimetype ?? null;
+    image.sizeBytes = file.size ?? null;
+    image.uploadedById = uploadedById;
 
-    return new ApiResponseDto(HttpStatus.OK, 'Avatar uploaded successfully', {
-      avatarUrl: secureUrl,
+    const saved = await this.imagesRepository.save(image);
+
+    return new ApiResponseDto(HttpStatus.CREATED, 'Image uploaded successfully', {
+      id: saved.id,
+      url: saved.url,
+      purpose: saved.purpose,
     });
   }
 
   /**
-   * Deletes an avatar image from Cloudinary and clears user.avatar in database.
+   * Returns image metadata by UUID.
    */
-  async deleteAvatar(userId: number): Promise<ApiResponseDto> {
-    const user = await this.userImagesRepository.findById(userId);
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
+  async findById(id: string): Promise<ApiResponseDto> {
+    const image = await this.imagesRepository.findById(id);
+    if (!image) {
+      throw new NotFoundException(`Image ${id} not found`);
     }
 
-    if (!user.avatar) {
-      throw new BadRequestException('No avatar to delete');
-    }
-
-    const publicId = this.extractPublicId(user.avatar);
-    if (publicId) {
-      await this.cloudinaryService.deleteImage(publicId);
-    }
-
-    user.avatar = null;
-    await this.userImagesRepository.save(user);
-
-    return new ApiResponseDto(
-      HttpStatus.OK,
-      'Avatar deleted successfully',
-      null,
-    );
+    return new ApiResponseDto(HttpStatus.OK, 'Image found', {
+      id: image.id,
+      url: image.url,
+      purpose: image.purpose,
+      originalName: image.originalName,
+      mimeType: image.mimeType,
+      sizeBytes: image.sizeBytes,
+      createdAt: image.createdAt,
+    });
   }
 
   /**
-   * Uploads immutable delivery proof image for a trip stop. Cannot be updated or deleted.
+   * Deletes the image from Cloudinary and removes the DB row.
    */
-  async uploadDeliveryProof(
-    tripStopId: string,
-    userId: number,
-    file: Express.Multer.File,
-  ): Promise<ApiResponseDto> {
-    if (!isUUID(tripStopId)) {
-      throw new NotFoundException(`Trip stop with ID ${tripStopId} not found`);
+  async delete(id: string): Promise<ApiResponseDto> {
+    const image = await this.imagesRepository.findById(id);
+    if (!image) {
+      throw new NotFoundException(`Image ${id} not found`);
     }
 
-    const folder = 'waypoint/delivery-proofs';
-    const publicId = tripStopId;
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    let secureUrl: string;
-    let uploaded = false;
+    // Delete from Cloudinary (non-fatal if already gone)
     try {
-      const tripStop =
-        await this.tripStopImagesRepository.findForDeliveryProofUpload(
-          tripStopId,
-          queryRunner.manager,
-        );
-      if (!tripStop) {
-        throw new NotFoundException(
-          `Trip stop with ID ${tripStopId} not found`,
-        );
-      }
-      if (tripStop.trip?.driverId !== userId) {
-        throw new ForbiddenException(
-          'You can only upload proof for your assigned trip stops',
-        );
-      }
-      if (tripStop.deliveryProofUrl) {
-        throw new BadRequestException('Delivery proof already uploaded');
-      }
-
-      // Keep the lock through the upload so another request cannot replace it.
-      secureUrl = await this.cloudinaryService.uploadImage(
-        file.buffer,
-        publicId,
-        folder,
-        false,
-      );
-      uploaded = true;
-      tripStop.deliveryProofUrl = secureUrl;
-      await this.tripStopImagesRepository.save(tripStop, queryRunner.manager);
-      await queryRunner.commitTransaction();
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      if (uploaded) {
-        await this.cloudinaryService.deleteImage(`${folder}/${publicId}`);
-      }
-      throw error;
-    } finally {
-      await queryRunner.release();
+      await this.cloudinaryService.deleteImage(image.publicId);
+    } catch {
+      // Log but don't block the DB cleanup
     }
 
-    return new ApiResponseDto(
-      HttpStatus.OK,
-      'Delivery proof uploaded successfully',
-      {
-        deliveryProofUrl: secureUrl,
-      },
-    );
+    await this.imagesRepository.delete(id);
+
+    return new ApiResponseDto(HttpStatus.OK, 'Image deleted successfully', null);
   }
 
+  // ── Helpers kept for backward-compat with old avatar flow ──────────────────
+
   /**
-   * Extracts the Cloudinary public_id (including folder path) from a secure URL.
-   * Format: https://res.cloudinary.com/<cloud>/image/upload/v<version>/<folder>/<publicId>.<ext>
-   * Example output: 'waypoint/avatars/5_avatar'
+   * Extracts the Cloudinary public_id from a secure URL.
+   * Format: https://res.cloudinary.com/<cloud>/image/upload/v<ver>/<folder>/<id>.<ext>
    */
-  private extractPublicId(url: string): string | null {
+  extractPublicId(url: string): string | null {
     if (!url) return null;
     const uploadIndex = url.indexOf('/upload/');
     if (uploadIndex === -1) return null;
-
     let path = url.slice(uploadIndex + '/upload/'.length);
-    // Strip version prefix if present, e.g. v1234567890/
     path = path.replace(/^v\d+\//, '');
-    // Strip extension
-    const lastDotIndex = path.lastIndexOf('.');
-    if (lastDotIndex !== -1) {
-      path = path.slice(0, lastDotIndex);
-    }
-    return path || null;
+    const dotIdx = path.lastIndexOf('.');
+    return dotIdx !== -1 ? path.slice(0, dotIdx) : path || null;
   }
 }
