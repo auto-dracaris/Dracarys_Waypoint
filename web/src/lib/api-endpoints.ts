@@ -18,6 +18,14 @@ export const API_ENDPOINTS = {
     role: (id: number) => `/users/${id}/role`,
     status: (id: number) => `/users/${id}/status`,
   },
+  outlets: {
+    list: '/outlets',
+    summary: '/outlets/summary',
+    districts: '/outlets/districts',
+    detail: (id: number) => `/outlets/${id}`,
+    overview: (id: number) => `/outlets/${id}/overview`,
+    availability: (id: number) => `/outlets/${id}/availability`,
+  },
   vehicles: {
     list: '/vehicles',
     detail: (id: number) => `/vehicles/${id}`,

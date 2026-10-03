@@ -175,7 +175,7 @@
 }
 
 @theme inline {
-  --font-waypoint: "Google Sans Flex", ui-sans-serif, system-ui, sans-serif;
+  --font-waypoint: 'Google Sans Flex', ui-sans-serif, system-ui, sans-serif;
   --color-wp-red-50: var(--wp-red-50);
   --color-wp-red-100: var(--wp-red-100);
   --color-wp-red-200: var(--wp-red-200);

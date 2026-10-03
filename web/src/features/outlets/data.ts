@@ -1,50 +1,81 @@
-export type OutletAllocation = 'Unallocated' | 'Allocated' | 'Deferred'
-export type OutletFilter = 'All' | OutletAllocation
 export type OutletAvailability = 'Available' | 'Unavailable'
+export type OutletFilter = 'All' | OutletAvailability
+export type ParkingConstraint = 'van_only' | 'normal' | 'mall_dock'
+export type DockType = 'street' | 'rear_dock' | 'mall_bay'
 export interface DeliveryRequirements {
-  depot: string
+  // The district decides the depot, so a depot change is a district change.
   district: string
   windowStart: string
   windowEnd: string
-  access: 'Van only' | 'Standard'
-  deliveryPoint: string
+  // A mall's fixed access window; empty for outlets outside malls.
+  mallWindowStart: string
+  mallWindowEnd: string
+  parkingConstraint: ParkingConstraint
+  dockType: DockType
+  address: string
 }
 export interface Outlet extends DeliveryRequirements {
   id: string
+  dbId: number
   brand: string
-  allocation: OutletAllocation
+  name: string
+  depot: string
+  contactPhone: string
   availability: OutletAvailability
+  // Labels for the enum columns above, so the table can show and sort them.
+  access: string
+  deliveryPoint: string
 }
-export type OutletSortKey = 'id' | 'brand' | 'district' | 'windowStart' | 'access'
-export interface OutletSort { key: OutletSortKey | null; direction: 'ascending' | 'descending' }
-
-// Figma supplies these six table records. Allocation and availability are
-// explicit local preview values, not confirmed operational assignments.
-const rows = [
-  ['OUT014', 'Fresh', 'Gampaha', '06:00', '08:00', 'Van only', 'Unallocated'],
-  ['OUT008', 'Fresh', 'Gampaha', '06:00', '08:00', 'Standard', 'Allocated'],
-  ['OUT025', 'Style', 'Colombo', '10:00', '12:00', 'Standard', 'Unallocated'],
-  ['OUT031', 'Fresh', 'Gampaha', '06:00', '08:00', 'Standard', 'Allocated'],
-  ['OUT042', 'Tech', 'Gampaha', '09:00', '12:00', 'Standard', 'Unallocated'],
-  ['OUT056', 'Fresh', 'Gampaha', '06:00', '08:00', 'Van only', 'Allocated'],
-] as const
-export const initialOutlets: Outlet[] = rows.map(([id, brand, district, windowStart, windowEnd, access, allocation]) => ({ id, brand, district, windowStart, windowEnd, access, allocation, depot: 'Peliyagoda', deliveryPoint: 'Rear loading bay', availability: 'Available' }))
-export const outletMetrics = [72, 12, 18] as const
-export const outletFilters: OutletFilter[] = ['All', 'Unallocated', 'Allocated', 'Deferred']
-
-export function selectOutlets(outlets: Outlet[], filter: OutletFilter, query: string, sort: OutletSort): Outlet[] {
-  const term = query.trim().toLowerCase()
-  const visible = outlets.filter(outlet => (filter === 'All' || outlet.allocation === filter) && `${outlet.id} ${outlet.brand} ${outlet.district} ${outlet.depot} ${outlet.windowStart} ${outlet.windowEnd} ${outlet.access}`.toLowerCase().includes(term))
-  if (sort.key) {
-    const key = sort.key
-    visible.sort((a, b) => a[key].localeCompare(b[key]) * (sort.direction === 'ascending' ? 1 : -1))
-  }
-  return visible
+export type Brand = 'Fresh' | 'Style' | 'Tech'
+export interface NewOutlet extends DeliveryRequirements {
+  uniqueId: string
+  name: string
+  brand: Brand
 }
+export interface District {
+  name: string
+  depot: string
+}
+export interface PageMeta {
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+export interface OutletSummary {
+  total: number
+  available: number
+  unavailable: number
+  vanOnly: number
+  mallDock: number
+}
+export interface OutletActivity {
+  type: 'received' | 'deferred'
+  at: string
+  note: string | null
+}
+export interface OutletOverview {
+  nextDelivery: { date: string; orders: number; temps: ('ambient' | 'chilled')[] } | null
+  recentActivity: OutletActivity[]
+}
+export type OutletSortKey = 'id' | 'name' | 'brand' | 'district' | 'windowStart' | 'access'
+export interface OutletSort {
+  key: OutletSortKey | null
+  direction: 'ascending' | 'descending'
+}
+
+export const parkingLabels: Record<ParkingConstraint, string> = { van_only: 'Van only', normal: 'Standard', mall_dock: 'Mall dock' }
+export const dockLabels: Record<DockType, string> = { street: 'Street frontage', rear_dock: 'Rear loading dock', mall_bay: 'Mall loading bay' }
+export const brands: Brand[] = ['Fresh', 'Style', 'Tech']
+export const outletFilters: OutletFilter[] = ['All', 'Available', 'Unavailable']
 
 export function requirementsError(value: DeliveryRequirements): string {
-  if (!value.depot.trim() || !value.district.trim() || !value.deliveryPoint.trim()) return 'Enter a depot, district, and delivery point.'
+  if (!value.district) return 'Choose a district.'
+  if (!value.address.trim()) return 'Enter a delivery address.'
   const validTime = /^([01]\d|2[0-3]):[0-5]\d$/
-  if (!validTime.test(value.windowStart) || !validTime.test(value.windowEnd) || value.windowStart >= value.windowEnd) return 'The receiving window must end after it starts.'
+  if (!validTime.test(value.windowStart) || !validTime.test(value.windowEnd) || value.windowStart >= value.windowEnd) return 'The delivery window must end after it starts.'
+  if (!value.mallWindowStart !== !value.mallWindowEnd) return 'Enter both mall access times, or leave both blank.'
+  if (value.mallWindowStart && (!validTime.test(value.mallWindowStart) || !validTime.test(value.mallWindowEnd) || value.mallWindowStart >= value.mallWindowEnd))
+    return 'The mall access window must end after it starts.'
   return ''
 }

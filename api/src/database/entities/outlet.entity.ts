@@ -61,6 +61,10 @@ export class Outlet extends AutoIncBaseEntity {
   @Column({ name: 'window_close_time', type: 'time' })
   windowCloseTime: string;
 
+  // Dispatcher-controlled: an unavailable outlet is left out of planning.
+  @Column({ name: 'is_available', type: 'boolean', default: true })
+  isAvailable: boolean;
+
   @Column({ type: 'text', nullable: true })
   address: string | null;
 

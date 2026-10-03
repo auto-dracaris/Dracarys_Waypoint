@@ -17,8 +17,8 @@ export function demoMapLocations(index: number): DeliveryMapLocations {
   const path = demoPaths[index % demoPaths.length]
   return {
     depotPosition: [...demoDepot],
-    vehiclePosition: [...path[1 + index % (path.length - 2)]],
-    routeCoordinates: path.map(position => [...position]),
+    vehiclePosition: [...path[1 + (index % (path.length - 2))]],
+    routeCoordinates: path.map((position) => [...position]),
   }
 }
 

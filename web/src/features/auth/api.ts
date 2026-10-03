@@ -44,17 +44,12 @@ export interface VerifyOtpPayload {
 
 const { auth } = API_ENDPOINTS
 
-export const login = (body: LoginPayload) =>
-  apiRequest<Session>(auth.login, { method: 'POST', body })
+export const login = (body: LoginPayload) => apiRequest<Session>(auth.login, { method: 'POST', body })
 
-export const register = (body: RegisterPayload) =>
-  apiRequest<{ userId: number; otpId: number }>(auth.register, { method: 'POST', body })
+export const register = (body: RegisterPayload) => apiRequest<{ userId: number; otpId: number }>(auth.register, { method: 'POST', body })
 
-export const verifyOtp = (body: VerifyOtpPayload) =>
-  apiRequest<null>(auth.verifyOtp, { method: 'POST', body })
+export const verifyOtp = (body: VerifyOtpPayload) => apiRequest<null>(auth.verifyOtp, { method: 'POST', body })
 
-export const resendOtp = (phone: string) =>
-  apiRequest<{ otpId: number }>(auth.resendOtp, { method: 'POST', body: { phone } })
+export const resendOtp = (phone: string) => apiRequest<{ otpId: number }>(auth.resendOtp, { method: 'POST', body: { phone } })
 
-export const logout = (token: string) =>
-  apiRequest<null>(auth.logout, { method: 'POST', token })
+export const logout = (token: string) => apiRequest<null>(auth.logout, { method: 'POST', token })

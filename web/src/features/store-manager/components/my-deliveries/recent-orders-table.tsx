@@ -1,19 +1,19 @@
-import { Button } from "@/components/ui/shadcn/button";
-import { Input } from "@/components/ui/shadcn/input";
-import { Filter, ArrowUpDown, Search } from "lucide-react";
+import { Button } from '@/components/ui/shadcn/button'
+import { Input } from '@/components/ui/shadcn/input'
+import { Filter, ArrowUpDown, Search } from 'lucide-react'
 
 interface OrderRow {
-  id: string;
-  date: string;
-  requirement: string;
-  quantity: string;
-  status: string;
-  statusColor: string;
-  actionText: string;
+  id: string
+  date: string
+  requirement: string
+  quantity: string
+  status: string
+  statusColor: string
+  actionText: string
 }
 
 interface RecentOrdersTableProps {
-  orders: OrderRow[];
+  orders: OrderRow[]
 }
 
 export function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
@@ -21,10 +21,7 @@ export function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
     <div className="flex-1 bg-white rounded-xl border border-gray-200 flex flex-col gap-4 overflow-hidden shadow-sm p-4">
       <div className="flex justify-between items-center">
         <h3 className="text-stone-900 text-4xl font-medium">Recent orders</h3>
-        <Button
-          variant="ghost"
-          className="text-neutral-700 font-semibold gap-2"
-        >
+        <Button variant="ghost" className="text-neutral-700 font-semibold gap-2">
           View all orders <span className="text-xl">→</span>
         </Button>
       </div>
@@ -32,18 +29,10 @@ export function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
       {/* Tabs and Search Filters */}
       <div className="flex justify-between items-center px-2">
         <div className="p-1 bg-neutral-100 rounded-[10px] flex gap-1">
-          <div className="px-3 py-2 bg-white rounded-lg shadow-sm text-sm font-medium">
-            All (6)
-          </div>
-          <div className="px-3 py-2 text-stone-600 text-sm font-normal cursor-pointer">
-            Upcoming (2)
-          </div>
-          <div className="px-3 py-2 text-stone-600 text-sm font-normal cursor-pointer">
-            Awaiting confirmation (1)
-          </div>
-          <div className="px-3 py-2 text-stone-600 text-sm font-normal cursor-pointer">
-            Deferred (1)
-          </div>
+          <div className="px-3 py-2 bg-white rounded-lg shadow-sm text-sm font-medium">All (6)</div>
+          <div className="px-3 py-2 text-stone-600 text-sm font-normal cursor-pointer">Upcoming (2)</div>
+          <div className="px-3 py-2 text-stone-600 text-sm font-normal cursor-pointer">Awaiting confirmation (1)</div>
+          <div className="px-3 py-2 text-stone-600 text-sm font-normal cursor-pointer">Deferred (1)</div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -78,27 +67,18 @@ export function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
         </div>
 
         {orders.map((order, idx) => (
-          <div
-            key={idx}
-            className="grid grid-cols-5 h-12 px-4 items-center text-xs border-b border-neutral-200 hover:bg-neutral-50"
-          >
+          <div key={idx} className="grid grid-cols-5 h-12 px-4 items-center text-xs border-b border-neutral-200 hover:bg-neutral-50">
             <span className="font-medium text-stone-900">{order.id}</span>
             <span className="text-stone-600">{order.date}</span>
             <span className="text-stone-600">{order.requirement}</span>
             <span className="text-stone-600">{order.quantity}</span>
             <div className="flex justify-between items-center">
-              <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${order.statusColor}`}
-              >
-                {order.status}
-              </span>
-              <span className="text-blue-600 font-medium cursor-pointer hover:underline">
-                {order.actionText}
-              </span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${order.statusColor}`}>{order.status}</span>
+              <span className="text-blue-600 font-medium cursor-pointer hover:underline">{order.actionText}</span>
             </div>
           </div>
         ))}
       </div>
     </div>
-  );
+  )
 }
