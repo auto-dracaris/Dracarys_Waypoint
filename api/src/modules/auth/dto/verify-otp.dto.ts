@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsString, Length } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
+import { OtpPurpose } from '../enums/otp-purpose.enum';
 
 export class VerifyOtpDto {
   @IsNotEmpty({ message: 'Phone number is required' })
@@ -15,4 +16,9 @@ export class VerifyOtpDto {
   @Type(() => Number)
   @IsInt({ message: 'OTP ID must be an integer' })
   otpId: number;
+
+  /** Defaults to REGISTRATION on the server side if omitted. */
+  @IsOptional()
+  @IsEnum(OtpPurpose, { message: 'Purpose must be a valid OTP purpose' })
+  purpose?: OtpPurpose;
 }
