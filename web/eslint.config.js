@@ -19,4 +19,10 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    files: ['src/store-manager/components/ui/button.tsx'],
+    rules: {
+      'react-refresh/only-export-components': ['error', { allowExportNames: ['buttonVariants'] }],
+    },
+  },
 ])

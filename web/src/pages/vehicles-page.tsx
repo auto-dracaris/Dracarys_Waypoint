@@ -1,3 +1,4 @@
+import { IconButton } from '@/components/ui/icon-button'
 import { useEffect, useRef, useState } from 'react'
 import NotificationsRounded from '@mui/icons-material/NotificationsRounded'
 import MenuRounded from '@mui/icons-material/MenuRounded'
@@ -55,7 +56,7 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
     setEditing(null)
   }
   return <div className="overview-canvas vehicles-canvas">
-    <header className="overview-header fleet-page-header"><div className="flex items-center gap-wp-space-lg"><button type="button" aria-label="Open navigation" aria-expanded={navigationOpen} aria-controls="main-navigation" className="icon-button mobile-menu" onClick={onOpenNavigation}><MenuRounded fontSize="inherit" /></button><h1 className="type-display-lg-medium">Vehicles</h1></div><div className="fleet-header-actions"><DateRangePicker /><Button variant="danger" className="decision-button type-text-md-semibold" onClick={() => onNavigate('Order notifications')}><NotificationsRounded fontSize="inherit" />3 orders need a decision</Button></div></header>
+    <header className="overview-header fleet-page-header"><div className="flex items-center gap-wp-space-lg"><IconButton type="button" aria-label="Open navigation" aria-expanded={navigationOpen} aria-controls="main-navigation" className="mobile-menu" onClick={onOpenNavigation}><MenuRounded fontSize="inherit" /></IconButton><h1 className="type-display-lg-medium">Vehicles</h1></div><div className="fleet-header-actions"><DateRangePicker /><Button variant="danger" size="md" className="decision-button" onClick={() => onNavigate('Order notifications')}><NotificationsRounded fontSize="inherit" />3 orders need a decision</Button></div></header>
     <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">{['Home', 'Dashboard', 'Management'].map(label => <span key={label}><button onClick={() => onNavigate(label)}>{label}</button><span aria-hidden="true">/</span></span>)}<strong aria-current="page" className="text-wp-text-primary type-text-sm-semibold">Vehicles</strong></nav>
     <FleetSummary totals={totals} reviewCount={1 + changes} onReview={() => onNavigate('Vehicle change impact review')} />
     {message && <p role="status" className="fleet-update-message type-text-sm-medium">{message}</p>}

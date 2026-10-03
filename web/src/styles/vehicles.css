@@ -49,8 +49,6 @@
 .fleet-id-cell input:disabled { cursor: default; }
 .fleet-id-cell button { cursor: pointer; }
 .fleet-table .fleet-row-checked td:first-child { background: var(--wp-yellow-50); box-shadow: inset var(--wp-space-xs) 0 var(--wp-yellow-500); }
-.allocation-badge { display: inline-flex; align-items: center; height: var(--wp-space-2xl); padding: 0 var(--wp-space-md); color: var(--wp-lime-700); background: var(--wp-lime-100); border-radius: var(--wp-radius-lg); white-space: nowrap; }
-.allocation-badge--unallocated { color: var(--wp-red-700); background: var(--wp-red-100); }
 .fleet-table tfoot td { height: var(--wp-space-4xl); border-bottom: 0; }
 .fleet-table tfoot td:first-child { padding-left: var(--wp-space-2xl); }
 .fleet-add-column { display: flex; align-items: center; gap: var(--wp-space-xs); cursor: pointer; color: var(--wp-text-tertiary); white-space: nowrap; }
@@ -87,10 +85,8 @@
 .date-range-picker summary:focus-visible { outline: 2px solid var(--wp-yellow-500); outline-offset: var(--wp-space-xxs); }
 .date-range-form { position: absolute; z-index: 10; top: calc(100% + var(--wp-space-md)); right: 0; width: var(--wp-spacing-80); max-width: calc(100vw - var(--wp-space-4xl)); padding: var(--wp-space-xl); background: var(--wp-neutral-50); border: 1px solid var(--wp-neutral-300); border-radius: var(--wp-radius-md); display: flex; flex-direction: column; gap: var(--wp-space-lg); }
 .date-range-form label, .availability-field { display: flex; flex-direction: column; gap: var(--wp-space-md); }
-.date-range-form input, .availability-field select { border: 1px solid var(--wp-neutral-300); border-radius: var(--wp-radius-md); background: var(--wp-neutral-50); padding: var(--wp-space-md); min-width: 0; width: 100%; @apply type-text-sm-regular; }
 .availability-field { margin-block: var(--wp-space-3xl); }
 .availability-actions { display: flex; justify-content: flex-end; gap: var(--wp-space-md); margin-top: var(--wp-space-3xl); }
-.wp-button:disabled { opacity: 0.5; cursor: not-allowed; }
 @container (max-width: 672px) {
   .fleet-toolbar { flex-direction: column; }
   .fleet-search { width: 100%; min-width: 0; max-width: none; flex: none; }

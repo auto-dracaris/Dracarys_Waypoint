@@ -1,6 +1,6 @@
 # WayPoint web
 
-A React, TypeScript, Vite, and Tailwind app built page by page from Figma. UI components use plain React and native HTML; icons use Material UI. No shadcn components are used.
+A single React, TypeScript, Vite, and Tailwind application for Hub and Store Manager. Hub keeps its plain React controls and WayPoint tokens. Store Manager keeps its existing shadcn/Base UI components, Geist font, and theme.
 
 ## Run locally
 
@@ -13,9 +13,25 @@ npm run dev
 
 Open the address printed by Vite. The app opens Delivery Overview at `/`; `/login` opens Admin Sign In. Use Orders or `/orders` for Confirmed Orders, Planning or `/planning` for Final Plan Review and `/planning/published` for its publication preview, `/operations/loading-exception` for Loading Exception Review, and `/vehicles`, `/outlets`, and `/team` for management screens. Browser back/forward navigation works between these screens.
 
+Store Manager routes:
+
+| Screen | URL |
+| --- | --- |
+| Overview | `/store-manager` |
+| Orders | `/store-manager/orders` |
+| Place order | `/store-manager/orders/create` |
+| Deliveries | `/store-manager/deliveries` |
+| Delivery tracking | `/store-manager/delivery/:id` |
+| Existing Store Manager login | `/store-manager/login` |
+
+Both areas use this one development server and production build. Store Manager's router uses `/store-manager` as its basename, so its existing internal links stay within that area. The browser entry loads only the selected area's global stylesheet to preserve both designs, including portaled shadcn dialogs. Use normal document links (not client-side navigation) when linking between Hub and Store Manager. Production hosting must serve `index.html` for application routes so direct links and refresh work.
+
+This is a directory consolidation; existing demo data, login behavior, and service integration status are preserved.
+
 ```powershell
 npm run lint
 npm run build
+npm run check:ui
 ```
 
 ## Source structure
@@ -31,11 +47,16 @@ src/
   lib/                 Shared utilities, added when needed
   styles/              Original Figma tokens and generated CSS
   assets/              Preserved images and fonts
+  store-manager/       Migrated pages, layouts, shadcn controls, utilities and assets
   main.tsx             Browser entry point
   index.css            Global styles and token imports
 ```
 
 Empty folders contain `.gitkeep` files to preserve the structure in Git.
+
+`components.json` points shadcn at `src/store-manager/components/ui` and its original stylesheet. Store Manager public artwork lives in `public/store-manager`. Keep these controls separate from Hub's `src/components/ui` to avoid replacing either implementation.
+
+Phase 1 of modularization provides shared Button, IconButton, Input, Select, Textarea, StatusBadge and Tooltip primitives, with styles owned by those components. Existing screens consume them while feature code retains validation and business state. See the [shared UI guide](src/components/ui/README.md) for props and examples. Search/filter composition, shared page sections and feature hooks remain later phases.
 
 ## Build page by page
 

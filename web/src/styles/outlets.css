@@ -38,8 +38,6 @@
 .outlet-activity-icon--warning { color: var(--wp-text-warning-primary); }
 .outlet-editor-fields { display: flex; flex-direction: column; gap: var(--wp-space-xl); margin-block: var(--wp-space-3xl); }
 .outlet-editor-fields label { display: flex; flex-direction: column; gap: var(--wp-space-md); min-width: 0; }
-.outlet-editor-fields input, .outlet-editor-fields select { @apply type-text-sm-regular; width: 100%; min-width: 0; padding: var(--wp-space-md); border: 1px solid var(--wp-neutral-300); background: var(--wp-neutral-50); border-radius: var(--wp-radius-md); }
-.outlet-editor-fields select:focus-visible { outline: 2px solid var(--wp-yellow-500); outline-offset: var(--wp-space-xxs); }
 .outlet-window-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--wp-space-xl); }
 @container (max-width: 800px) { .outlet-toolbar { flex-direction: column; } .outlet-toolbar .fleet-search { min-width: 0; width: 100%; max-width: none; flex: none; } }
 @media (max-width: 1199px) { .outlet-details { min-height: auto; } }

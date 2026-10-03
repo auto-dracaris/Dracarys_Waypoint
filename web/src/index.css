@@ -18,6 +18,9 @@
   --scrollbar-thumb-hover: var(--wp-yellow-600);
 }
 
+/* Shared keyboard focus belongs to the application, not a feature stylesheet. */
+:is(button, input, select, textarea, summary, a):focus-visible { outline: 2px solid var(--wp-yellow-500); outline-offset: var(--wp-space-xxs); }
+
 @layer base {
   html {
     @apply font-sans;
