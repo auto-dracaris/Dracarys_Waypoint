@@ -88,11 +88,11 @@ void main() {
         findsNWidgets(2));
   });
 
-  testWidgets('first trip is highlighted with the illustration and filled button',
+  testWidgets('every trip shows an illustration; first is highlighted with the filled button',
       (tester) async {
     await pumpScreen(tester, MockTripsRepository(latency: Duration.zero));
 
-    expect(find.byKey(const Key('trip-illustration')), findsOneWidget);
+    expect(find.byKey(const Key('trip-illustration')), findsNWidgets(2));
     expect(find.text('View trip'), findsOneWidget);
     expect(find.text('View Trip'), findsOneWidget);
   });
