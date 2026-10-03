@@ -1,0 +1,25 @@
+meta {
+  name: 05-get-vehicle-by-id
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseURL}}/api/vehicles/1
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.id: eq 1
+  res.body.data.uniqueId: eq VEH001
+  res.body.data.depot.name: eq Peliyagoda
+  res.body.data.type: eq truck
+  res.body.data.isRefrigerated: eq true
+  res.body.data.weightCapKg: eq 5510
+}

@@ -1,0 +1,45 @@
+info:
+  name: List Users
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/users?page=1&limit=10"
+  params:
+    - name: page
+      value: "1"
+      type: query
+    - name: limit
+      value: "10"
+      type: query
+    - name: role
+      value: driver
+      type: query
+      disabled: true
+    - name: status
+      value: active
+      type: query
+      disabled: true
+    - name: search
+      value: john
+      type: query
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Paginated user list. Dispatcher only (Bearer `{{dispatcherAccessToken}}` from the folder).
+
+  Query params (all optional):
+  - `page` (default 1), `limit` (default 10, max 200)
+  - `role`: dispatcher | store_manager | driver | loader
+  - `status`: pending | active | blocked | deleted
+  - `search`: matches first name, last name or phone
+
+  Response `data`: `{ items, meta: { total, page, limit, totalPages } }`. Each item carries `depot` (the home depot row, for its name) or null.

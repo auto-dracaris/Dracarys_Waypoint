@@ -1,0 +1,13 @@
+info:
+  name: vehicles
+  type: folder
+  seq: 3
+
+request:
+  auth:
+    type: bearer
+    token: "{{dispatcherAccessToken}}"
+
+docs:
+  content: Fleet management (`/api/vehicles`), dispatcher only. Requests use Bearer `{{dispatcherAccessToken}}`, set by Auth → Login when a dispatcher logs in. `{{vehicleId}}` (environment) is the target vehicle.
+  type: text/markdown

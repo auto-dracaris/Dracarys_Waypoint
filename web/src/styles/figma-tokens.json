@@ -1,0 +1,2183 @@
+{
+  "source": {
+    "fileKey": "dDrNBgpWrqw3WUd94dKpNy",
+    "url": "https://www.figma.com/design/dDrNBgpWrqw3WUd94dKpNy/WayPoint",
+    "exportedAt": "2026-09-30"
+  },
+  "collections": [
+    {
+      "id": "115:6157",
+      "name": "Primitives",
+      "modes": ["Mode 1"]
+    },
+    {
+      "id": "124:6591",
+      "name": "Tokens",
+      "modes": ["Mode 1"]
+    },
+    {
+      "id": "729:54",
+      "name": "Terminal / Primitives",
+      "modes": ["Value"]
+    },
+    {
+      "id": "729:55",
+      "name": "Terminal / Tokens",
+      "modes": ["Terminal"]
+    }
+  ],
+  "variables": [
+    {
+      "id": "120:31",
+      "collectionId": "115:6157",
+      "name": "red/50",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9960784316062927, 0.9490196108818054, 0.9490196108818054, 1]
+      }
+    },
+    {
+      "id": "120:32",
+      "collectionId": "115:6157",
+      "name": "red/100",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9960784316062927, 0.886274516582489, 0.886274516582489, 1]
+      }
+    },
+    {
+      "id": "120:33",
+      "collectionId": "115:6157",
+      "name": "red/200",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9960784316062927, 0.7921568751335144, 0.7921568751335144, 1]
+      }
+    },
+    {
+      "id": "120:34",
+      "collectionId": "115:6157",
+      "name": "red/300",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9882352948188782, 0.6470588445663452, 0.6470588445663452, 1]
+      }
+    },
+    {
+      "id": "120:35",
+      "collectionId": "115:6157",
+      "name": "red/400",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9725490212440491, 0.4431372582912445, 0.4431372582912445, 1]
+      }
+    },
+    {
+      "id": "120:36",
+      "collectionId": "115:6157",
+      "name": "red/500",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9372549057006836, 0.2666666805744171, 0.2666666805744171, 1]
+      }
+    },
+    {
+      "id": "120:37",
+      "collectionId": "115:6157",
+      "name": "red/600",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.8627451062202454, 0.14901961386203766, 0.14901961386203766, 1]
+      }
+    },
+    {
+      "id": "120:38",
+      "collectionId": "115:6157",
+      "name": "red/700",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.7254902124404907, 0.10980392247438431, 0.10980392247438431, 1]
+      }
+    },
+    {
+      "id": "120:39",
+      "collectionId": "115:6157",
+      "name": "red/800",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.6000000238418579, 0.10588235408067703, 0.10588235408067703, 1]
+      }
+    },
+    {
+      "id": "120:40",
+      "collectionId": "115:6157",
+      "name": "red/900",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.49803921580314636, 0.11372549086809158, 0.11372549086809158, 1]
+      }
+    },
+    {
+      "id": "120:41",
+      "collectionId": "115:6157",
+      "name": "red/950",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.2705882489681244, 0.03921568766236305, 0.03921568766236305, 1]
+      }
+    },
+    {
+      "id": "120:42",
+      "collectionId": "115:6157",
+      "name": "yellow/50",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9960784316062927, 0.9882352948188782, 0.9098039269447327, 1]
+      }
+    },
+    {
+      "id": "120:43",
+      "collectionId": "115:6157",
+      "name": "yellow/100",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9960784316062927, 0.9764705896377563, 0.7647058963775635, 1]
+      }
+    },
+    {
+      "id": "120:44",
+      "collectionId": "115:6157",
+      "name": "yellow/200",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9960784316062927, 0.9411764740943909, 0.5411764979362488, 1]
+      }
+    },
+    {
+      "id": "120:45",
+      "collectionId": "115:6157",
+      "name": "yellow/300",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9921568632125854, 0.8784313797950745, 0.27843138575553894, 1]
+      }
+    },
+    {
+      "id": "120:46",
+      "collectionId": "115:6157",
+      "name": "yellow/400",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9803921580314636, 0.800000011920929, 0.08235294371843338, 1]
+      }
+    },
+    {
+      "id": "120:47",
+      "collectionId": "115:6157",
+      "name": "yellow/500",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9176470637321472, 0.7019608020782471, 0.0313725508749485, 1]
+      }
+    },
+    {
+      "id": "120:48",
+      "collectionId": "115:6157",
+      "name": "yellow/600",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.7921568751335144, 0.5411764979362488, 0.01568627543747425, 1]
+      }
+    },
+    {
+      "id": "120:49",
+      "collectionId": "115:6157",
+      "name": "yellow/700",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.6313725709915161, 0.3843137323856354, 0.027450980618596077, 1]
+      }
+    },
+    {
+      "id": "120:50",
+      "collectionId": "115:6157",
+      "name": "yellow/800",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.5215686559677124, 0.3019607961177826, 0.054901961237192154, 1]
+      }
+    },
+    {
+      "id": "120:51",
+      "collectionId": "115:6157",
+      "name": "yellow/900",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.4431372582912445, 0.24705882370471954, 0.07058823853731155, 1]
+      }
+    },
+    {
+      "id": "120:52",
+      "collectionId": "115:6157",
+      "name": "yellow/950",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.25882354378700256, 0.125490203499794, 0.0235294122248888, 1]
+      }
+    },
+    {
+      "id": "120:53",
+      "collectionId": "115:6157",
+      "name": "lime/50",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9686274528503418, 0.9960784316062927, 0.9058823585510254, 1]
+      }
+    },
+    {
+      "id": "120:54",
+      "collectionId": "115:6157",
+      "name": "lime/100",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9254902005195618, 0.9882352948188782, 0.7960784435272217, 1]
+      }
+    },
+    {
+      "id": "120:55",
+      "collectionId": "115:6157",
+      "name": "lime/200",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.8509804010391235, 0.9764705896377563, 0.615686297416687, 1]
+      }
+    },
+    {
+      "id": "120:56",
+      "collectionId": "115:6157",
+      "name": "lime/300",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.7450980544090271, 0.9490196108818054, 0.3921568691730499, 1]
+      }
+    },
+    {
+      "id": "120:57",
+      "collectionId": "115:6157",
+      "name": "lime/400",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.6392157077789307, 0.9019607901573181, 0.2078431397676468, 1]
+      }
+    },
+    {
+      "id": "120:58",
+      "collectionId": "115:6157",
+      "name": "lime/500",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.5176470875740051, 0.800000011920929, 0.08627451211214066, 1]
+      }
+    },
+    {
+      "id": "120:59",
+      "collectionId": "115:6157",
+      "name": "lime/600",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.3960784375667572, 0.6392157077789307, 0.05098039284348488, 1]
+      }
+    },
+    {
+      "id": "120:60",
+      "collectionId": "115:6157",
+      "name": "lime/700",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.3019607961177826, 0.48627451062202454, 0.05882352963089943, 1]
+      }
+    },
+    {
+      "id": "120:61",
+      "collectionId": "115:6157",
+      "name": "lime/800",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.24705882370471954, 0.3843137323856354, 0.07058823853731155, 1]
+      }
+    },
+    {
+      "id": "120:62",
+      "collectionId": "115:6157",
+      "name": "lime/900",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.21176470816135406, 0.32549020648002625, 0.0784313753247261, 1]
+      }
+    },
+    {
+      "id": "120:63",
+      "collectionId": "115:6157",
+      "name": "lime/950",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.10196078568696976, 0.18039216101169586, 0.019607843831181526, 1]
+      }
+    },
+    {
+      "id": "120:64",
+      "collectionId": "115:6157",
+      "name": "blue/50",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9372549057006836, 0.9647058844566345, 1, 1]
+      }
+    },
+    {
+      "id": "120:65",
+      "collectionId": "115:6157",
+      "name": "blue/100",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.8588235378265381, 0.9176470637321472, 0.9960784316062927, 1]
+      }
+    },
+    {
+      "id": "120:66",
+      "collectionId": "115:6157",
+      "name": "blue/200",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.7490196228027344, 0.8588235378265381, 0.9960784316062927, 1]
+      }
+    },
+    {
+      "id": "120:67",
+      "collectionId": "115:6157",
+      "name": "blue/300",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.5764706134796143, 0.772549033164978, 0.9921568632125854, 1]
+      }
+    },
+    {
+      "id": "120:68",
+      "collectionId": "115:6157",
+      "name": "blue/400",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.3764705955982208, 0.6470588445663452, 0.9803921580314636, 1]
+      }
+    },
+    {
+      "id": "120:69",
+      "collectionId": "115:6157",
+      "name": "blue/500",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.23137255012989044, 0.5098039507865906, 0.9647058844566345, 1]
+      }
+    },
+    {
+      "id": "120:70",
+      "collectionId": "115:6157",
+      "name": "blue/600",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.14509804546833038, 0.38823530077934265, 0.9215686321258545, 1]
+      }
+    },
+    {
+      "id": "120:71",
+      "collectionId": "115:6157",
+      "name": "blue/700",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.11372549086809158, 0.30588236451148987, 0.8470588326454163, 1]
+      }
+    },
+    {
+      "id": "120:72",
+      "collectionId": "115:6157",
+      "name": "blue/800",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.11764705926179886, 0.250980406999588, 0.686274528503418, 1]
+      }
+    },
+    {
+      "id": "120:73",
+      "collectionId": "115:6157",
+      "name": "blue/900",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.11764705926179886, 0.22745098173618317, 0.5411764979362488, 1]
+      }
+    },
+    {
+      "id": "120:74",
+      "collectionId": "115:6157",
+      "name": "blue/950",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.09019608050584793, 0.14509804546833038, 0.3294117748737335, 1]
+      }
+    },
+    {
+      "id": "120:75",
+      "collectionId": "115:6157",
+      "name": "neutral/50",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.978440523147583, 0.978440523147583, 0.978440523147583, 1]
+      }
+    },
+    {
+      "id": "120:76",
+      "collectionId": "115:6157",
+      "name": "neutral/100",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9596041440963745, 0.9596041440963745, 0.9596041440963745, 1]
+      }
+    },
+    {
+      "id": "120:77",
+      "collectionId": "115:6157",
+      "name": "neutral/200",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.8980392217636108, 0.8980392217636108, 0.8980392217636108, 1]
+      }
+    },
+    {
+      "id": "120:78",
+      "collectionId": "115:6157",
+      "name": "neutral/300",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.8313725590705872, 0.8313725590705872, 0.8313725590705872, 1]
+      }
+    },
+    {
+      "id": "120:79",
+      "collectionId": "115:6157",
+      "name": "neutral/400",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.637499988079071, 0.637499988079071, 0.637499988079071, 1]
+      }
+    },
+    {
+      "id": "120:80",
+      "collectionId": "115:6157",
+      "name": "neutral/500",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.45098039507865906, 0.45098039507865906, 0.45098039507865906, 1]
+      }
+    },
+    {
+      "id": "120:81",
+      "collectionId": "115:6157",
+      "name": "neutral/600",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.32156863808631897, 0.32156863808631897, 0.32156863808631897, 1]
+      }
+    },
+    {
+      "id": "120:82",
+      "collectionId": "115:6157",
+      "name": "neutral/700",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.250980406999588, 0.250980406999588, 0.250980406999588, 1]
+      }
+    },
+    {
+      "id": "120:83",
+      "collectionId": "115:6157",
+      "name": "neutral/800",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.14901961386203766, 0.14901961386203766, 0.14901961386203766, 1]
+      }
+    },
+    {
+      "id": "120:84",
+      "collectionId": "115:6157",
+      "name": "neutral/900",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.09019608050584793, 0.09019608050584793, 0.09019608050584793, 1]
+      }
+    },
+    {
+      "id": "120:85",
+      "collectionId": "115:6157",
+      "name": "neutral/950",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.03921568766236305, 0.03921568766236305, 0.03921568766236305, 1]
+      }
+    },
+    {
+      "id": "120:86",
+      "collectionId": "115:6157",
+      "name": "warm-neutral/50",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9843137264251709, 0.9803921580314636, 0.9764705896377563, 1]
+      }
+    },
+    {
+      "id": "120:87",
+      "collectionId": "115:6157",
+      "name": "warm-neutral/100",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9529411792755127, 0.9450980424880981, 0.9450980424880981, 1]
+      }
+    },
+    {
+      "id": "120:88",
+      "collectionId": "115:6157",
+      "name": "warm-neutral/200",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9098039269447327, 0.8941176533699036, 0.8901960849761963, 1]
+      }
+    },
+    {
+      "id": "120:89",
+      "collectionId": "115:6157",
+      "name": "warm-neutral/300",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.8470588326454163, 0.8235294222831726, 0.8156862854957581, 1]
+      }
+    },
+    {
+      "id": "120:90",
+      "collectionId": "115:6157",
+      "name": "warm-neutral/400",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.6705882549285889, 0.6274510025978088, 0.6117647290229797, 1]
+      }
+    },
+    {
+      "id": "120:91",
+      "collectionId": "115:6157",
+      "name": "warm-neutral/500",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.48627451062202454, 0.4274509847164154, 0.40392157435417175, 1]
+      }
+    },
+    {
+      "id": "120:92",
+      "collectionId": "115:6157",
+      "name": "warm-neutral/600",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.35686275362968445, 0.30980393290519714, 0.29411765933036804, 1]
+      }
+    },
+    {
+      "id": "120:93",
+      "collectionId": "115:6157",
+      "name": "warm-neutral/700",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.27843138575553894, 0.23529411852359772, 0.2235294133424759, 1]
+      }
+    },
+    {
+      "id": "120:94",
+      "collectionId": "115:6157",
+      "name": "warm-neutral/800",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.16862745583057404, 0.1411764770746231, 0.13333334028720856, 1]
+      }
+    },
+    {
+      "id": "120:95",
+      "collectionId": "115:6157",
+      "name": "warm-neutral/900",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.11372549086809158, 0.0941176488995552, 0.08627451211214066, 1]
+      }
+    },
+    {
+      "id": "120:96",
+      "collectionId": "115:6157",
+      "name": "warm-neutral/950",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.0470588244497776, 0.03921568766236305, 0.03529411926865578, 1]
+      }
+    },
+    {
+      "id": "126:31",
+      "collectionId": "115:6157",
+      "name": "spacing/0",
+      "type": "FLOAT",
+      "value": 0
+    },
+    {
+      "id": "126:32",
+      "collectionId": "115:6157",
+      "name": "spacing/0-5",
+      "type": "FLOAT",
+      "value": 2
+    },
+    {
+      "id": "126:33",
+      "collectionId": "115:6157",
+      "name": "spacing/1",
+      "type": "FLOAT",
+      "value": 4
+    },
+    {
+      "id": "126:34",
+      "collectionId": "115:6157",
+      "name": "spacing/1-5",
+      "type": "FLOAT",
+      "value": 6
+    },
+    {
+      "id": "126:35",
+      "collectionId": "115:6157",
+      "name": "spacing/2",
+      "type": "FLOAT",
+      "value": 8
+    },
+    {
+      "id": "126:36",
+      "collectionId": "115:6157",
+      "name": "spacing/3",
+      "type": "FLOAT",
+      "value": 12
+    },
+    {
+      "id": "126:37",
+      "collectionId": "115:6157",
+      "name": "spacing/4",
+      "type": "FLOAT",
+      "value": 16
+    },
+    {
+      "id": "126:38",
+      "collectionId": "115:6157",
+      "name": "spacing/5",
+      "type": "FLOAT",
+      "value": 20
+    },
+    {
+      "id": "126:39",
+      "collectionId": "115:6157",
+      "name": "spacing/6",
+      "type": "FLOAT",
+      "value": 24
+    },
+    {
+      "id": "126:40",
+      "collectionId": "115:6157",
+      "name": "spacing/8",
+      "type": "FLOAT",
+      "value": 32
+    },
+    {
+      "id": "126:41",
+      "collectionId": "115:6157",
+      "name": "spacing/10",
+      "type": "FLOAT",
+      "value": 40
+    },
+    {
+      "id": "126:42",
+      "collectionId": "115:6157",
+      "name": "spacing/12",
+      "type": "FLOAT",
+      "value": 48
+    },
+    {
+      "id": "126:43",
+      "collectionId": "115:6157",
+      "name": "spacing/16",
+      "type": "FLOAT",
+      "value": 64
+    },
+    {
+      "id": "126:44",
+      "collectionId": "115:6157",
+      "name": "spacing/20",
+      "type": "FLOAT",
+      "value": 80
+    },
+    {
+      "id": "126:45",
+      "collectionId": "115:6157",
+      "name": "spacing/24",
+      "type": "FLOAT",
+      "value": 96
+    },
+    {
+      "id": "126:46",
+      "collectionId": "115:6157",
+      "name": "spacing/32",
+      "type": "FLOAT",
+      "value": 128
+    },
+    {
+      "id": "126:47",
+      "collectionId": "115:6157",
+      "name": "spacing/40",
+      "type": "FLOAT",
+      "value": 160
+    },
+    {
+      "id": "126:48",
+      "collectionId": "115:6157",
+      "name": "spacing/48",
+      "type": "FLOAT",
+      "value": 192
+    },
+    {
+      "id": "126:49",
+      "collectionId": "115:6157",
+      "name": "spacing/56",
+      "type": "FLOAT",
+      "value": 224
+    },
+    {
+      "id": "126:50",
+      "collectionId": "115:6157",
+      "name": "spacing/64",
+      "type": "FLOAT",
+      "value": 256
+    },
+    {
+      "id": "126:51",
+      "collectionId": "115:6157",
+      "name": "spacing/80",
+      "type": "FLOAT",
+      "value": 320
+    },
+    {
+      "id": "126:52",
+      "collectionId": "115:6157",
+      "name": "spacing/96",
+      "type": "FLOAT",
+      "value": 384
+    },
+    {
+      "id": "126:53",
+      "collectionId": "115:6157",
+      "name": "spacing/120",
+      "type": "FLOAT",
+      "value": 480
+    },
+    {
+      "id": "126:54",
+      "collectionId": "115:6157",
+      "name": "spacing/140",
+      "type": "FLOAT",
+      "value": 560
+    },
+    {
+      "id": "126:55",
+      "collectionId": "115:6157",
+      "name": "spacing/160",
+      "type": "FLOAT",
+      "value": 640
+    },
+    {
+      "id": "126:56",
+      "collectionId": "115:6157",
+      "name": "spacing/180",
+      "type": "FLOAT",
+      "value": 720
+    },
+    {
+      "id": "126:57",
+      "collectionId": "115:6157",
+      "name": "spacing/192",
+      "type": "FLOAT",
+      "value": 768
+    },
+    {
+      "id": "126:58",
+      "collectionId": "115:6157",
+      "name": "spacing/256",
+      "type": "FLOAT",
+      "value": 1024
+    },
+    {
+      "id": "126:59",
+      "collectionId": "115:6157",
+      "name": "spacing/320",
+      "type": "FLOAT",
+      "value": 1280
+    },
+    {
+      "id": "126:60",
+      "collectionId": "115:6157",
+      "name": "spacing/360",
+      "type": "FLOAT",
+      "value": 1440
+    },
+    {
+      "id": "126:61",
+      "collectionId": "115:6157",
+      "name": "spacing/400",
+      "type": "FLOAT",
+      "value": 1600
+    },
+    {
+      "id": "126:62",
+      "collectionId": "115:6157",
+      "name": "spacing/480",
+      "type": "FLOAT",
+      "value": 1920
+    },
+    {
+      "id": "128:31",
+      "collectionId": "124:6591",
+      "name": "radius/none",
+      "type": "FLOAT",
+      "value": 0
+    },
+    {
+      "id": "128:32",
+      "collectionId": "124:6591",
+      "name": "radius/xxs",
+      "type": "FLOAT",
+      "value": 2
+    },
+    {
+      "id": "128:33",
+      "collectionId": "124:6591",
+      "name": "radius/xs",
+      "type": "FLOAT",
+      "value": 4
+    },
+    {
+      "id": "128:34",
+      "collectionId": "124:6591",
+      "name": "radius/sm",
+      "type": "FLOAT",
+      "value": 6
+    },
+    {
+      "id": "128:35",
+      "collectionId": "124:6591",
+      "name": "radius/md",
+      "type": "FLOAT",
+      "value": 8
+    },
+    {
+      "id": "128:36",
+      "collectionId": "124:6591",
+      "name": "radius/lg",
+      "type": "FLOAT",
+      "value": 10
+    },
+    {
+      "id": "128:37",
+      "collectionId": "124:6591",
+      "name": "radius/xl",
+      "type": "FLOAT",
+      "value": 12
+    },
+    {
+      "id": "128:38",
+      "collectionId": "124:6591",
+      "name": "radius/2xl",
+      "type": "FLOAT",
+      "value": 16
+    },
+    {
+      "id": "128:39",
+      "collectionId": "124:6591",
+      "name": "radius/3xl",
+      "type": "FLOAT",
+      "value": 20
+    },
+    {
+      "id": "128:40",
+      "collectionId": "124:6591",
+      "name": "radius/4xl",
+      "type": "FLOAT",
+      "value": 24
+    },
+    {
+      "id": "128:41",
+      "collectionId": "124:6591",
+      "name": "radius/full",
+      "type": "FLOAT",
+      "value": 9999
+    },
+    {
+      "id": "157:45",
+      "collectionId": "124:6591",
+      "name": "space/none",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:31"
+      }
+    },
+    {
+      "id": "157:46",
+      "collectionId": "124:6591",
+      "name": "space/xxs",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:32"
+      }
+    },
+    {
+      "id": "157:47",
+      "collectionId": "124:6591",
+      "name": "space/xs",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:33"
+      }
+    },
+    {
+      "id": "157:48",
+      "collectionId": "124:6591",
+      "name": "space/sm",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:34"
+      }
+    },
+    {
+      "id": "157:49",
+      "collectionId": "124:6591",
+      "name": "space/md",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:35"
+      }
+    },
+    {
+      "id": "157:50",
+      "collectionId": "124:6591",
+      "name": "space/lg",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:36"
+      }
+    },
+    {
+      "id": "157:51",
+      "collectionId": "124:6591",
+      "name": "space/xl",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:37"
+      }
+    },
+    {
+      "id": "157:52",
+      "collectionId": "124:6591",
+      "name": "space/2xl",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:38"
+      }
+    },
+    {
+      "id": "157:53",
+      "collectionId": "124:6591",
+      "name": "space/3xl",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:39"
+      }
+    },
+    {
+      "id": "157:54",
+      "collectionId": "124:6591",
+      "name": "space/4xl",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:40"
+      }
+    },
+    {
+      "id": "157:55",
+      "collectionId": "124:6591",
+      "name": "space/5xl",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:41"
+      }
+    },
+    {
+      "id": "157:56",
+      "collectionId": "124:6591",
+      "name": "space/6xl",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:42"
+      }
+    },
+    {
+      "id": "157:57",
+      "collectionId": "124:6591",
+      "name": "space/7xl",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:43"
+      }
+    },
+    {
+      "id": "157:58",
+      "collectionId": "124:6591",
+      "name": "space/8xl",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:44"
+      }
+    },
+    {
+      "id": "157:59",
+      "collectionId": "124:6591",
+      "name": "space/9xl",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:45"
+      }
+    },
+    {
+      "id": "157:60",
+      "collectionId": "124:6591",
+      "name": "space/10xl",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:46"
+      }
+    },
+    {
+      "id": "157:61",
+      "collectionId": "124:6591",
+      "name": "space/11xl",
+      "type": "FLOAT",
+      "value": {
+        "alias": "126:47"
+      }
+    },
+    {
+      "id": "171:48",
+      "collectionId": "124:6591",
+      "name": "text/primary",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:94"
+      }
+    },
+    {
+      "id": "171:49",
+      "collectionId": "124:6591",
+      "name": "text/primary-on-brand",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:75"
+      }
+    },
+    {
+      "id": "171:50",
+      "collectionId": "124:6591",
+      "name": "text/secondary",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:92"
+      }
+    },
+    {
+      "id": "171:51",
+      "collectionId": "124:6591",
+      "name": "text/secondary-hover",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:93"
+      }
+    },
+    {
+      "id": "171:52",
+      "collectionId": "124:6591",
+      "name": "text/secondary-on-brand",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:78"
+      }
+    },
+    {
+      "id": "171:53",
+      "collectionId": "124:6591",
+      "name": "text/tertiary",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:80"
+      }
+    },
+    {
+      "id": "171:54",
+      "collectionId": "124:6591",
+      "name": "text/tertiary-hover",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:81"
+      }
+    },
+    {
+      "id": "171:55",
+      "collectionId": "124:6591",
+      "name": "text/tertiary-on-brand",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:79"
+      }
+    },
+    {
+      "id": "171:56",
+      "collectionId": "124:6591",
+      "name": "text/quaternary",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:79"
+      }
+    },
+    {
+      "id": "171:57",
+      "collectionId": "124:6591",
+      "name": "text/quaternary-on-brand",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:80"
+      }
+    },
+    {
+      "id": "171:58",
+      "collectionId": "124:6591",
+      "name": "text/white",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:75"
+      }
+    },
+    {
+      "id": "171:59",
+      "collectionId": "124:6591",
+      "name": "text/placeholder",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:79"
+      }
+    },
+    {
+      "id": "171:60",
+      "collectionId": "124:6591",
+      "name": "text/brand/primary",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:94"
+      }
+    },
+    {
+      "id": "171:61",
+      "collectionId": "124:6591",
+      "name": "text/brand/secondary",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:92"
+      }
+    },
+    {
+      "id": "171:62",
+      "collectionId": "124:6591",
+      "name": "text/brand/secondary-hover",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:93"
+      }
+    },
+    {
+      "id": "171:63",
+      "collectionId": "124:6591",
+      "name": "text/brand/tertiary",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:91"
+      }
+    },
+    {
+      "id": "171:64",
+      "collectionId": "124:6591",
+      "name": "text/brand/tertiary-alt",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:90"
+      }
+    },
+    {
+      "id": "171:65",
+      "collectionId": "124:6591",
+      "name": "text/error/primary",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:37"
+      }
+    },
+    {
+      "id": "171:66",
+      "collectionId": "124:6591",
+      "name": "text/warning/primary",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:47"
+      }
+    },
+    {
+      "id": "171:67",
+      "collectionId": "124:6591",
+      "name": "text/success/primary",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:60"
+      }
+    },
+    {
+      "id": "729:56",
+      "collectionId": "729:55",
+      "name": "canvas",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:76"
+      }
+    },
+    {
+      "id": "729:57",
+      "collectionId": "729:55",
+      "name": "surface",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:75"
+      }
+    },
+    {
+      "id": "729:58",
+      "collectionId": "729:55",
+      "name": "ink",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:96"
+      }
+    },
+    {
+      "id": "729:59",
+      "collectionId": "729:55",
+      "name": "muted",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:81"
+      }
+    },
+    {
+      "id": "729:60",
+      "collectionId": "729:55",
+      "name": "border",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:79"
+      }
+    },
+    {
+      "id": "729:61",
+      "collectionId": "729:55",
+      "name": "success",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:61"
+      }
+    },
+    {
+      "id": "729:62",
+      "collectionId": "729:55",
+      "name": "success-bg",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:54"
+      }
+    },
+    {
+      "id": "729:63",
+      "collectionId": "729:55",
+      "name": "danger",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:39"
+      }
+    },
+    {
+      "id": "729:64",
+      "collectionId": "729:55",
+      "name": "danger-bg",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:31"
+      }
+    },
+    {
+      "id": "729:65",
+      "collectionId": "729:55",
+      "name": "warning",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:51"
+      }
+    },
+    {
+      "id": "729:66",
+      "collectionId": "729:55",
+      "name": "warning-bg",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:43"
+      }
+    },
+    {
+      "id": "729:67",
+      "collectionId": "729:55",
+      "name": "focus",
+      "type": "COLOR",
+      "value": {
+        "alias": "120:71"
+      }
+    },
+    {
+      "id": "729:68",
+      "collectionId": "729:54",
+      "name": "brand-yellow",
+      "type": "COLOR",
+      "value": {
+        "rgba": [0.9803921580314636, 0.800000011920929, 0.08235294371843338, 1]
+      }
+    },
+    {
+      "id": "729:69",
+      "collectionId": "729:55",
+      "name": "accent",
+      "type": "COLOR",
+      "value": {
+        "alias": "729:68"
+      }
+    },
+    {
+      "id": "729:70",
+      "collectionId": "729:54",
+      "name": "space/s",
+      "type": "FLOAT",
+      "value": 16
+    },
+    {
+      "id": "729:71",
+      "collectionId": "729:55",
+      "name": "space/s",
+      "type": "FLOAT",
+      "value": {
+        "alias": "729:70"
+      }
+    },
+    {
+      "id": "729:72",
+      "collectionId": "729:54",
+      "name": "space/m",
+      "type": "FLOAT",
+      "value": 24
+    },
+    {
+      "id": "729:73",
+      "collectionId": "729:55",
+      "name": "space/m",
+      "type": "FLOAT",
+      "value": {
+        "alias": "729:72"
+      }
+    },
+    {
+      "id": "729:74",
+      "collectionId": "729:54",
+      "name": "space/l",
+      "type": "FLOAT",
+      "value": 32
+    },
+    {
+      "id": "729:75",
+      "collectionId": "729:55",
+      "name": "space/l",
+      "type": "FLOAT",
+      "value": {
+        "alias": "729:74"
+      }
+    },
+    {
+      "id": "729:76",
+      "collectionId": "729:54",
+      "name": "space/xl",
+      "type": "FLOAT",
+      "value": 48
+    },
+    {
+      "id": "729:77",
+      "collectionId": "729:55",
+      "name": "space/xl",
+      "type": "FLOAT",
+      "value": {
+        "alias": "729:76"
+      }
+    },
+    {
+      "id": "729:78",
+      "collectionId": "729:54",
+      "name": "radius",
+      "type": "FLOAT",
+      "value": 12
+    },
+    {
+      "id": "729:79",
+      "collectionId": "729:55",
+      "name": "radius",
+      "type": "FLOAT",
+      "value": {
+        "alias": "729:78"
+      }
+    },
+    {
+      "id": "729:80",
+      "collectionId": "729:54",
+      "name": "control",
+      "type": "FLOAT",
+      "value": 80
+    },
+    {
+      "id": "729:81",
+      "collectionId": "729:55",
+      "name": "control",
+      "type": "FLOAT",
+      "value": {
+        "alias": "729:80"
+      }
+    }
+  ],
+  "typography": [
+    {
+      "name": "Display 2xl/Regular",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 72,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 90
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display 2xl/Medium",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 500,
+      "fontSize": 72,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 90
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display 2xl/Semibold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 72,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 90
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display 2xl/Bold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 700,
+      "fontSize": 72,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 90
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display xl/Regular",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 60,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 72
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display xl/Medium",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 500,
+      "fontSize": 60,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 72
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display xl/Semibold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 60,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 72
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display xl/Bold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 700,
+      "fontSize": 60,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 72
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display lg/Regular",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 48,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 60
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display lg/Medium",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 500,
+      "fontSize": 48,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 60
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display lg/Semibold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 48,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 60
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display lg/Bold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 700,
+      "fontSize": 48,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 60
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display md/Regular",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 36,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 44
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display md/Medium",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 500,
+      "fontSize": 36,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 44
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display md/Semibold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 36,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 44
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display md/Bold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 700,
+      "fontSize": 36,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 44
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display sm/Regular",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 30,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 38
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display sm/Medium",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 500,
+      "fontSize": 30,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 38
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display sm/Semibold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 30,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 38
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display sm/Bold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 700,
+      "fontSize": 30,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 38
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display xs/Regular",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 24,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 32
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display xs/Medium",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 500,
+      "fontSize": 24,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 32
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display xs/Semibold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 24,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 32
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Display xs/Bold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 700,
+      "fontSize": 24,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 32
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text xl/Regular",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 20,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 30
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text xl/Medium",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 500,
+      "fontSize": 20,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 30
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text xl/Semibold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 20,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 30
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text xl/Bold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 700,
+      "fontSize": 20,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 30
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text lg/Regular",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 18,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 28
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text lg/Medium",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 500,
+      "fontSize": 18,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 28
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text lg/Semibold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 18,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 28
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text lg/Bold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 700,
+      "fontSize": 18,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 28
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text md/Regular",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 16,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 24
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text md/Medium",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 500,
+      "fontSize": 16,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 24
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text md/Semibold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 16,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 24
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text md/Bold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 700,
+      "fontSize": 16,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 24
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text sm/Regular",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 14,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text sm/Medium",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 500,
+      "fontSize": 14,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text sm/Semibold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 14,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text sm/Bold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 700,
+      "fontSize": 14,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text xs/Regular",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 12,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 18
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text xs/Medium",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 500,
+      "fontSize": 12,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 18
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text xs/Semibold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 12,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 18
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Text xs/Bold",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 700,
+      "fontSize": 12,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 18
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -2
+      }
+    },
+    {
+      "name": "Terminal/Display",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 64,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 70
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      }
+    },
+    {
+      "name": "Terminal/Title",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 40,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 50
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      }
+    },
+    {
+      "name": "Terminal/Heading",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 28,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 35
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      }
+    },
+    {
+      "name": "Terminal/Body",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 24,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 30
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      }
+    },
+    {
+      "name": "Terminal/Label",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 600,
+      "fontSize": 24,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 30
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      }
+    },
+    {
+      "name": "Terminal/Meta",
+      "fontFamily": "Google Sans Flex",
+      "fontWeight": 400,
+      "fontSize": 20,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 25
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      }
+    }
+  ]
+}

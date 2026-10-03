@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   HttpStatus,
   Injectable,
   NotFoundException,
@@ -8,25 +9,51 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
+import { MAX_OTP_ATTEMPTS } from '../../common/constants/otp.constant';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
-import { PermissionResolutionService } from '../../common/services/permission-resolution.service';
+import { Depot } from '../../common/enums/depot.enum';
+import { ImagePurpose } from '../../common/enums/image-purpose.enum';
+import { UserRole } from '../../common/enums/user-role.enum';
+import { UserStatus } from '../../common/enums/user-status.enum';
+import { DepotsRepository } from '../../common/repositories/depots.repository';
+import { SmsService } from '../../common/sms/sms.service';
+import { formatPhoneNumber } from '../../common/utils/phone.util';
+import { vehicleLabel } from '../../common/utils/vehicle.util';
 import { User } from '../../database/entities/user.entity';
 import { UserSession } from '../../database/entities/user-session.entity';
+import { ImagesService } from '../images/images.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterDto } from './dto/register.dto';
+import { ResendOtpDto } from './dto/resend-otp.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { OtpPurpose } from './enums/otp-purpose.enum';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { UserStatus } from '../../common/enums/user-status.enum';
 import { UserAuthRepository } from './repositories/user-auth.repository';
+import { UserOtpRepository } from './repositories/user-otp.repository';
 import { UserSessionRepository } from './repositories/user-session.repository';
 
 const BCRYPT_ROUNDS = 10;
+const INVALID_OTP_MESSAGE = 'Invalid or expired OTP';
+
+// How soon a second reset code may be asked for, so the endpoint cannot be
+// used to flood a phone with messages.
+const RESET_CODE_COOLDOWN_MS = 60_000;
+
+/** A code just issued: the code to text, its row and how long it lasts. */
+interface IssuedOtp {
+  otp: string;
+  otpId: number;
+  expireMinutes: number;
+}
 
 /**
- * Every method here is a bespoke flow rather than plain CRUD, so this service
- * deliberately does not extend `BaseCrudService`.
+ * Handles all authentication, registration, session management, and OTP verification flows.
  */
 @Injectable()
 export class AuthService {
@@ -36,16 +63,252 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly userAuthRepository: UserAuthRepository,
     private readonly userSessionRepository: UserSessionRepository,
-    private readonly permissionResolutionService: PermissionResolutionService,
+    private readonly userOtpRepository: UserOtpRepository,
+    private readonly depotsRepository: DepotsRepository,
+    private readonly smsService: SmsService,
+    private readonly imagesService: ImagesService,
   ) {}
 
-  async login(loginDto: LoginDto): Promise<ApiResponseDto> {
-    const user = await this.userAuthRepository.findByEmail(loginDto.email);
-    // One message for both "no such email" and "wrong password", so the
-    // endpoint can't be used to enumerate accounts.
-    if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
-      throw new UnauthorizedException('Invalid email or password');
+  async register(registerDto: RegisterDto): Promise<ApiResponseDto> {
+    const formattedPhone = formatPhoneNumber(registerDto.phone);
+
+    const phoneExists =
+      await this.userAuthRepository.findByPhone(formattedPhone);
+    if (phoneExists) {
+      throw new ConflictException(
+        'Phone number is already in use by another user',
+      );
     }
+
+    // Everyone starts at the default depot; a dispatcher moves them later.
+    const depot = await this.depotsRepository.findByName(Depot.PELIYAGODA);
+    if (!depot) {
+      throw new BadRequestException('Default depot not found');
+    }
+
+    const passwordHash = await bcrypt.hash(registerDto.password, BCRYPT_ROUNDS);
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    let savedUser: User;
+    let issued: IssuedOtp;
+
+    try {
+      const newUser = this.userAuthRepository.create({
+        firstName: registerDto.firstName,
+        lastName: registerDto.lastName,
+        phone: formattedPhone,
+        passwordHash,
+        // Self-registration always creates a driver; other roles are assigned by a dispatcher.
+        role: UserRole.DRIVER,
+        status: UserStatus.PENDING,
+        depotId: depot.id,
+      });
+      savedUser = await this.userAuthRepository.save(
+        newUser,
+        queryRunner.manager,
+      );
+
+      issued = await this.issueOtp(
+        savedUser.id,
+        OtpPurpose.REGISTRATION,
+        queryRunner.manager,
+      );
+
+      await queryRunner.commitTransaction();
+    } catch (error: any) {
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException(
+        error.message || 'Registration failed due to an internal error',
+      );
+    } finally {
+      await queryRunner.release();
+    }
+
+    // Queue the OTP SMS; delivery happens in SmsConsumer, off the request path
+    await this.sendOtp(formattedPhone, issued, 'verification');
+
+    return new ApiResponseDto(
+      HttpStatus.CREATED,
+      'User registered successfully. Please verify your OTP.',
+      {
+        userId: savedUser.id,
+        otpId: issued.otpId,
+        ...this.otpForTesting(issued),
+      },
+    );
+  }
+
+  async verifyOtp(verifyOtpDto: VerifyOtpDto): Promise<ApiResponseDto> {
+    const formattedPhone = formatPhoneNumber(verifyOtpDto.phone);
+
+    const userOtp = await this.userOtpRepository.findById(verifyOtpDto.otpId);
+    // A registration code always belongs to the user who is registering.
+    if (
+      !userOtp ||
+      userOtp.purpose !== OtpPurpose.REGISTRATION ||
+      userOtp.userId === null
+    ) {
+      throw new BadRequestException(INVALID_OTP_MESSAGE);
+    }
+
+    if (new Date() > userOtp.expiresAt) {
+      throw new BadRequestException(INVALID_OTP_MESSAGE);
+    }
+
+    const user = await this.userAuthRepository.findById(userOtp.userId);
+    if (!user || user.phone !== formattedPhone) {
+      throw new BadRequestException(INVALID_OTP_MESSAGE);
+    }
+
+    if (user.status === UserStatus.ACTIVE) {
+      throw new BadRequestException('User is already verified');
+    }
+
+    const isValid = await bcrypt.compare(verifyOtpDto.otp, userOtp.otpHash);
+    if (!isValid) {
+      throw new BadRequestException(INVALID_OTP_MESSAGE);
+    }
+
+    user.status = UserStatus.ACTIVE;
+    await this.userAuthRepository.save(user);
+    await this.userOtpRepository.deleteById(userOtp.id);
+
+    return new ApiResponseDto(HttpStatus.OK, 'OTP verified successfully', null);
+  }
+
+  async resendOtp(resendOtpDto: ResendOtpDto): Promise<ApiResponseDto> {
+    const formattedPhone = formatPhoneNumber(resendOtpDto.phone);
+
+    const user = await this.userAuthRepository.findByPhone(formattedPhone);
+    if (!user) {
+      throw new NotFoundException('User with this phone number not found');
+    }
+
+    if (user.status === UserStatus.ACTIVE) {
+      throw new BadRequestException('User is already verified');
+    }
+
+    const issued = await this.issueOtp(user.id, OtpPurpose.REGISTRATION);
+    await this.sendOtp(formattedPhone, issued, 'verification');
+
+    return new ApiResponseDto(HttpStatus.OK, 'OTP resent successfully', {
+      otpId: issued.otpId,
+      ...this.otpForTesting(issued),
+    });
+  }
+
+  /**
+   * Texts a reset code to an active account. The answer is the same whether
+   * or not the number has one, so this cannot be used to find out which
+   * numbers are registered.
+   */
+  async forgotPassword(dto: ForgotPasswordDto): Promise<ApiResponseDto> {
+    const formattedPhone = formatPhoneNumber(dto.phone);
+    const user = await this.userAuthRepository.findByPhone(formattedPhone);
+
+    let issued: IssuedOtp | undefined;
+    if (user?.status === UserStatus.ACTIVE) {
+      const previous = await this.userOtpRepository.findByUserIdAndPurpose(
+        user.id,
+        OtpPurpose.PASSWORD_RESET,
+      );
+      const tooSoon =
+        !!previous &&
+        Date.now() - previous.createdAt.getTime() < RESET_CODE_COOLDOWN_MS;
+      if (!tooSoon) {
+        issued = await this.issueOtp(user.id, OtpPurpose.PASSWORD_RESET);
+        await this.sendOtp(formattedPhone, issued, 'password reset');
+      }
+    }
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'If that number has an account, a code has been sent.',
+      issued ? this.otpForTesting(issued) : {},
+    );
+  }
+
+  /**
+   * Sets a new password with the code from `forgotPassword`, and signs the
+   * user out everywhere, since anyone using the old password should be.
+   */
+  async resetPassword(dto: ResetPasswordDto): Promise<ApiResponseDto> {
+    const user = await this.userAuthRepository.findByPhone(
+      formatPhoneNumber(dto.phone),
+    );
+    const userOtp =
+      user?.status === UserStatus.ACTIVE
+        ? await this.userOtpRepository.findByUserIdAndPurpose(
+            user.id,
+            OtpPurpose.PASSWORD_RESET,
+          )
+        : null;
+    // One message for every way this can fail, so nothing is learned from it.
+    if (!user || !userOtp || new Date() > userOtp.expiresAt) {
+      throw new BadRequestException(INVALID_OTP_MESSAGE);
+    }
+
+    if (!(await bcrypt.compare(dto.otp, userOtp.otpHash))) {
+      userOtp.attempts += 1;
+      if (userOtp.attempts >= MAX_OTP_ATTEMPTS) {
+        await this.userOtpRepository.deleteById(userOtp.id);
+      } else {
+        await this.userOtpRepository.save(userOtp);
+      }
+      throw new BadRequestException(INVALID_OTP_MESSAGE);
+    }
+
+    user.passwordHash = await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS);
+    user.updatedById = user.id;
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      await this.userAuthRepository.save(user, queryRunner.manager);
+      await this.userOtpRepository.deleteById(userOtp.id, queryRunner.manager);
+      await this.userSessionRepository.revokeAllForUser(
+        user.id,
+        queryRunner.manager,
+      );
+      await queryRunner.commitTransaction();
+    } catch (error: any) {
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException(
+        error.message || 'Password reset failed due to an internal error',
+      );
+    } finally {
+      await queryRunner.release();
+    }
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'Password reset successfully. Sign in with your new password.',
+      null,
+    );
+  }
+
+  async login(loginDto: LoginDto): Promise<ApiResponseDto> {
+    const formattedPhone = formatPhoneNumber(loginDto.phone);
+    const user = await this.userAuthRepository.findByPhone(formattedPhone);
+
+    // One generic error message so endpoint cannot be used for user enumeration
+    if (
+      !user ||
+      !(await bcrypt.compare(loginDto.password, user.passwordHash))
+    ) {
+      throw new UnauthorizedException('Invalid phone number or password');
+    }
+
+    if (user.status === UserStatus.PENDING) {
+      throw new UnauthorizedException(
+        'Please verify your phone number with the OTP first',
+      );
+    }
+
     if (user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedException('This account is not active');
     }
@@ -54,21 +317,18 @@ export class AuthService {
 
     return new ApiResponseDto(HttpStatus.OK, 'Logged in successfully', {
       ...tokens,
-      user: this.toPublic(user),
+      user: await this.toProfile(user),
     });
   }
 
   async me(userId: number): Promise<ApiResponseDto> {
     const user = await this.findUserOrThrow(userId);
-    const { effective } = await this.permissionResolutionService.resolveForUser(
-      user.id,
-      user.role,
-    );
 
-    return new ApiResponseDto(HttpStatus.OK, 'Profile retrieved successfully', {
-      ...this.toPublic(user),
-      permissions: effective,
-    });
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'Profile retrieved successfully',
+      await this.toProfile(user),
+    );
   }
 
   async updateMe(
@@ -76,14 +336,37 @@ export class AuthService {
     updateMeDto: UpdateMeDto,
   ): Promise<ApiResponseDto> {
     const user = await this.findUserOrThrow(userId);
-    Object.assign(user, updateMeDto);
-    user.updatedBy = String(userId);
+    const { avatarImageId, ...fields } = updateMeDto;
+    Object.assign(user, fields);
+    user.updatedById = userId;
+
+    // Undefined leaves the picture alone; null removes it; an id replaces it.
+    const replaced =
+      avatarImageId !== undefined && avatarImageId !== user.avatarImageId
+        ? user.avatarImage
+        : null;
+    if (avatarImageId !== undefined) {
+      const image = avatarImageId
+        ? await this.imagesService.findForUse(
+            avatarImageId,
+            ImagePurpose.AVATAR,
+            userId,
+          )
+        : null;
+      // The relation is set with the id: a loaded relation would otherwise
+      // win over the changed column on save.
+      user.avatarImageId = image?.id ?? null;
+      user.avatarImage = image;
+    }
     const saved = await this.userAuthRepository.save(user);
+    if (replaced) {
+      await this.imagesService.remove(replaced);
+    }
 
     return new ApiResponseDto(
       HttpStatus.OK,
       'Profile updated successfully',
-      this.toPublic(saved),
+      await this.toProfile(saved),
     );
   }
 
@@ -94,17 +377,17 @@ export class AuthService {
     const user = await this.findUserOrThrow(userId);
     const matches = await bcrypt.compare(
       changePasswordDto.currentPassword,
-      user.password,
+      user.passwordHash,
     );
     if (!matches) {
       throw new BadRequestException('Current password is incorrect');
     }
 
-    user.password = await bcrypt.hash(
+    user.passwordHash = await bcrypt.hash(
       changePasswordDto.newPassword,
       BCRYPT_ROUNDS,
     );
-    user.updatedBy = String(userId);
+    user.updatedById = userId;
     await this.userAuthRepository.save(user);
 
     return new ApiResponseDto(
@@ -114,12 +397,6 @@ export class AuthService {
     );
   }
 
-  /**
-   * Rotates the session: the presented refresh token is verified against the
-   * stored hash, that session is revoked, and a fresh pair is issued. Replaying
-   * an already-rotated token therefore fails, because its session is no longer
-   * live.
-   */
   async refresh(refreshTokenDto: RefreshTokenDto): Promise<ApiResponseDto> {
     let payload: { sid: number; userId: number };
     try {
@@ -155,7 +432,7 @@ export class AuthService {
       await queryRunner.commitTransaction();
       return new ApiResponseDto(HttpStatus.OK, 'Token refreshed successfully', {
         ...tokens,
-        user: this.toPublic(user),
+        user: await this.toProfile(user),
       });
     } catch (error: any) {
       await queryRunner.rollbackTransaction();
@@ -176,10 +453,6 @@ export class AuthService {
     return new ApiResponseDto(HttpStatus.OK, 'Logged out successfully', null);
   }
 
-  /**
-   * Creates the session row first so its id can go into both tokens as `sid`,
-   * then stores the hash of the refresh token on that same row.
-   */
   private async issueSession(
     user: User,
     manager?: import('typeorm').EntityManager,
@@ -194,21 +467,18 @@ export class AuthService {
       refreshTokenHash: '',
       expiresAt: new Date(Date.now() + this.toMilliseconds(refreshExpiresIn)),
       revokedAt: null,
-      createBy: String(user.id),
+      createdById: user.id,
     });
     const saved = await this.userSessionRepository.save(session, manager);
 
     const payload: JwtPayload = {
       userId: user.id,
-      email: user.email,
       role: user.role,
       sid: saved.id,
     };
 
     const accessToken = await this.jwtService.signAsync(payload);
     const refreshToken = await this.jwtService.signAsync(payload, {
-      // `as any` because @types/jsonwebtoken types `expiresIn` as a literal
-      // union of duration strings, which an env-supplied string can't satisfy.
       expiresIn: refreshExpiresIn as any,
     });
 
@@ -216,6 +486,57 @@ export class AuthService {
     await this.userSessionRepository.save(saved, manager);
 
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * Gives the user a fresh 6-digit code for `purpose`, replacing any earlier
+   * one. Only its hash is stored; the code itself goes back to the caller to
+   * be texted.
+   */
+  private async issueOtp(
+    userId: number,
+    purpose: OtpPurpose,
+    manager?: EntityManager,
+  ): Promise<IssuedOtp> {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expireMinutes = parseInt(
+      this.configService.get<string>('OTP_EXPIRE_MINUTES', '10'),
+      10,
+    );
+
+    await this.userOtpRepository.deleteByUserIdAndPurpose(
+      userId,
+      purpose,
+      manager,
+    );
+    const saved = await this.userOtpRepository.save(
+      this.userOtpRepository.create({
+        userId,
+        otpHash: await bcrypt.hash(otp, BCRYPT_ROUNDS),
+        purpose,
+        expiresAt: new Date(Date.now() + expireMinutes * 60 * 1000),
+      }),
+      manager,
+    );
+    return { otp, otpId: saved.id, expireMinutes };
+  }
+
+  /** Queues the code's SMS; delivery happens in SmsConsumer, off the request path. */
+  private sendOtp(
+    phone: string,
+    { otp, expireMinutes }: IssuedOtp,
+    kind: 'verification' | 'password reset',
+  ): Promise<void> {
+    return this.smsService.sendSms(
+      phone,
+      `Your Waypoint ${kind} code is: ${otp}. Valid for ${expireMinutes} minutes.`,
+    );
+  }
+
+  // Outside production the code is also returned, so a flow can be tried
+  // without a phone to receive the SMS.
+  private otpForTesting({ otp }: IssuedOtp): { otp?: string } {
+    return process.env.NODE_ENV !== 'production' ? { otp } : {};
   }
 
   private async findUserOrThrow(userId: number): Promise<User> {
@@ -226,13 +547,44 @@ export class AuthService {
     return user;
   }
 
-  /** Never return a user without stripping the password hash first. */
+  // Without the password hash, and with the profile picture as its URL.
   private toPublic(user: User) {
-    const { password: _password, ...result } = user;
-    return result;
+    const { passwordHash: _passwordHash, avatarImage, ...result } = user;
+    return { ...result, avatar: avatarImage?.url ?? null };
   }
 
-  /** Accepts the `30d` / `12h` / `45m` / `30s` forms used in env. */
+  /**
+   * The user as a client sees it. A driver also gets the `driver` block the
+   * handset works from: their code, home depot and the vehicle they are on.
+   */
+  private async toProfile(user: User) {
+    const profile = this.toPublic(user);
+    if (user.role !== UserRole.DRIVER) {
+      return profile;
+    }
+    const [depot, vehicle] = await Promise.all([
+      this.depotsRepository.findById(user.depotId),
+      this.userAuthRepository.findVehicleOfDriver(user.id),
+    ]);
+
+    return {
+      ...profile,
+      driver: {
+        code: `DRV-${String(user.id).padStart(4, '0')}`,
+        depot: depot?.name ?? null,
+        depotLocation:
+          depot?.lat != null && depot.lng != null
+            ? { lat: depot.lat, lng: depot.lng }
+            : null,
+        vehicle: vehicle && {
+          id: vehicle.id,
+          plate: vehicle.uniqueId,
+          type: vehicleLabel(vehicle),
+        },
+      },
+    };
+  }
+
   private toMilliseconds(duration: string): number {
     const match = /^(\d+)([smhd])$/.exec(duration.trim());
     if (!match) {

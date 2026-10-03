@@ -1,0 +1,49 @@
+info:
+  name: Login
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/login"
+  body:
+    type: json
+    data: |-
+      {
+        "phone": "0711120401",
+        "password": "111111"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const data = res.body?.data;
+
+        // Current token, used by the protected requests via the auth folder.
+        if (data?.accessToken) {
+          bru.setEnvVar("accessToken", data.accessToken);
+          bru.setEnvVar("refreshToken", data.refreshToken);
+        }
+
+        // Per-role copy, e.g. driverAccessToken, storeManagerAccessToken.
+        const role = data?.user?.role;
+        if (data?.accessToken && role) {
+          const prefix = role.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+          bru.setEnvVar(`${prefix}AccessToken`, data.accessToken);
+          bru.setEnvVar(`${prefix}RefreshToken`, data.refreshToken);
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Log in with phone + password. Public. The account must be verified (active).
+
+  Response `data`: `{ accessToken, refreshToken, user }`. Tokens are saved to the selected environment (session only, not written to disk):
+
+  - `accessToken` / `refreshToken`: the latest login, used by the protected requests.
+  - `<role>AccessToken` / `<role>RefreshToken` per role: `dispatcherAccessToken`, `storeManagerAccessToken`, `driverAccessToken`, `loaderAccessToken` (and the matching refresh tokens). Use e.g. `{{dispatcherAccessToken}}` in a request's Bearer auth to call as that role.

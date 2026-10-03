@@ -14,7 +14,7 @@ import {
  *
  * A subclass must never redeclare one of these names with a different
  * signature (TypeScript rejects it); give a differently-shaped lookup a
- * distinct name instead, e.g. `findByEmail` rather than overloading
+ * distinct name instead, e.g. `findByPhone` rather than overloading
  * `findById`.
  */
 export abstract class BaseRepository<T extends ObjectLiteral> {

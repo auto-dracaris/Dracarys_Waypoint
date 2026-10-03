@@ -1,25 +1,38 @@
-import { Column, Entity, Unique } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import type { Relation } from 'typeorm';
 import { AutoIncBaseEntity } from '../../common/entities/autoinc-base.entity';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { UserStatus } from '../../common/enums/user-status.enum';
+import { Depot } from './depot.entity';
+import { Image } from './image.entity';
+import { Outlet } from './outlet.entity';
 
 @Entity('users')
-@Unique(['email'])
 export class User extends AutoIncBaseEntity {
-  @Column({ length: 150 })
-  email: string;
+  @Column({ name: 'password_hash', type: 'text' })
+  passwordHash: string;
 
-  @Column({ length: 255 })
-  password: string;
+  // Never selected by default, so it cannot leak into a response; ask for it
+  // explicitly (`addSelect`) where a PIN is being checked.
+  @Column({ name: 'pin_hash', type: 'text', nullable: true, select: false })
+  pinHash: string | null;
 
-  @Column({ length: 120 })
-  name: string;
+  @Column({ name: 'first_name', length: 100 })
+  firstName: string;
 
-  @Column({ length: 20, nullable: true })
+  @Column({ name: 'last_name', length: 100 })
+  lastName: string;
+
+  @Column({ length: 20, nullable: true, unique: true })
   phone: string;
 
-  @Column({ type: 'text', nullable: true })
-  avatar: string;
+  // The profile picture. Responses give its URL as `avatar`.
+  @Column({ name: 'avatar_image_id', type: 'uuid', nullable: true })
+  avatarImageId: string | null;
+
+  @ManyToOne(() => Image, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'avatar_image_id' })
+  avatarImage?: Relation<Image> | null;
 
   @Column({ type: 'enum', enum: UserRole })
   role: UserRole;
@@ -30,4 +43,21 @@ export class User extends AutoIncBaseEntity {
     default: UserStatus.ACTIVE,
   })
   status: UserStatus;
+
+  // Home depot. Required: registration and the dispatcher seed default it to
+  // Peliyagoda, and a dispatcher changes it through `PUT /users/:id`.
+  @Column({ name: 'depot_id', type: 'int' })
+  depotId: number;
+
+  @ManyToOne(() => Depot)
+  @JoinColumn({ name: 'depot_id' })
+  depot?: Relation<Depot>;
+
+  // The outlet a store manager orders for.
+  @Column({ name: 'outlet_id', type: 'int', nullable: true })
+  outletId: number | null;
+
+  @ManyToOne(() => Outlet, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'outlet_id' })
+  outlet?: Relation<Outlet> | null;
 }

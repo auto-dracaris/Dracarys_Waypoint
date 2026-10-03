@@ -1,0 +1,38 @@
+info:
+  name: Register
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/register"
+  body:
+    type: json
+    data: |-
+      {
+        "firstName": "Ramishka",
+        "lastName": "Geenath",
+        "phone": "0711120401",
+        "password": "UORENG@123"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const data = res.body?.data;
+        if (data?.otpId) bru.setEnvVar("otpId", data.otpId);
+        if (data?.otp) bru.setEnvVar("otp", data.otp);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Register a new user and send a registration OTP by SMS. Public.
+
+  The account is always created with the `driver` role and the Peliyagoda home depot; neither is accepted in the body. A dispatcher changes them afterwards (Users → Update User Role / Update User).
+
+  Response `data`: `{ userId, otpId, otp? }` (`otp` only outside production). `otpId` and `otp` are saved to the selected environment for Verify OTP.

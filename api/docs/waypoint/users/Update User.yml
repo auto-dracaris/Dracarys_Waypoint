@@ -1,0 +1,29 @@
+info:
+  name: Update User
+  type: http
+  seq: 3
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/users/{{userId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "firstName": "Jane",
+        "lastName": "Silva",
+        "phone": "0712345678",
+        "depot": "Peliyagoda"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Update a user's profile fields (firstName, lastName, phone, avatar) and home depot (`depot`: Peliyagoda | Kandy) — all optional. The response carries the `depot` row. Dispatcher only (Bearer `{{dispatcherAccessToken}}` from the folder).
+
+  Role and status have their own endpoints; password changes via Auth → Change Password.

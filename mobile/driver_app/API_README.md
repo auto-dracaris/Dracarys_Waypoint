@@ -1,21 +1,20 @@
-# Driver App — Backend API Requirements
+# Driver App — Backend API
 
-Everything the Waypoint driver app needs from the backend to run end to end
-with no mocks. Today the app talks to in-memory mock repositories
+What the Waypoint driver app calls to run end to end with no mocks. Today the
+app talks to in-memory mock repositories
 (`lib/features/*/data/mock_*_repository.dart`); each section says which
 repository interface the endpoints replace, so wiring the API is "write an
 `ApiXRepository` that implements the same interface and swap the provider".
 
-This document was written against the real `api/` project (NestJS + TypeORM +
-PostgreSQL, see `api/CLAUDE.md`). Where it proposes something new it follows
-that project's conventions.
+This describes the `api/` project as it is built (NestJS + TypeORM +
+PostgreSQL). The runnable examples are the Bruno requests in
+`api/docs/api-test/trips/`.
 
-Legend: ✅ exists in `api/` today · 🔁 exists but must change · 🆕 must be built
+Legend: ✅ built · ⏳ not built yet
 
-## 0. Ground rules (from the existing API)
+## 0. Ground rules
 
-**Base URL** — `main.ts` sets the global prefix `api` and the port defaults to
-`5000` (`api/.env`). Every path below is relative to it:
+**Base URL** — the global prefix is `api` and the port defaults to `5000`:
 
 | Where the app runs | Base URL |
 |---|---|
@@ -23,187 +22,177 @@ Legend: ✅ exists in `api/` today · 🔁 exists but must change · 🆕 must b
 | iOS simulator / desktop | `http://localhost:5000/api` |
 | Physical device (dev) | `http://<your-LAN-ip>:5000/api` |
 
-Health check: ✅ `GET /api/health`.
+Health check: `GET /api/health`.
 
 **Android dev gotcha:** Android 9+ blocks plain `http://` unless the manifest
-allows it, and the debug manifest
-(`android/app/src/debug/AndroidManifest.xml`) currently only declares `INTERNET`.
-For local development add `android:usesCleartextTraffic="true"` to the
-`<application>` element in the **debug** manifest only; production must use
+allows it. For local development add `android:usesCleartextTraffic="true"` to
+the `<application>` element in the **debug** manifest only; production must use
 HTTPS. Make the base URL build-time config
 (`--dart-define=API_BASE_URL=http://10.0.2.2:5000/api`).
 
-**One envelope for everything**, success and error (`ApiResponseDto`):
+**One envelope for everything**, success and error:
 
 ```json
-{ "statusCode": 200, "message": "Logged in successfully", "data": { } }
+{ "statusCode": 200, "message": "Trip started", "data": { } }
 ```
 
 - List endpoints: `data = { "items": [...], "meta": { "total", "page", "limit", "totalPages" } }`,
-  query `?page=1&limit=10` (`PaginationQueryDto`: page ≥ 1, limit 1–100, default 10).
-- Errors use the same shape. For validation errors `message` is the *first*
-  problem and `data` is the full array of messages.
-- Common messages the app should surface as-is: `Invalid email or password`,
-  `This account is not active`.
+  query `?page=1&limit=10` (page ≥ 1, limit 1–200, default 10).
+- Errors use the same shape. For validation errors `message` is the first
+  problem and `data` is the full list.
+- A `409` on a trip action carries **the current trip in `data`** (same shape
+  as `GET /trips/:id`), so the app can replace its copy and show what changed.
 
-**Strict request bodies.** The global `ValidationPipe` runs with
-`whitelist: true, forbidNonWhitelisted: true, transform: true`. Any field that
-is not declared in the endpoint's DTO is rejected with **400**. So the app must
-send exactly the documented fields, and every DTO below must declare all of
-them (with a custom `message` per rule, per the API's conventions).
+**Strict request bodies.** Any field that is not documented below is rejected
+with `400`. Send exactly these fields.
 
 **Auth** — `Authorization: Bearer <accessToken>`. Access token lifetime `1d`,
 refresh token `30d`; refresh **rotates** (the old session is revoked, replaying
-an old refresh token fails). A token is only honoured while its
-`user_sessions` row is live, so logout takes effect immediately. On `401` the
-app refreshes once and retries; if that fails it signs out.
+an old refresh token fails). Logout takes effect immediately. On `401` the app
+refreshes once and retries; if that fails it signs out.
 
-**Authorisation.** Routes use `@UseGuards(JwtAuthGuard, PermissionsGuard)` +
-`@Permissions(...)` (OR semantics). Permissions are granted **directly to a
-user** — there are *no role defaults*, and only `dispatcher` bypasses checks.
-Consequence for this app: every new driver endpoint needs (a) a permission
-string in `PERMISSIONS` (`src/common/constants/permissions.constant.ts`), (b) a
-seed migration row (otherwise the guard fails closed for non-dispatchers), and
-(c) that permission granted to each driver user. The existing
-`PUT /api/permissions/users/:userId` (`permission.manage`, dispatcher bypasses)
-takes `{ permissions: string[] }` and **replaces** the user's whole grant set,
-so the caller must send the complete list, not just the new one — or add a small
-"driver bundle" step to user creation. Proposed strings:
+**Access is by role.** A user has one role: `driver`, `loader`,
+`store_manager` or `dispatcher`. There are no per-user permissions to grant.
+Driver routes also check **ownership**: a trip is yours if it names you as its
+driver, or names nobody yet and you are on its vehicle. Anything else is `403`.
 
-| Permission | Used by |
+**IDs**
+
+| Thing | Id |
 |---|---|
-| `trip.view` | driver: read own vehicle/trips/notifications/route changes |
-| `delivery.execute` | driver: start, arrive, complete, proof, issues, acknowledge, location |
-| `trip.manage` | dispatcher: create/resequence trips (bypassed by role anyway) |
-| `loading.manage` | loader: mark loading done, record shortfall |
+| User, vehicle | integer |
+| Trip | UUID |
+| Stop | the outlet's integer id, as a string (`"14"`). A stop is every order the trip carries to one outlet |
+| Order | its reference, `ORD0000012`. Use it in paths and as the key in `deliveredCases` |
 
-Every driver route must additionally check **ownership** in the service
-(the trip's driver is the caller) and respond `403` otherwise.
+**`clientId` and retries.** Every driver action carries a `clientId`, a UUID
+minted on the handset.
 
-**IDs.** `users.id` is an integer (`AutoIncBaseEntity`); the app keeps ids as
-strings, so it converts. New domain tables that the handset reads or creates
-use `UuidBaseEntity` — the API's own comment says UUIDs are for ids "exposed to
-a client" or "minted offline (driver handsets) and merged on sync". Records the
-driver creates (arrival, completion, proof, issue, location points) take the
-**handset-generated UUID as their primary key** (`clientId` in bodies, stored as
-`id`). Replaying the same `clientId` returns the original result and creates
-nothing new.
+- Start, arrive and complete are state changes. Sending one that already
+  happened returns `200` with the current trip and changes nothing, so a retry
+  after working offline is safe.
+- Issues, proofs and location points are records. Their `clientId` becomes the
+  record's id; sending the same one again returns the stored record (`200`
+  instead of `201`) and creates nothing.
 
-**Times** — ISO-8601 UTC strings on the wire; quantities are integer cases.
-The operation runs in Sri Lanka (UTC+5:30, `Asia/Colombo`), so the app formats
-all times in the device's local zone. `deliveryWindow` (`"06:00-08:00"`) is a
-local-time display string.
+**Times** — ISO-8601 strings on the wire. Send the **device's** time for
+`startedAt`, `arrivedAt`, `completedAt` and `recordedAt`, not the time of the
+request. The operation runs in Sri Lanka (UTC+5:30); `deliveryWindow`
+(`"06:00-08:00"`) is local time. Quantities are whole cases.
 
-**Status codes** — `400` validation, `401` auth, `403` not allowed / not your
-trip, `404` unknown id, `409` invalid state transition, `422` business-rule failure.
+**Status codes** — `400` validation, `401` auth, `403` wrong role or not your
+trip, `404` unknown id, `409` the trip is not in a state that allows the action
+(with the current trip in `data`), `413` image over 5 MB, `422` a business rule
+failed, `502` the routing engine or image storage failed, `503` image storage
+is not configured on the server.
 
-**Conventions to follow when building** (from `api/CLAUDE.md`): controllers are
-pass-through; services return `ApiResponseDto` and throw typed Nest exceptions;
-all DB access via per-entity repositories; entities in `src/database/entities/`
-with snake_case columns; schema comes from `synchronize: true`, migrations are
-seed-only and idempotent; multi-table writes use a `QueryRunner` transaction;
-config via `ConfigService`, never `process.env`.
+## 1. Auth & profile ✅
 
-**Documentation = Bruno.** There is no Swagger; the collection in
-`api/docs/api-test/` *is* the API doc and runs with `npm run test:api`. Each new
-endpoint below ships with numbered `.bru` requests including negative cases
-(wrong role, other driver's trip, replayed `clientId`, invalid transition).
+Replaces `AuthRepository`.
 
-## 1. Auth & profile
-
-Replaces `AuthRepository` (`currentDriver / login / signUp / logout`).
-
-| | Method & path | Notes |
+| Method & path | Body | Notes |
 |---|---|---|
-| ✅ | `POST /auth/login` | `{ email, password }` → `data: { accessToken, refreshToken, user }` |
-| ✅ | `POST /auth/refresh` | `{ refreshToken }` → new `accessToken`, `refreshToken`, `user` |
-| ✅ | `POST /auth/logout` | Revokes the session (JWT required) |
-| 🔁 | `GET /auth/me` | Today returns the user (password stripped) **plus `permissions: string[]`**. Must also return the driver block below |
-| ✅ | `PUT /auth/me` | `{ name?, phone?, avatar? }` (name ≤ 120, phone ≤ 20, avatar text) — powers Edit profile |
-| ✅ | `PUT /auth/change-password` | `{ currentPassword, newPassword }`; wrong current → 400 `Current password is incorrect` |
-| ✅ | `POST /users` | **How drivers are created.** Dispatcher only (`user.manage`): `{ email, password (≥6), name, role: "driver", phone?, avatar? }` |
-| ❌ | public sign-up | **Does not exist by design** — `SeedSystemDispatcher` states there is "no public registration endpoint". The app's *Sign-up* screen therefore cannot work and should be removed |
+| `POST /auth/register` | `{ firstName, lastName, phone, password }` | Creates a **driver** account and sends an OTP by SMS. Returns `otpId` |
+| `POST /auth/verify-otp` | `{ phone, otp, otpId }` | Activates the account |
+| `POST /auth/resend-otp` | `{ phone }` | |
+| `POST /auth/login` | `{ phone, password }` | → `{ accessToken, refreshToken, user }` |
+| `POST /auth/forgot-password` | `{ phone }` | Texts a 6-digit reset code if the number has an active account. Always `200` with the same message, whether or not it does. At most one code a minute |
+| `POST /auth/reset-password` | `{ phone, otp, newPassword }` | Sets the new password and signs the user out everywhere; sign in again. `400` for a wrong, expired or used code; the code is void after 5 wrong tries |
+| `POST /auth/refresh` | `{ refreshToken }` | → new `accessToken`, `refreshToken`, `user` |
+| `POST /auth/logout` | — | Revokes the session |
+| `GET /auth/me` | — | The `user` below |
+| `PUT /auth/me` | `{ firstName?, lastName?, phone?, avatarImageId? }` | Edit profile. `avatarImageId` is an image uploaded with purpose `avatar` (§3); `null` removes the picture |
+| `PUT /auth/change-password` | `{ currentPassword, newPassword }` | |
 
-**What the app reads from `user`** (login/refresh/me):
+Login is by **phone number**, not email. Sign-up works, but a new driver has no
+vehicle until a dispatcher assigns one on the web app.
+
+**`user`** for a driver (login, refresh and `/auth/me`):
 
 ```json
 {
   "id": 12,
-  "email": "kasun@waypoint.lk",
-  "name": "Kasun Perera",
-  "phone": "+94771234567",
+  "firstName": "Kasun", "lastName": "Perera",
+  "phone": "94771234567",
   "avatar": null,
   "role": "driver",
   "status": "active",
-  "permissions": ["trip.view", "delivery.execute"],
+  "depotId": 1,
   "driver": {
-    "code": "DRV-0042",
-    "depot": "Peliyagoda Depot",
-    "depotLocation": { "lat": 6.9645, "lng": 79.8880 }
+    "code": "DRV-0012",
+    "depot": "Peliyagoda",
+    "depotLocation": { "lat": 6.9645, "lng": 79.888 },
+    "vehicle": { "id": 21, "plate": "VEH021", "type": "Refrigerated van" }
   }
 }
 ```
 
-`code` and `depot` do not exist on `users` — add a `driver_profiles` entity
-(`user_id`, `code`, `depot_id`) and merge it into `me`/`login` for drivers. The
-app builds the avatar initials from `name`. Login rejects `blocked`/`deleted`
-users, which is how a dispatcher can lock a driver out.
+`avatar` is the profile picture's URL, or `null`. To change it, upload the
+image (§3) and send its id as `avatarImageId` to `PUT /auth/me`.
 
-## 2. Vehicle
+`driver.vehicle` is the vehicle the driver is assigned to, or `null`. There is
+no separate vehicle endpoint: `TripsRepository.getVehicle` reads it from here.
+Use `vehicle.id` for location uploads (§6).
 
-Replaces `TripsRepository.getVehicle`.
-
-| | Method & path | Response |
-|---|---|---|
-| 🆕 | `GET /driver/vehicle` | `{ "id": "…uuid", "plate": "VEH021", "type": "Refrigerated van" }` — the vehicle assigned to the driver today (404 if none) |
-
-## 3. Trips
+## 2. Trips ✅
 
 Replaces `TripsRepository` (`getTrips / getTrip / startTrip / markArrived / completeStop`).
 
-| | Method & path | Purpose |
+| Method & path | Body | Result |
 |---|---|---|
-| 🆕 | `GET /trips?date=YYYY-MM-DD&page=&limit=` | My trips for the day (default today), summary form, `{ items, meta }` |
-| 🆕 | `GET /trips/:id` | Full trip with stops + orders |
-| 🆕 | `POST /trips/:id/start` | `{ clientId, startedAt }` — `ready → in_progress`; `409` unless `ready` |
-| 🆕 | `POST /trips/:id/stops/:stopId/arrive` | `{ clientId, planVersion, arrivedAt, lat?, lng? }` → stop `arrived` |
-| 🆕 | `POST /trips/:id/stops/:stopId/complete` | `{ clientId, planVersion, completedAt, deliveredCases: { "<orderId>": 12 } }` → stop `completed`; when the last stop completes the trip becomes `completed` |
+| `GET /trips?date=YYYY-MM-DD&updatedSince=<ISO>&page=&limit=` | — | My trips for the day (default today), summary form. `updatedSince` returns only trips changed after that instant |
+| `GET /trips/:id` | — | Full trip with stops and orders |
+| `POST /trips/:id/start` | `{ clientId, startedAt, otp }` | `ready → in_progress`; `409` unless ready. `otp` is the start code from the loader (see "Confirmation codes") |
+| `POST /trips/:id/stops/:stopId/arrive` | `{ clientId, planVersion, arrivedAt, lat?, lng? }` | Stop becomes `arrived` |
+| `POST /trips/:id/stops/:stopId/complete` | `{ clientId, planVersion, completedAt, deliveredCases, deliveryCode? }` | Stop becomes `completed`; the last one completes the trip. `deliveryCode` is the outlet's code (see "Confirmation codes") |
+| `POST /trips/:id/stops/:stopId/delivery-code` | — | Sends the outlet a new code. Needs a connection; refetch the trip afterwards for the new hash |
 
-**Trip** (`GET /trips/:id`):
+`deliveredCases` maps **every** order at the stop to the cases handed over:
+`{ "ORD0000012": 12, "ORD0000013": 0 }`. Each value is `0..cases`.
+
+Every action returns the updated trip.
+
+**Trip** (`GET /trips/:id`; the list returns the fields above `depot`):
 
 ```json
 {
   "id": "5f1c…",
   "name": "Trip 1",
   "subtitle": "Fresh deliveries · Gampaha",
-  "departure": "2026-10-03T00:00:00Z",
-  "status": "loading",            // assigned | loading | ready | in_progress | completed
-  "planVersion": 3,
-  "updatedAt": "2026-10-03T05:28:00Z",
-  "shortfall": {                  // null when the load is complete
-    "orderId": "ORD-4521", "storeName": "Waypoint Fresh — Ja-Ela",
+  "departure": "2026-10-05T22:00:00.000Z",
+  "status": "loading",
+  "planVersion": 1,
+  "updatedAt": "2026-10-05T21:40:00.000Z",
+  "vehicle": { "id": 21, "plate": "VEH021", "type": "Refrigerated van" },
+  "stopCount": 4,
+  "completedStops": 0,
+  "depot": "Peliyagoda",
+  "shortfall": {
+    "orderId": "ORD0000012", "storeName": "Waypoint Fresh — OUT014",
     "shortCases": 2, "plannedCases": 12,
-    "dispatcherNote": "Two cases short from the warehouse…"
+    "dispatcherNote": "Two cases short from the warehouse"
   },
   "stops": [
     {
-      "id": "9a02…",
-      "sequence": 3,
-      "name": "Waypoint Fresh — Ja-Ela",
+      "id": "14",
+      "sequence": 1,
+      "name": "Waypoint Fresh — OUT014",
       "deliveryWindow": "06:00-08:00",
-      "plannedArrival": "2026-10-03T01:40:00Z",
+      "plannedArrival": "2026-10-06T00:37:00.000Z",
       "dock": "Rear loading dock",
-      "lat": 7.0742, "lng": 79.8919,
-      "contactPhone": "+94112345678",
-      "status": "pending",         // pending | arrived | completed
+      "lat": 7.0961, "lng": 80.0231,
+      "contactPhone": null,
+      "status": "pending",
       "arrivedAt": null,
-      "etaMinutes": 18,            // from routing, see §8
-      "distanceKm": 12.1,
+      "deliveryCode": { "salt": "9f2c…", "iterations": 150000, "hash": "5b1e…" },
+      "codeVerified": null,
+      "etaMinutes": 37,
+      "distanceKm": 28,
       "orders": [
         {
-          "id": "ORD-4521", "storeName": "Waypoint Fresh — Ja-Ela",
-          "cases": 12, "temperature": "chilled",   // chilled | ambient
-          "status": "pending_delivery",            // pending_delivery | delivered
+          "id": "ORD0000012", "storeName": "Waypoint Fresh — OUT014",
+          "cases": 12, "temperature": "chilled",
+          "status": "pending_delivery",
           "deliveredCases": null,
           "handling": "Keep below 4°C"
         }
@@ -213,196 +202,252 @@ Replaces `TripsRepository` (`getTrips / getTrip / startTrip / markArrived / comp
 }
 ```
 
-**Stale plans.** `arrive`/`complete` carry the `planVersion` the driver was
-looking at. If the dispatcher resequenced the trip in the meantime (version
-bumped) and the action no longer fits the new order, respond `409` with the
-current trip so the app can show the Route update screen instead of silently
-recording a delivery against the wrong stop.
+- `status`: `assigned | loading | ready | in_progress | completed`.
+- Stop `status`: `pending | arrived | completed`.
+- Order `status`: `pending_delivery | delivered`. `delivered` means the driver
+  recorded an outcome; `deliveredCases` says how much (it can be `0`).
+- `shortfall` is `null` when the load is complete.
+- `lat`, `lng` and `contactPhone` can be `null`. Outlet coordinates are
+  approximate (placed near the district centre) until someone corrects them.
+- `etaMinutes` and `distanceKm` are the planner's clear-road figures from the
+  previous point (the depot for the first stop). For a live route use §6.
 
-**State rules enforced server-side:** start only when `ready`; stops complete in
-`sequence` order; `complete` requires `arrived`; `deliveredCases[orderId]` is
-`0..cases`; actions on a trip that isn't the caller's → `403`.
+**Rules the server enforces:** start only when `ready`; stops complete in
+`sequence` order; `complete` requires `arrived`; an arrive or complete sent with
+an old `planVersion` gets `409` (see §4). On `409`, replace the local trip with
+`data` from the response.
 
-**Planning side (needed so there is data to serve).** `api/CLAUDE.md` lists
-orders, vehicles, depots, stalls, planning, deliveries and issues as "still to
-come". Minimum for the driver app: dispatcher endpoints to create a trip with
-stops/orders and assign driver + vehicle (`trip.manage`), and to resequence it
-(§5). The existing `settings` already hold knobs this workflow reads
-(`order_cutoff_time`, `loading_deadline_time`, `max_trips_per_vehicle`,
-`driver_rest_minutes`); drivers cannot call `GET /settings` (it needs
-`settings.manage`), so expose anything the app must show (e.g. rest time)
-inside the trip payload instead.
+**Loading → ready is the loader's job**, not the driver's. Remove the app's
+*"Simulate loading complete"* button. These two calls are made by a loader (or
+a dispatcher) and are listed here so a developer can drive a trip to `ready`
+when testing:
 
-**Loading → ready is not driver-initiated.** The app's *"Simulate loading
-complete"* button is demo-only and goes away. The loading team (`role = loader`)
-marks the load done and the server moves the trip to `ready` and notifies the
-driver (§6/§7):
-
-| | Method & path | Who |
+| Method & path | Body | Result |
 |---|---|---|
-| 🆕 | `POST /trips/:id/loading/start` | loader (`loading.manage`) → trip `loading` + "loading started" notification |
-| 🆕 | `POST /trips/:id/loading/complete` | loader → trip `ready`, optional `shortfall: { orderId, shortCases, dispatcherNote }` |
+| `POST /trips/:id/loading/start` | — | `assigned → loading` |
+| `POST /trips/:id/loading/complete` | — | `→ ready`. The response has `dispatchCode`, the start code for the driver. A loader reports a shortfall with `POST /issues` (type `load_shortfall`), and the trip then shows it as `shortfall` |
+| `POST /trips/:id/loading/code` | — | A fresh `dispatchCode` if the first was lost or used up |
 
-## 4. Delivery records (proof of delivery & issues)
+A loader calling `GET /trips` gets their depot's trips for the day.
 
-Replaces `RecordsRepository` and the "complete a stop" flow. Both `POST`s are
-`multipart/form-data` (platform-express/multer is already a dependency; fields
-arrive as strings, so DTOs need `@Type(() => Number)` for numbers). Limit each
-image to 5 MB (the app should downscale/compress before upload — it does not do
-that yet).
+### Confirmation codes
 
-| | Method & path | Fields |
+Two handovers are confirmed with a 6-digit code.
+
+**Starting a trip.** When the loader marks the vehicle loaded, a start code is
+shown on the loader's screen and texted to the driver. Send it as `otp` to
+`POST /trips/:id/start`. A wrong code is `400` "Invalid start code"; after 5
+wrong tries the code is void and the loader issues a new one. The driver is at
+the depot here, so this step is online.
+
+**Completing a stop, with or without signal.** When the trip starts, each
+outlet's store manager is texted a delivery code. The driver asks for it at the
+stop and types it in. So that this works with no connection, the trip carries
+each stop's `deliveryCode: { salt, iterations, hash }` from the moment it
+starts (in the `start` response and `GET /trips/:id`). Save it with the trip.
+
+The app checks a typed code like this, with no network:
+
+```
+PBKDF2-HMAC-SHA256(
+  password   = the 6 digits, as UTF-8 text,
+  salt       = the bytes of `salt` (it is hex: decode it to 16 bytes),
+  iterations = `iterations`,
+  length     = 32 bytes
+) -> lowercase hex, must equal `hash`
+```
+
+In Dart, `Pbkdf2(macAlgorithm: Hmac.sha256(), iterations: …, bits: 256)` from
+the `cryptography` package does this. To check an implementation: password
+`password`, salt `73616c74` (the bytes of "salt"), 4096 iterations gives
+`c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a`. Run it off
+the UI thread; 150 000 iterations take a noticeable moment on a phone.
+
+Then send the code as `deliveryCode` in `complete` (now, or later from the
+offline queue). The server checks it again; a wrong one is `400` "Invalid
+delivery code".
+
+**If the store cannot give a code** (phone off, nobody there to ask): record a
+proof of delivery for the stop first (§3), then send `complete` without
+`deliveryCode`. Without a code or a proof, `complete` is `400`.
+
+On a completed stop, `codeVerified` is `true` if the outlet's code confirmed it
+and `false` if a proof stood in; it is `null` before that. `deliveryCode` is
+`null` before the trip starts and after the stop is completed.
+
+## 3. Images and delivery records ✅
+
+Replaces `RecordsRepository`.
+
+### Uploading an image
+
+Every image goes through one endpoint, whatever it is for. Upload first, then
+send the returned `id` in the JSON body of the thing it belongs to.
+
+| Method & path | Fields (`multipart/form-data`) | Result |
 |---|---|---|
-| 🆕 | `POST /trips/:id/stops/:stopId/proof` | `clientId`, `receivedBy` (staff name, required), `notes?`, and `signature` (PNG from the in-app pad) **or** `photo` (JPEG) — at least one |
-| 🆕 | `POST /trips/:id/stops/:stopId/orders/:orderId/issues` | `clientId`, `type`, `affectedCases` (1..order cases), `note?`, `photo?` |
-| 🆕 | `GET /trips/:id/records` | `{ items, meta }` of `{ id, kind: arrival\|issue\|proof, title, savedAt, syncState }` — the "saved records" list |
+| `POST /images` | `image` (the file), `purpose`, `clientId?` | `{ id, url, purpose, format, width, height, bytes }` |
 
-**Issue `type`** values the form offers: `damaged` (UI label includes the
-temperature), `temperature_breach`, `short_delivery`, `wrong_items`, `other`.
-An issue reduces the deliverable quantity (`cases − affectedCases`) and flags
-the order for dispatcher review.
+- `purpose`: `avatar | proof_signature | proof_photo | issue_photo`. An image
+  can only be attached where its purpose fits, and only by the user who
+  uploaded it.
+- PNG or JPEG, up to 5 MB. The server checks the file's content, not its name.
+  Compress photos before upload.
+- `clientId` (a UUID from the handset) becomes the image's `id`. Sending the
+  same one again returns the stored image (`200` instead of `201`) without
+  uploading twice, so an upload can be retried safely after working offline.
+- `url` is an `https://res.cloudinary.com/…` address. Load it directly; it
+  needs no token.
 
-Storage: save files to disk/object storage and keep only the URL/path on the
-row (never blobs in Postgres). Check MIME type and size server-side, generate
-the file name yourself, and serve files behind auth or short-lived signed URLs —
-proof signatures are sensitive. The API currently has `enableCors()` open to all
-origins and no rate limiting; tighten both before exposing upload endpoints.
+**There is no endpoint for fetching an image.** Wherever an image is used, the
+response already carries its URL: `avatar` on the user, `signatureUrl` and
+`photoUrl` on a proof, `photoUrl` on an issue.
 
-## 5. Route updates (re-sequencing)
+### Proof of delivery and issues
+
+All take ordinary JSON.
+
+| Method & path | Body |
+|---|---|
+| `POST /trips/:id/stops/:stopId/proof` | `{ clientId, receivedBy, notes?, signatureImageId?, photoImageId? }` — at least one of the two images. `signatureImageId` is an image of purpose `proof_signature` (the PNG from the in-app pad), `photoImageId` one of `proof_photo` |
+| `POST /issues` | `{ clientId?, type, tripId, orderId?, affectedCases?, note?, photoImageId?, recordedAt? }` — see "Reporting an issue" below |
+| `GET /issues?page=&limit=` | — → the issues this driver reported, newest first, each with its `status` (`open`, `acknowledged`, `resolved`) and the dispatcher's `resolutionNote` |
+| `GET /trips/:id/records?page=&limit=` | — → `{ items, meta }` of `{ id, kind: arrival\|issue\|proof, title, savedAt, syncState }`, newest first |
+
+#### Reporting an issue
+
+Issues from every role go to the same `POST /issues`. For a driver:
+
+| Field | Notes |
+|---|---|
+| `type` | `damaged`, `temperature_breach`, `short_delivery`, `wrong_items` (about one order's goods), or `delivery_problem`, `delay`, `vehicle_breakdown`, `other` (about the trip) |
+| `tripId` | Required; the driver's own trip |
+| `orderId` | The order reference. Required for the four goods types |
+| `affectedCases` | Required for the four goods types; 1 to the order's cases |
+| `note` | Optional; up to 500 characters |
+| `photoImageId` | Optional; an image of purpose `issue_photo` |
+| `recordedAt` | Optional; the device's clock, for an issue noted offline |
+| `clientId` | Optional UUID; becomes the issue's id, so a retry stores nothing new (`200` instead of `201`) |
+
+Errors: `400` a type a driver cannot use, or a goods type without `orderId` and
+`affectedCases`; `403` not the driver's trip; `404` the order is not on the
+trip; `422` more cases than the order has.
+
+A proof response includes `signatureUrl` and `photoUrl`; an issue response
+includes `photoUrl`. Everything the server returns in `records` has
+`syncState: "synced"`; records still waiting on the handset are the app's to
+list.
+
+Offline, queue the image upload and the record that uses it together: mint the
+image's `clientId` up front, put it in the record's body, and send the upload
+before the record.
+
+## 4. Route updates ✅
 
 Replaces `RouteChangesRepository`.
 
-| | Method & path | Purpose |
+| Method & path | Body | Result |
 |---|---|---|
-| 🆕 | `GET /trips/:id/route-change` | Latest change the driver has not acknowledged, or `data: null` |
-| 🆕 | `POST /trips/:id/route-change/acknowledge` | `{ clientId }` |
+| `GET /trips/:id/route-change` | — | The latest change the driver has not acknowledged, or `data: null` |
+| `POST /trips/:id/route-change/acknowledge` | `{ clientId }` | The change, now `acknowledged: true` |
 
 ```json
 {
   "tripId": "5f1c…",
-  "planVersion": 4,
-  "updatedAt": "2026-10-03T05:28:00Z",
-  "reason": "Store closed early — Ragama moved after Ja-Ela",
-  "previous": [ { "name": "Keells — Kiribathgoda", "area": "Kiribathgoda", "completed": true, "movement": "none" } ],
-  "updated":  [ { "name": "Waypoint Fresh — Ja-Ela", "area": "Ja-Ela", "completed": false, "movement": "up" } ],
-  "impactStopName": "Lanka Sathosa — Ragama",
-  "impactArrivalNow": "07:45 AM",
-  "impactArrivalWas": "07:10 AM",
-  "tightWindow": "Window closes 09:00",   // nullable
+  "planVersion": 2,
+  "updatedAt": "2026-10-05T23:28:00.000Z",
+  "reason": "Store closing early",
+  "previous": [ { "name": "Waypoint Fresh — OUT011", "area": "Gampaha", "completed": true, "movement": "none" } ],
+  "updated":  [ { "name": "Waypoint Fresh — OUT014", "area": "Gampaha", "completed": false, "movement": "up" } ],
+  "impactStopName": "Waypoint Fresh — OUT016",
+  "impactArrivalNow": "2026-10-06T01:45:00.000Z",
+  "impactArrivalWas": "2026-10-06T01:10:00.000Z",
+  "tightWindow": "Window closes 08:00",
   "acknowledged": false
 }
 ```
 
-`impactArrivalNow` / `impactArrivalWas` are display strings in the app's current
-model; send them as ISO timestamps and have the app format them (change the model
-to `DateTime` when wiring this endpoint). `movement`: `none | up | down`. Written when the dispatcher resequences a trip
-(bumps `planVersion`, stores before/after snapshots, creates a
-`stop_sequence_changed` notification, sends a push).
+`impactArrivalNow` and `impactArrivalWas` are **ISO timestamps**; change the
+app's model from display strings to `DateTime` and format them locally.
+`movement`: `none | up | down`. `tightWindow` is `null` unless the stop is now
+reached within 30 minutes of its window closing.
 
-## 6. Notifications
+A change is written when the dispatcher reorders the stops the vehicle has not
+reached yet. That raises the trip's `planVersion`, so an arrive or complete sent
+with the old one gets `409` and the app should fetch the route change, show the
+Route update screen, acknowledge, then retry with the new `planVersion`.
 
-Replaces `NotificationsRepository`.
+## 5. Notifications and push ⏳
 
-| | Method & path | Notes |
+Not built. `GET /notifications`, `POST /notifications/:id/read` and
+`POST /devices` do not exist yet. Until they do, poll `GET /trips` and
+`GET /trips/:id/route-change` every 30–60 s while the app is open, and keep
+`NotificationsRepository` on its mock.
+
+## 6. Live location & routing ✅
+
+| Method & path | Body | Notes |
 |---|---|---|
-| 🆕 | `GET /notifications?page=&limit=` | Newest first, `{ items, meta }` |
-| 🆕 | `POST /notifications/:id/read` | Clears the unread dot |
+| `POST /vehicles/:id/locations` | `{ "points": [{ "clientId", "lat", "lng", "heading?", "speedKmh?", "recordedAt" }] }` | 1–50 fixes per call, about every 5 s while a trip is `in_progress`. `:id` is `driver.vehicle.id`. Only that vehicle's driver may send. Replaces `SimulatedLocationSource` |
+| `POST /routing/route` | `{ "waypoints": [{ "lat", "lng" }, …], "profile?": "van" \| "truck" }` | 2–25 points → `{ profile, geometry: [[lng,lat],…], distanceMeters, durationSeconds, legs: [{ distanceMeters, durationSeconds }] }`. `profile` defaults to the driver's own vehicle type |
 
-```json
-{
-  "id": "…uuid", "kind": "stop_sequence_changed",
-  "severity": "warning",                // error | warning | info | success
-  "title": "Stop order changed", "body": "Ja-Ela is now before Ragama.",
-  "createdAt": "2026-10-03T05:28:00Z",
-  "tripId": "5f1c…",                    // nullable; powers "Review changes" / "View trip"
-  "actionLabel": "Review changes",      // nullable
-  "footnote": null
-}
-```
+`heading` is whole degrees (0–360). Points captured offline can be sent later
+in batches; a point sent twice is stored once.
 
-`kind`: `stop_sequence_changed | loading_started | trip_assigned`. The app's model
-also has `saved_offline` ("saved on this device, will sync"); it should be created
-locally when a record is queued, never by the server (the mock repository
-currently includes one as sample data).
+`/routing/route` proxies the team's self-hosted OSRM (`osrm_setup/`), which has
+separate van and truck road profiles. Replace the public OSRM URL in
+`routing_repository.dart` with it. It returns `502` when the engine is not
+running; keep `StraightLineRoutingRepository` as the fallback.
 
-## 7. Push
+## 7. Offline & sync
 
-| | Method & path | Notes |
-|---|---|---|
-| 🆕 | `POST /devices` | `{ token, platform: "android"\|"ios" }` after login (FCM token) |
-| 🆕 | `DELETE /devices/:token` | On logout |
+The server side of the contract is in place:
 
-Push on: trip assigned, loading started / complete (`ready`), stop sequence
-changed. Payload `{ kind, tripId }`; the app then refetches `GET /trips/:id`,
-`/route-change`, `/notifications`. Until push exists the app should poll `GET /trips`
-and `GET /notifications` every 30–60 s while open (the app does not poll yet).
+1. Every driver action carries a `clientId` and the device's own time.
+2. Retries are safe (§0). A retry the trip no longer allows returns `409` with
+   the current trip.
+3. `GET /trips?updatedSince=<ISO>` returns only trips changed since then.
+4. `GET /trips/:id/records` is the source of truth for what has synced.
 
-## 8. Live location & routing
+Still needed in the app: a local database for the trip cache, a persistent
+outbox of pending actions with retry and backoff, and a real connectivity
+listener (the online pill is currently a long-press toggle).
 
-| | Method & path | Notes |
-|---|---|---|
-| 🆕 | `POST /vehicles/:id/locations` | Replaces the in-app `SimulatedLocationSource`. Body `{ "points": [{ "clientId", "lat", "lng", "heading", "speedKmh", "recordedAt" }] }` — a batch (≤ 50, `@ArrayMaxSize` + `@ValidateNested`) of fixes sent about every 5 s while a trip is `in_progress`. Dispatchers read this; the driver app only writes |
-| 🆕 | `POST /routing/route` | `{ "waypoints": [{ "lat", "lng" }, …] }` (2–25) → `{ "geometry": [[lng,lat],…], "distanceMeters", "durationSeconds", "legs": [{ "distanceMeters", "durationSeconds" }] }`. A thin proxy over a **self-hosted OSRM** with a Sri Lanka extract (add it to `docker-compose.yml`). The app currently calls the public OSRM demo server, which is dev-only. Per-leg figures replace the mock `etaMinutes`/`distanceKm` on stops |
+## 8. App changes to make
 
-App side: only `LocationSource` changes — add a `GpsLocationSource` (geolocator
-+ permissions) next to the simulator and a small uploader that batches fixes.
-Map tiles come from OpenFreeMap today; decide whether to self-host before launch.
-
-## 9. Offline & sync
-
-The app has offline *screens* ("Waiting to sync" records, a saved-trip view), but
-today everything lives in memory in the mock repositories — there is **no
-on-device storage or outbox yet**. Wiring this API needs, app-side: a local
-database for the trip cache (e.g. drift/sqflite), a persistent outbox of pending
-actions with retry/backoff, and a real connectivity listener (the online pill is
-currently a long-press toggle). Server contract:
-
-1. Every driver action carries a `clientId` and the **device's** real time
-   (`arrivedAt`, `completedAt`, `recordedAt`), not the server's receive time.
-2. Replays are idempotent (§0). A replay the state machine no longer allows
-   returns `409` with the current state so the app can reconcile.
-3. `GET /trips?updatedSince=<ISO>` returns only trips changed since a
-   timestamp, so reconnecting is cheap.
-4. `GET /trips/:id/records` is the source of truth for `syncState`.
-
-## 10. Backend work list
-
-**New entities** (in `src/database/entities/`, UUID keys unless noted):
-`driver_profiles`, `depots`, `vehicles` (+ daily driver assignment), `trips`,
-`trip_stops`, `trip_orders`, `shortfall_reports`, `route_changes` (+ before/after
-stop snapshots), `delivery_arrivals`, `delivery_proofs`, `delivery_issues`,
-`attachments`, `notifications`, `device_tokens`, `vehicle_locations`.
-
-**New modules** (one folder each under `src/modules/`, matching the existing
-layout): `drivers`, `vehicles`, `trips` (planning + driver actions),
-`deliveries` (proof/issues/records), `notifications` (+ devices),
-`routing`, `locations`.
-
-**Seeds:** new permission rows (§0) in a `…-SeedDomainPermissions` migration,
-written idempotently with `ON CONFLICT DO NOTHING`.
-
-## 11. Build order (smallest path to a real delivery day)
-
-1. **Auth & profile** — `driver_profiles`, driver block on `/auth/me`, driver
-   permissions + seed, a seeded demo driver. App: remove Sign-up, build the
-   Account/Profile screen on `GET/PUT /auth/me` + `PUT /auth/change-password`.
-2. **Trips** — vehicle, trips list/detail, `start`/`arrive`/`complete`, plus the
-   dispatcher endpoints that create and ready a trip.
-3. **Records** — `proof`, `issues`, `records` with image upload.
-4. **Notifications & route updates** — endpoints, `/devices` push, loader
-   `loading/start|complete`.
-5. **Routing & location** — OSRM + `/routing/route`, `/vehicles/:id/locations`,
-   `GpsLocationSource`.
-6. **Sync hardening** — `updatedSince`, idempotency tests, `409` reconciliation.
-
-## 12. App changes once the API is live
-
+- **Login by phone.** Change `AuthRepository.login` and the sign-in form from
+  email to phone. Sign-up needs the OTP step (`/auth/register` then
+  `/auth/verify-otp`).
+- **Vehicle** comes from `user.driver.vehicle`; drop the separate call.
+- **Confirmation codes.** A start-code field before starting a trip, and a
+  delivery-code field when completing a stop, checked on the handset against
+  the hash saved with the trip (§2, "Confirmation codes").
+- **Stop-specific calls.** `markArrived(tripId)` and the `RecordsRepository`
+  calls must take the `stopId` and `planVersion`.
+- **Order ids** are references like `ORD0000012`.
+- **Images are two steps.** Upload with `POST /images`, then send the returned
+  id in the JSON body of the proof, issue or profile update (§3). Proofs and
+  issues are no longer multipart.
 - Remove *Simulate loading complete* (`TripsRepository.simulateLoadingComplete`).
-- Remove the **Sign-up** screen and `AuthRepository.signUp` (no public registration).
-- Mock repositories and `SimulatedLocationSource` stop being the defaults.
-- Stop-level `etaMinutes`/`distanceKm` come from the server, not mock data.
-- `TripsRepository.markArrived(tripId)` and the `RecordsRepository` calls must take
-  the `stopId` (and `planVersion`) because the API is stop-specific; add the local
-  outbox and persistence described in §9.
-- Replace the public OSRM URL in `routing_repository.dart` with `/routing/route`.
+- Route change arrival times become `DateTime` (§4).
+- Mock repositories and `SimulatedLocationSource` stop being the defaults; add a
+  `GpsLocationSource` and a small uploader that batches fixes.
+- Replace the public OSRM URL with `/routing/route`.
 - Add the API base URL as build-time config (`--dart-define=API_BASE_URL=…`).
+
+## 9. Trying it against a local API
+
+1. In `api/.env`, set `DEMO_DRIVER_PASSWORD` and `DEMO_LOADER_PASSWORD` (see
+   `api/.env.example`) and start the API. That seeds a driver on a Peliyagoda
+   vehicle and a loader.
+2. On the web app, as the dispatcher: have orders placed, open **Planning**, run
+   it and publish. If the demo driver's vehicle got no trip, assign the driver
+   to a vehicle that did (Vehicles → Assign driver).
+3. As the loader, call `loading/start` then `loading/complete` on the trip. The
+   response's `dispatchCode` is the start code.
+4. Sign in on the app as the driver: the trip is `ready`. Start it with that
+   code.
+5. Outside production, the `start` response also gives each stop's delivery
+   code as `deliveryCode.code`, so a stop can be completed without the SMS.
+
+`api/docs/api-test/trips/` walks the same steps request by request.

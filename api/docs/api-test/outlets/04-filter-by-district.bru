@@ -1,0 +1,22 @@
+meta {
+  name: 04-filter-by-district
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseURL}}/api/outlets?district=Colombo&limit=50
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.meta.total: eq 24
+  res.body.data.items.length: eq 24
+  res.body.data.items[0].district.name: eq Colombo
+}

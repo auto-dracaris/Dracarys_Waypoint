@@ -1,0 +1,260 @@
+@reference "../index.css";
+
+.publication-print-button {
+  min-height: var(--wp-space-5xl);
+  padding-block: var(--wp-space-md);
+  @apply type-text-md-semibold;
+}
+.publication-success {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-xl);
+  padding: var(--wp-space-3xl);
+  background: var(--wp-lime-50);
+  border: 1px solid var(--wp-lime-500);
+  border-radius: var(--wp-radius-xl);
+  color: var(--wp-lime-800);
+}
+.publication-success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--wp-space-6xl);
+  height: var(--wp-space-6xl);
+  background: var(--wp-lime-100);
+  border-radius: var(--wp-radius-4xl);
+  flex-shrink: 0;
+}
+.publication-success-icon svg {
+  width: var(--wp-space-3xl);
+  height: var(--wp-space-3xl);
+}
+.publication-success > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+  min-width: 0;
+}
+.publication-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.publication-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--wp-spacing-96);
+  gap: var(--wp-space-3xl);
+  align-items: start;
+}
+.publication-team {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--wp-space-2xl);
+  padding: var(--wp-space-3xl);
+  border: 1px solid var(--wp-neutral-300);
+  border-radius: var(--wp-radius-xl);
+}
+.publication-team > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--wp-space-md);
+}
+.publication-team h2:focus,
+.publication-manifest h2:focus {
+  outline: 2px solid var(--wp-yellow-500);
+  outline-offset: var(--wp-space-xxs);
+}
+.publication-team-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--wp-neutral-200);
+  border-radius: var(--wp-radius-md);
+}
+.publication-team-scroll:focus-visible {
+  outline: 2px solid var(--wp-yellow-500);
+  outline-offset: var(--wp-space-xxs);
+}
+.publication-team-table {
+  width: 100%;
+  min-width: var(--wp-spacing-192);
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.publication-team-table col:nth-child(1) {
+  width: var(--wp-spacing-48);
+}
+.publication-team-table col:nth-child(2) {
+  width: var(--wp-space-11xl);
+}
+.publication-team-table col:nth-child(4) {
+  width: var(--wp-spacing-56);
+}
+.publication-team-table th,
+.publication-team-table td {
+  padding: var(--wp-space-xl);
+  text-align: left;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+.publication-team-table thead {
+  color: var(--wp-text-secondary);
+  background: var(--wp-neutral-100);
+}
+.publication-team-table thead th {
+  padding: var(--wp-space-lg);
+}
+.publication-team-table tbody tr + tr {
+  border-top: 1px solid var(--wp-neutral-200);
+}
+.publication-notification-status {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+  flex-wrap: wrap;
+}
+.publication-resend {
+  cursor: pointer;
+  border-radius: var(--wp-radius-xs);
+}
+.publication-resend:hover {
+  text-decoration: underline;
+}
+.publication-sidebar,
+.publication-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xl);
+  min-width: 0;
+}
+.publication-lock {
+  background: var(--wp-neutral-50);
+}
+.publication-lock h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-md);
+}
+.publication-lock h2 svg {
+  width: var(--wp-space-2xl);
+  height: var(--wp-space-2xl);
+  flex-shrink: 0;
+  color: var(--wp-text-secondary);
+}
+.publication-actions {
+  gap: var(--wp-space-lg);
+}
+.publication-actions .wp-button {
+  width: 100%;
+  min-height: var(--wp-space-5xl);
+  padding-block: var(--wp-space-md);
+  @apply type-text-md-semibold;
+}
+.publication-manifest {
+  display: none;
+  flex-direction: column;
+  gap: var(--wp-space-xl);
+  min-width: 0;
+  padding: var(--wp-space-3xl);
+  border: 1px solid var(--wp-neutral-200);
+  border-radius: var(--wp-radius-xl);
+}
+.publication-manifest--visible {
+  display: flex;
+}
+.publication-manifest > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--wp-space-md);
+}
+.publication-manifest-deferred {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-md);
+}
+.publication-print-only {
+  display: none;
+}
+.publication-error {
+  padding: var(--wp-space-lg);
+  background: var(--wp-red-50);
+  color: var(--wp-red-700);
+  border-radius: var(--wp-radius-md);
+}
+@media (max-width: 1535px) {
+  .publication-workspace {
+    grid-template-columns: minmax(0, 1fr) var(--wp-spacing-80);
+  }
+}
+@media (max-width: 1199px) {
+  .publication-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .publication-sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+@media (max-width: 767px) {
+  .publication-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .publication-sidebar {
+    display: flex;
+  }
+  .publication-success,
+  .publication-team,
+  .publication-manifest {
+    padding: var(--wp-space-lg);
+  }
+  .publication-success {
+    align-items: flex-start;
+  }
+  .publication-print-button {
+    white-space: normal;
+  }
+}
+@media print {
+  .overview-shell:has(.publication-canvas) .sidebar,
+  .overview-shell:has(.publication-canvas) .sidebar-backdrop,
+  .overview-shell:has(.publication-canvas) .stage-notice,
+  .publication-screen {
+    display: none !important;
+  }
+  .overview-shell:has(.publication-canvas),
+  .overview-shell:has(.publication-canvas) .overview-main {
+    display: block;
+    padding: var(--wp-space-none);
+  }
+  .publication-canvas {
+    display: block;
+    padding: var(--wp-space-none);
+    border: 0;
+  }
+  .publication-manifest,
+  .publication-print-only {
+    display: block;
+  }
+  .publication-manifest {
+    padding: var(--wp-space-none);
+    border: 0;
+  }
+  .publication-manifest > * + * {
+    margin-top: var(--wp-space-xl);
+  }
+  .publication-manifest .plan-route {
+    break-inside: avoid;
+  }
+  .publication-manifest .plan-schedule-scroll {
+    overflow: visible;
+  }
+  .publication-manifest .plan-schedule {
+    min-width: 0;
+    table-layout: auto;
+  }
+  .publication-manifest .plan-schedule col {
+    width: auto;
+  }
+}

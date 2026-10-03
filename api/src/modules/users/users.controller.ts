@@ -5,36 +5,31 @@ import {
   Param,
   ParseIntPipe,
   Patch,
-  Post,
   Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { UserRole } from '../../common/enums/user-role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../../common/guards/permissions.guard';
-import { PERMISSIONS } from '../../common/constants/permissions.constant';
-import { Permissions } from '../auth/decorators/permissions.decorator';
-import { CreateUserDto } from './dto/create-user.dto';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { PatchUserRoleDto } from './dto/patch-user-role.dto';
 import { PatchUserStatusDto } from './dto/patch-user-status.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserListQueryDto } from './dto/user-list-query.dto';
 import { UsersService } from './users.service';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
-@Permissions(PERMISSIONS.USERS.MANAGE)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.DISPATCHER)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto): Promise<ApiResponseDto> {
-    return this.usersService.create(createUserDto);
-  }
-
   @Get()
-  findAll(@Query() query: PaginationQueryDto): Promise<ApiResponseDto> {
-    return this.usersService.findAll(query.page, query.limit);
+  findAll(@Query() query: UserListQueryDto): Promise<ApiResponseDto> {
+    return this.usersService.findAllFiltered(query);
   }
 
   @Get(':id')
@@ -46,15 +41,26 @@ export class UsersController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
+    @CurrentUser('userId') actorId: number,
   ): Promise<ApiResponseDto> {
-    return this.usersService.update(id, updateUserDto);
+    return this.usersService.updateProfile(id, updateUserDto, actorId);
+  }
+
+  @Patch(':id/role')
+  patchRole(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() patchUserRoleDto: PatchUserRoleDto,
+    @CurrentUser('userId') actorId: number,
+  ): Promise<ApiResponseDto> {
+    return this.usersService.patchRole(id, patchUserRoleDto, actorId);
   }
 
   @Patch(':id/status')
   patchStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() patchUserStatusDto: PatchUserStatusDto,
+    @CurrentUser('userId') actorId: number,
   ): Promise<ApiResponseDto> {
-    return this.usersService.patchStatus(id, patchUserStatusDto);
+    return this.usersService.patchStatus(id, patchUserStatusDto, actorId);
   }
 }

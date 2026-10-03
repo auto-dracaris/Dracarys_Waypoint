@@ -1,0 +1,28 @@
+info:
+  name: List Vehicles
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/vehicles?depot=Peliyagoda&date=2026-10-03&limit=200"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  The whole fleet for the Vehicles page in one call. Dispatcher only.
+
+  Query (all optional):
+  - `depot`: Peliyagoda | Kandy
+  - `date`: YYYY-MM-DD, the delivery day trips are counted for. Defaults to today.
+  - `type`: truck | van
+  - `isRefrigerated`: true | false
+  - `uniqueId`: the dataset identifier, e.g. VEH021
+  - `page`, `limit` (max 200)
+
+  Each row carries `status` (available | in_workshop | breakdown) and `plannedTrips`, its number of non-cancelled trips on `date` (shown as "n of 2"; above zero means Allocated). The tabs, search and sorting are computed in the browser from this list; the status cards come from Vehicle Summary.

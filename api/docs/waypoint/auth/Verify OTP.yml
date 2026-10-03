@@ -1,0 +1,27 @@
+info:
+  name: Verify OTP
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/verify-otp"
+  body:
+    type: json
+    data: |-
+      {
+        "phone": "0711120401",
+        "otp": "689451",
+        "otpId": "2"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Verify the 6-digit OTP sent after Register / Resend OTP, activating the account. Public.
+
+  `otpId` comes from the Register or Resend OTP response.
