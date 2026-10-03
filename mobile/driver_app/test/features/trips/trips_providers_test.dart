@@ -35,7 +35,7 @@ void main() {
 
     await container
         .read(authControllerProvider.notifier)
-        .login(email: 'a@b.lk', password: 'secret1');
+        .login(phone: '0770000002', password: 'secret1');
     await container.read(tripsProvider.future);
     expect(trips.calls, 2);
   });

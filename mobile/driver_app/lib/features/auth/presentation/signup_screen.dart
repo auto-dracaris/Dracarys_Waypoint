@@ -16,15 +16,17 @@ class SignUpScreen extends ConsumerStatefulWidget {
 }
 
 class _SignUpScreenState extends AuthFormState<SignUpScreen> {
-  final _name = TextEditingController();
-  final _email = TextEditingController();
+  final _firstName = TextEditingController();
+  final _lastName = TextEditingController();
+  final _phone = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
 
   @override
   void dispose() {
-    _name.dispose();
-    _email.dispose();
+    _firstName.dispose();
+    _lastName.dispose();
+    _phone.dispose();
     _password.dispose();
     _confirm.dispose();
     super.dispose();
@@ -41,19 +43,27 @@ class _SignUpScreenState extends AuthFormState<SignUpScreen> {
           child: Column(
             children: [
               TextFormField(
-                key: const Key('name'),
-                controller: _name,
+                key: const Key('firstName'),
+                controller: _firstName,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Full name'),
+                decoration: const InputDecoration(labelText: 'First name'),
                 validator: validateName,
               ),
               const SizedBox(height: 16),
               TextFormField(
-                key: const Key('email'),
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Email'),
-                validator: validateEmail,
+                key: const Key('lastName'),
+                controller: _lastName,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Last name'),
+                validator: validateName,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                key: const Key('phone'),
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Phone number'),
+                validator: validatePhone,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -61,7 +71,7 @@ class _SignUpScreenState extends AuthFormState<SignUpScreen> {
                 controller: _password,
                 obscureText: true,
                 decoration: const InputDecoration(labelText: 'Password'),
-                validator: validatePassword,
+                validator: validateNewPassword,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -84,8 +94,9 @@ class _SignUpScreenState extends AuthFormState<SignUpScreen> {
           onPressed: () => submit(() => ref
               .read(authControllerProvider.notifier)
               .signUp(
-                  name: _name.text.trim(),
-                  email: _email.text.trim(),
+                  firstName: _firstName.text.trim(),
+                  lastName: _lastName.text.trim(),
+                  phone: _phone.text.trim(),
                   password: _password.text)),
         ),
         const SizedBox(height: 12),

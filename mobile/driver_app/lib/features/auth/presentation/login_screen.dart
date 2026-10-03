@@ -16,12 +16,12 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends AuthFormState<LoginScreen> {
-  final _email = TextEditingController();
+  final _phone = TextEditingController();
   final _password = TextEditingController();
 
   @override
   void dispose() {
-    _email.dispose();
+    _phone.dispose();
     _password.dispose();
     super.dispose();
   }
@@ -37,11 +37,11 @@ class _LoginScreenState extends AuthFormState<LoginScreen> {
           child: Column(
             children: [
               TextFormField(
-                key: const Key('email'),
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Email'),
-                validator: validateEmail,
+                key: const Key('phone'),
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Phone number'),
+                validator: validatePhone,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -62,7 +62,7 @@ class _LoginScreenState extends AuthFormState<LoginScreen> {
           isLoading: busy,
           onPressed: () => submit(() => ref
               .read(authControllerProvider.notifier)
-              .login(email: _email.text.trim(), password: _password.text)),
+              .login(phone: _phone.text.trim(), password: _password.text)),
         ),
         const SizedBox(height: 12),
         TextButton(

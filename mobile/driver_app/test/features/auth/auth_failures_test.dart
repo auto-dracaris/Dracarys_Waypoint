@@ -13,14 +13,40 @@ class BrokenAuthRepository implements AuthRepository {
   Future<Driver?> currentDriver() async => throw StateError('offline');
 
   @override
-  Future<Driver> login({required String email, required String password}) async =>
+  Future<Driver> login(
+          {required String phone, required String password}) async =>
       throw StateError('offline');
 
   @override
-  Future<Driver> signUp({
-    required String name,
-    required String email,
+  Future<OtpChallenge> signUp({
+    required String firstName,
+    required String lastName,
+    required String phone,
     required String password,
+  }) async =>
+      throw StateError('offline');
+
+  @override
+  Future<void> verifyOtp({
+    required String phone,
+    required String otp,
+    required int otpId,
+  }) async =>
+      throw StateError('offline');
+
+  @override
+  Future<void> resendOtp({required String phone}) async =>
+      throw StateError('offline');
+
+  @override
+  Future<void> forgotPassword({required String phone}) async =>
+      throw StateError('offline');
+
+  @override
+  Future<void> resetPassword({
+    required String phone,
+    required String otp,
+    required String newPassword,
   }) async =>
       throw StateError('offline');
 
@@ -48,7 +74,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('email')), 'a@b.lk');
+    await tester.enterText(find.byKey(const Key('phone')), '0770000002');
     await tester.enterText(find.byKey(const Key('password')), 'secret1');
     await tester.tap(find.byKey(const Key('login-submit')));
     await tester.pumpAndSettle();
