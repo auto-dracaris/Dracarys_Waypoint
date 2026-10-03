@@ -51,8 +51,6 @@ jobs:
           cache: npm
           cache-dependency-path: api/package-lock.json
 
-      - run: npm run build
-
   deploy:
     name: Deploy to server
     needs: [frontend, backend]
@@ -81,6 +79,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'EOF'
             set -e
             cd /opt/waypoint
+            git fetch
             git pull --ff-only origin main
             cd api
             npm install
