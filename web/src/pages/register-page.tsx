@@ -1,52 +1,12 @@
 import { useState } from 'react'
-import { useForm, Controller, type Control, type FieldValues, type Path } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
 import { otpSchema, registerSchema } from '@/features/store-manager/schema'
 import type { OtpFormValues, RegisterFormValues } from '@/features/store-manager/types'
 import { register, resendOtp, verifyOtp } from '@/features/auth/api'
-import { Field, FieldLabel, FieldError } from '@/components/ui/shadcn/field'
-import { Input } from '@/components/ui/shadcn/input'
-import { Button } from '@/components/ui/shadcn/button'
+import { RootError, SubmitButton, TextField } from '@/features/auth/components/auth-fields'
 import { Logo } from '@/features/store-manager/components/logo'
-
-function TextField<T extends FieldValues>({
-  control,
-  name,
-  label,
-  ...inputProps
-}: {
-  control: Control<T>
-  name: Path<T>
-  label: string
-} & React.ComponentProps<typeof Input>) {
-  return (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field, fieldState }) => (
-        <Field data-invalid={fieldState.invalid} className="w-full space-y-1">
-          <FieldLabel className="text-slate-600 text-sm font-medium flex gap-1">
-            {label} <span className="text-red-500">*</span>
-          </FieldLabel>
-          <Input {...field} {...inputProps} aria-invalid={fieldState.invalid} className="h-11 px-3 bg-neutral-50 rounded-lg border-neutral-300 text-slate-900 text-sm" />
-          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-        </Field>
-      )}
-    />
-  )
-}
-
-function RootError({ message }: { message?: string }) {
-  return message ? (
-    <p role="alert" className="text-red-600 text-sm">
-      {message}
-    </p>
-  ) : null
-}
-
-const submitClass = 'w-full h-10 bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold text-base rounded-sm flex items-center justify-center gap-2 shadow-none'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -110,18 +70,14 @@ export default function RegisterPage() {
             <TextField control={registerForm.control} name="phone" label="Phone Number" type="tel" placeholder="07XXXXXXXX" />
             <TextField control={registerForm.control} name="password" label="Password" type="password" placeholder="••••••••••••" />
             <RootError message={registerForm.formState.errors.root?.message} />
-            <Button type="submit" disabled={registerForm.formState.isSubmitting} className={submitClass}>
-              Create account <ArrowRight className="h-5 w-5" />
-            </Button>
+            <SubmitButton disabled={registerForm.formState.isSubmitting}>Create account</SubmitButton>
           </form>
         ) : (
           <form onSubmit={otpForm.handleSubmit(onVerify)} className="w-full flex flex-col gap-5">
             <TextField control={otpForm.control} name="otp" label="Verification Code" inputMode="numeric" maxLength={6} autoComplete="one-time-code" placeholder="123456" />
             <RootError message={otpForm.formState.errors.root?.message} />
             {notice && <p className="text-green-700 text-sm">{notice}</p>}
-            <Button type="submit" disabled={otpForm.formState.isSubmitting} className={submitClass}>
-              Verify <ArrowRight className="h-5 w-5" />
-            </Button>
+            <SubmitButton disabled={otpForm.formState.isSubmitting}>Verify</SubmitButton>
             <button type="button" onClick={onResend} className="text-blue-600 text-sm font-medium hover:underline">
               Resend code
             </button>

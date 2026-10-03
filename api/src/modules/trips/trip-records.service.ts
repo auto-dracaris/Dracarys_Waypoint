@@ -4,33 +4,19 @@ import {
   HttpStatus,
   Injectable,
   NotFoundException,
-  UnprocessableEntityException,
 } from '@nestjs/common';
+import { ISSUE_TITLES } from '../../common/constants/issue.constant';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { ImagePurpose } from '../../common/enums/image-purpose.enum';
-import { IssueType } from '../../common/enums/issue-type.enum';
-import {
-  orderIdFromReference,
-  orderReference,
-} from '../../common/utils/order.util';
+import { orderReference } from '../../common/utils/order.util';
 import { DeliveryProof } from '../../database/entities/delivery-proof.entity';
-import { Issue } from '../../database/entities/issue.entity';
 import { Trip } from '../../database/entities/trip.entity';
 import { ImagesService } from '../images/images.service';
-import { DeliveryIssueDto, DeliveryProofDto } from './dto/record.dto';
+import { DeliveryProofDto } from './dto/record.dto';
 import { TripRecordsRepository } from './repositories/trip-records.repository';
 import { TripsService, outletName, stopsOf } from './trips.service';
-
-const ISSUE_TITLES: Partial<Record<IssueType, string>> = {
-  [IssueType.DAMAGED]: 'Damaged goods',
-  [IssueType.TEMPERATURE_BREACH]: 'Temperature breach',
-  [IssueType.SHORT_DELIVERY]: 'Short delivery',
-  [IssueType.WRONG_ITEMS]: 'Wrong items',
-  [IssueType.LOAD_SHORTFALL]: 'Loaded short',
-  [IssueType.OTHER]: 'Issue',
-};
 
 @Injectable()
 export class TripRecordsService {
@@ -107,70 +93,6 @@ export class TripRecordsService {
     );
   }
 
-  /** A problem with one order at a stop, for the dispatcher to review. */
-  async addIssue(
-    tripId: string,
-    stopId: number,
-    orderReferenceParam: string,
-    dto: DeliveryIssueDto,
-    user: AuthenticatedUser,
-  ): Promise<ApiResponseDto> {
-    const trip = await this.tripsService.loadFor(tripId, user);
-    const stop = this.stopOrThrow(trip, stopId);
-    const orderId = orderIdFromReference(orderReferenceParam);
-    const row = stop.rows.find((candidate) => candidate.orderId === orderId);
-    if (!row) {
-      throw new NotFoundException('That order is not at this stop');
-    }
-
-    const existing = await this.recordsRepository.findIssueById(dto.clientId);
-    if (existing) {
-      this.assertSameTrip(existing.tripId, tripId);
-      return new ApiResponseDto(
-        HttpStatus.OK,
-        'Issue already saved',
-        this.toIssueView(existing),
-      );
-    }
-    if (dto.affectedCases > row.order!.orderUnits) {
-      throw new UnprocessableEntityException(
-        `${orderReference(row.orderId)} has only ${row.order!.orderUnits} cases`,
-      );
-    }
-
-    const photo = dto.photoImageId
-      ? await this.imagesService.findForUse(
-          dto.photoImageId,
-          ImagePurpose.ISSUE_PHOTO,
-          user.userId,
-        )
-      : null;
-
-    await this.recordsRepository.saveIssue({
-      id: dto.clientId,
-      type: dto.type,
-      reportedById: user.userId,
-      tripId,
-      tripStopId: row.id,
-      orderId: row.orderId,
-      vehicleId: trip.vehicleId,
-      affectedUnits: dto.affectedCases,
-      description: dto.note?.trim() || ISSUE_TITLES[dto.type]!,
-      photoImageId: photo?.id ?? null,
-      recordedAt: new Date(),
-      createdById: user.userId,
-      updatedById: user.userId,
-    });
-
-    return new ApiResponseDto(
-      HttpStatus.CREATED,
-      'Issue reported',
-      this.toIssueView(
-        (await this.recordsRepository.findIssueById(dto.clientId))!,
-      ),
-    );
-  }
-
   /** Everything recorded on the trip so far, newest first. */
   async findRecords(
     tripId: string,
@@ -198,7 +120,7 @@ export class TripRecordsService {
       ...issues.map((issue) => ({
         id: issue.id,
         kind: 'issue',
-        title: `${ISSUE_TITLES[issue.type] ?? 'Issue'}${issue.orderId ? ` · ${orderReference(issue.orderId)}` : ''}`,
+        title: `${ISSUE_TITLES[issue.type]}${issue.orderId ? ` · ${orderReference(issue.orderId)}` : ''}`,
         savedAt: issue.recordedAt ?? issue.createdAt,
       })),
       ...proofs.map((proof) => ({
@@ -231,11 +153,6 @@ export class TripRecordsService {
       signatureUrl: signatureImage?.url ?? null,
       photoUrl: photoImage?.url ?? null,
     };
-  }
-
-  private toIssueView(issue: Issue) {
-    const { photoImage, ...fields } = issue;
-    return { ...fields, photoUrl: photoImage?.url ?? null };
   }
 
   private stopOrThrow(trip: Trip, stopId: number) {
