@@ -65,6 +65,7 @@ export function toDeliveryDetails({ order, trip, stop, route }: DeliveryTracking
   const depotPosition = positionOf(trip.depot)
   return {
     vehicleId: trip.vehicle.uniqueId,
+    vehicleKind: trip.vehicle.type,
     vehicleType: trip.vehicle.isRefrigerated ? `Refrigerated ${trip.vehicle.type}` : capitalise(trip.vehicle.type),
     status: status.label,
     statusVariant: bannerVariants[status.variant],
