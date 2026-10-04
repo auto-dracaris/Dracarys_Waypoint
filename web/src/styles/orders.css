@@ -117,6 +117,19 @@
   flex-direction: column;
   gap: var(--wp-space-md);
 }
+.order-prediction-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-lg);
+  min-width: 0;
+  padding: var(--wp-space-xl);
+  border: 1px solid var(--wp-warm-neutral-200);
+  border-radius: var(--wp-radius-xl);
+  background: var(--wp-neutral-50);
+  overflow-wrap: anywhere;
+}
+.order-prediction-preview h3 { color: var(--wp-text-primary); }
+.order-prediction-preview p { color: var(--wp-text-tertiary); }
 .order-summary-heading {
   display: flex;
   align-items: baseline;
