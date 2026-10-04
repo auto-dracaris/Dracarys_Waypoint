@@ -118,6 +118,18 @@ class ModelClient:
         # Gemini's response_schema endpoint rejects additionalProperties; retain the
         # strict extra-field check locally when validating the returned JSON.
         schema.pop("additionalProperties", None)
+        facts = {source.id for source in sources if not source.id.startswith("policy:")}
+        policies = {source.id for source in sources if source.id.startswith("policy:")}
+        # Document-only retrieval cannot establish the existence/absence of live records.
+        for text_field, ids_field, identifiers in (
+            ("live_facts", "fact_source_ids", facts),
+            ("policy_guidance", "policy_source_ids", policies),
+        ):
+            if identifiers:
+                schema["properties"][ids_field]["items"]["enum"] = sorted(identifiers)
+            else:
+                schema["properties"][text_field]["enum"] = [""]
+                schema["properties"][ids_field]["maxItems"] = 0
         client = genai.Client(api_key=settings.gemini_api_key.get_secret_value())
         async with client.aio as google:
             result = await google.models.generate_content(
@@ -149,6 +161,12 @@ class ModelClient:
                         "the latest/all records. Never claim to have performed a write or sent a "
                         "message. No evidence for a section means leave it empty; explain missing "
                         "information when relevant. Do not invent policies or cite unavailable IDs."
+                        " With only policy sources, live_facts must be empty and fact_source_ids "
+                        "must be []. Do not claim there are no orders or trips merely because "
+                        "no live records were supplied. If documents do not cover the question, "
+                        "leave policy_guidance empty and explain the gap in missing_information. "
+                        "Do not invent contacts, escalation roles or procedures absent "
+                        "from sources."
                         " If documents disagree and no explicit superseding authority is supplied, "
                         "state the conflict and cite both; do not choose a rule or blend them. "
                         "Identify challenge/reference material as such; indexing approval does not "
@@ -161,8 +179,6 @@ class ModelClient:
                 ),
             )
         answer = CombinedAnswer.model_validate_json(result.text or "{}")
-        facts = {source.id for source in sources if not source.id.startswith("policy:")}
-        policies = {source.id for source in sources if source.id.startswith("policy:")}
         if answer.live_facts and (
             not answer.fact_source_ids or not set(answer.fact_source_ids) <= facts
         ):
@@ -171,7 +187,11 @@ class ModelClient:
             not answer.policy_source_ids or not set(answer.policy_source_ids) <= policies
         ):
             return None
-        if not answer.live_facts and not answer.policy_guidance:
+        if (
+            not answer.live_facts.strip()
+            and not answer.policy_guidance.strip()
+            and not answer.missing_information.strip()
+        ):
             return None
         sections = []
         if answer.live_facts:
@@ -180,7 +200,7 @@ class ModelClient:
             sections.append(
                 f"Guidance\n{answer.policy_guidance} [{', '.join(answer.policy_source_ids)}]"
             )
-        if answer.missing_information:
+        if answer.missing_information.strip():
             sections.append(answer.missing_information)
         return "\n\n".join(sections)
 
