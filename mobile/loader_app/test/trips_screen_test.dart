@@ -43,6 +43,16 @@ http.Response response(
 );
 
 void main() {
+  test('today follows Colombo midnight', () {
+    expect(
+      TripService.todayServiceDate(now: DateTime.parse('2026-10-04T18:29:00Z')),
+      '2026-10-04',
+    );
+    expect(
+      TripService.todayServiceDate(now: DateTime.parse('2026-10-04T18:30:00Z')),
+      '2026-10-05',
+    );
+  });
   test('tomorrow follows Colombo midnight and month boundaries', () {
     expect(
       TripService.tomorrowServiceDate(
@@ -100,7 +110,7 @@ void main() {
           return http.Response(jsonEncode({'data': trip('selected')}), 200);
         }
         expect(request.url.queryParameters.containsKey('status'), isFalse);
-        expect(request.url.queryParameters.containsKey('date'), isFalse);
+        expect(request.url.queryParameters['date'], TripService.todayServiceDate());
         return response([
           trip('selected'),
           {
@@ -138,7 +148,7 @@ void main() {
     addTearDown(service.dispose);
     await tester.pumpWidget(MaterialApp(home: TripsScreen(service: service)));
     await tester.pumpAndSettle();
-    expect(find.text('No trips to load.'), findsOneWidget);
+    expect(find.text('No trips to load today.'), findsOneWidget);
     await tester.drag(find.byType(ListView), const Offset(0, 350));
     await tester.pumpAndSettle();
     expect(calls, 2);
@@ -167,7 +177,7 @@ void main() {
     expect(find.text('Trips unavailable'), findsOneWidget);
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
-    expect(find.text('No trips to load.'), findsOneWidget);
+    expect(find.text('No trips to load today.'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 }

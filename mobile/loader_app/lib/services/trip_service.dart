@@ -58,6 +58,14 @@ class TripService {
     return TripListResult(trips: trips, counts: counts);
   }
 
+  static String todayServiceDate({DateTime? now}) {
+    final colombo = (now ?? DateTime.now()).toUtc().add(
+      const Duration(hours: 5, minutes: 30),
+    );
+    final today = DateTime.utc(colombo.year, colombo.month, colombo.day);
+    return today.toIso8601String().substring(0, 10);
+  }
+
   static String tomorrowServiceDate({DateTime? now}) {
     final colombo = (now ?? DateTime.now()).toUtc().add(
       const Duration(hours: 5, minutes: 30),

@@ -60,7 +60,10 @@ class _TripsScreenState extends State<TripsScreen> with WidgetsBindingObserver {
       _error = null;
     });
     try {
-      final result = await _service.getTrips(status: null);
+      final result = await _service.getTrips(
+        status: null,
+        date: TripService.todayServiceDate(),
+      );
       if (!mounted || request != _request) return;
       setState(() {
         _trips = result.trips
