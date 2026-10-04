@@ -237,14 +237,28 @@ async def run_business(
                 raise
             except TimeoutError:
                 generation_timed_out = True
-            except Exception:
-                logging.getLogger("waypoint_ai.agent").warning("combined_answer_unavailable")
-        text = explanation or "\n\n".join(
-            f"{source.title}\n{source.text} [{source.id}]"
-            if source.id.startswith("policy:")
-            else f"{source.text} [{source.id}]"
-            for source in state["sources"]
-        )
+            except Exception as exc:
+                logging.getLogger("waypoint_ai.agent").warning(
+                    "combined_answer_unavailable", extra={"error_type": type(exc).__name__}
+                )
+        if explanation:
+            text = explanation
+        else:
+            # Keep checked business facts, but never paste policy chunks as an answer.
+            # Full excerpts remain available in source cards when synthesis is unavailable.
+            sections = [
+                f"{source.text} [{source.id}]"
+                for source in state["sources"]
+                if not source.id.startswith("policy:")
+            ]
+            policies = [source for source in state["sources"] if source.id.startswith("policy:")]
+            if policies:
+                sections.append(
+                    "I found document excerpts, but could not produce a supported summary. "
+                    "Please review the attached sources or try again. "
+                    f"[{', '.join(source.id for source in policies)}]"
+                )
+            text = "\n\n".join(sections)
         if state["knowledge_unavailable"]:
             text += "\n\nSome guidance could not be checked. Please review the available sources."
         elif state["knowledge_empty"]:
