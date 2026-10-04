@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/shadcn/dialog'
@@ -8,13 +8,11 @@ import { Field, FieldLabel, FieldError } from '@/components/ui/shadcn/field'
 import { ChevronDown } from 'lucide-react'
 import { reportIssueSchema } from '@/features/store-manager/schema'
 import type { ReportIssueFormValues } from '@/features/store-manager/types'
-
-// What a store manager can report on receipt, and what the affected cases are called.
-const issueTypes: Record<ReportIssueFormValues['issueType'], { label: string; cases: string }> = {
-  receipt_damage: { label: 'Damaged goods', cases: 'Damaged cases' },
-  receipt_shortfall: { label: 'Missing goods', cases: 'Missing cases' },
-  other: { label: 'Wrong items or something else', cases: 'Affected cases' },
-}
+import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded'
+import { IconButton } from '@/components/ui/icon-button'
+import { useUser } from '@/features/auth/user-context'
+import { draftDeliveryIssue, type IssueDraftFacts } from '@/features/assistant/issue-drafts'
+import '@/features/assistant/draft-notes.css'
 
 interface ReportIssueDialogProps {
   open: boolean
@@ -29,12 +27,18 @@ interface ReportIssueDialogProps {
 }
 
 export function ReportIssueDialog({ open, onOpenChange, deliveryId, outletLabel, totalOrdered, deliveredUnits, onSubmitIssue }: ReportIssueDialogProps) {
+  const { accessToken } = useUser()
   const [submitError, setSubmitError] = useState('')
+  const draftRequest = useRef<AbortController | null>(null)
+  const notesInput = useRef<HTMLTextAreaElement | null>(null)
+  const [drafting, setDrafting] = useState(false)
+  const [draftMessage, setDraftMessage] = useState('')
+  const [draftError, setDraftError] = useState('')
   // 2. Initialize Form
   const form = useForm<ReportIssueFormValues>({
     resolver: zodResolver(reportIssueSchema),
     defaultValues: {
-      issueType: 'receipt_damage',
+      issueType: 'Damaged goods',
       acceptedCases: deliveredUnits,
       damagedCases: 0,
       notes: '',
@@ -46,26 +50,74 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, outletLabel,
   useEffect(() => {
     if (open) {
       form.reset({
-        issueType: 'receipt_damage',
+        issueType: 'Damaged goods',
         acceptedCases: deliveredUnits,
         damagedCases: 0,
         notes: '',
       })
     }
   }, [open, deliveredUnits, form])
+  useEffect(() => () => { draftRequest.current?.abort() }, [open, deliveryId, totalOrdered, accessToken])
 
-  // Watch values for dynamic UI updates
-  const issueType = form.watch('issueType')
-  const accepted = form.watch('acceptedCases') || 0
-  const damaged = form.watch('damagedCases') || 0
-  const totalCalculated = accepted + damaged
-  const casesLabel = issueTypes[issueType]?.cases ?? 'Affected cases'
-
-  // A closed dialog forgets the last failed attempt.
-  const changeOpen = (next: boolean) => {
+  function changeOpen(next: boolean) {
+    draftRequest.current?.abort(); draftRequest.current = null
+    setDrafting(false); setDraftMessage(''); setDraftError('')
+    // A closed dialog forgets the last failed attempt.
     if (!next) setSubmitError('')
     onOpenChange(next)
   }
+
+  async function generateDraft() {
+    if (draftRequest.current || !accessToken) return
+    setDraftMessage(''); setDraftError('')
+    const values = form.getValues()
+    const snapshot = JSON.stringify(values)
+    const counted = values.acceptedCases + values.damagedCases
+    if (!Number.isInteger(values.acceptedCases) || !Number.isInteger(values.damagedCases)
+      || values.acceptedCases < 0 || values.damagedCases < 0 || counted > totalOrdered) {
+      setDraftError('Check the case quantities before drafting.'); return
+    }
+    if (values.issueType === 'Damaged goods' && (values.damagedCases === 0 || counted !== totalOrdered)) {
+      setDraftError('Enter the damaged cases and check the total before drafting.'); return
+    }
+    if (values.issueType === 'Missing goods' && counted === totalOrdered) {
+      setDraftError('The quantities do not show any missing cases. Please check them.'); return
+    }
+    if (!['Damaged goods', 'Missing goods', 'Wrong items'].includes(values.issueType)) {
+      setDraftError('Select an issue type before drafting.'); return
+    }
+    if (values.issueType === 'Wrong items' && !values.notes?.trim()) {
+      setDraftError('Add a short note about which items were wrong first.'); return
+    }
+    const controller = new AbortController()
+    draftRequest.current = controller; setDrafting(true)
+    try {
+      const result = await draftDeliveryIssue(accessToken, {
+        delivery_reference: deliveryId, issue_type: values.issueType as IssueDraftFacts['issue_type'],
+        ordered_cases: totalOrdered, accepted_cases: values.acceptedCases,
+        damaged_cases: values.damagedCases, notes: values.notes ?? '',
+      }, controller.signal)
+      if (draftRequest.current !== controller || controller.signal.aborted) return
+      if (JSON.stringify(form.getValues()) !== snapshot) {
+        setDraftMessage('Your details changed while drafting. Click the sparkle again for an updated draft.'); return
+      }
+      if (result.origin === 'form' && values.notes?.trim()) {
+        setDraftMessage('AI drafting was unavailable. Your existing notes were kept.'); return
+      }
+      form.setValue('notes', result.draft, { shouldDirty: true, shouldValidate: true })
+      setDraftMessage(result.origin === 'ai' ? 'AI draft ready. Review and edit it before submitting.' : 'Draft prepared from your quantities. Review it before submitting.')
+      notesInput.current?.focus()
+    } catch (error) {
+      if (draftRequest.current === controller && !controller.signal.aborted) setDraftError(error instanceof Error ? error.message : 'Could not draft your note. Please try again.')
+    } finally {
+      if (draftRequest.current === controller) { draftRequest.current = null; setDrafting(false) }
+    }
+  }
+
+  // Watch values for dynamic UI updates
+  const accepted = form.watch('acceptedCases') || 0
+  const damaged = form.watch('damagedCases') || 0
+  const totalCalculated = accepted + damaged
 
   const handleSubmit = async (data: ReportIssueFormValues) => {
     setSubmitError('')
@@ -118,11 +170,9 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, outletLabel,
                         {...field}
                         className="w-full h-11 px-3 pr-8 rounded-lg outline outline-1 outline-offset-[-1px] outline-neutral-300 text-stone-900 text-sm font-sans appearance-none bg-neutral-50 focus:outline-yellow-400"
                       >
-                        {Object.entries(issueTypes).map(([value, { label }]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
+                        <option value="Damaged goods">Damaged goods</option>
+                        <option value="Missing goods">Missing goods</option>
+                        <option value="Wrong items">Wrong items</option>
                       </select>
                       <ChevronDown className="w-4 h-4 text-stone-500 absolute right-3 top-3.5 pointer-events-none" />
                     </div>
@@ -156,7 +206,7 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, outletLabel,
                   control={form.control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid} className="space-y-1">
-                      <FieldLabel className="text-stone-500 text-sm font-medium font-sans">{casesLabel}</FieldLabel>
+                      <FieldLabel className="text-stone-500 text-sm font-medium font-sans">Damaged cases</FieldLabel>
                       <Input
                         {...field}
                         type="number"
@@ -171,9 +221,9 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, outletLabel,
               </div>
 
               {/* Dynamic Math Helper Text */}
-              <p className={`text-sm font-normal font-sans ${totalCalculated !== deliveredUnits ? 'text-red-500 font-medium' : 'text-stone-900'}`}>
-                {accepted} accepted + {damaged} {casesLabel.toLowerCase()} = {totalCalculated} cases
-                {totalCalculated !== deliveredUnits && ` (Warning: the driver recorded ${deliveredUnits} delivered)`}
+              <p className={`text-sm font-normal font-sans ${totalCalculated !== totalOrdered ? 'text-red-500 font-medium' : 'text-stone-900'}`}>
+                {accepted} accepted + {damaged} damaged = {totalCalculated} delivered cases
+                {totalCalculated !== totalOrdered && ` (Warning: Does not match ordered total of ${totalOrdered})`}
               </p>
 
               {/* Textarea */}
@@ -183,10 +233,22 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, outletLabel,
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid} className="space-y-1">
                     <FieldLabel className="text-stone-500 text-sm font-medium font-sans">What happened? (optional)</FieldLabel>
+                    <div className="issue-notes-wrap">
                     <textarea
                       {...field}
+                      ref={(element) => { field.ref(element); notesInput.current = element }}
+                      maxLength={450}
+                      aria-label="What happened? (optional)"
+                      aria-describedby="issue-draft-feedback"
                       className="w-full h-28 px-3 py-2 bg-neutral-50 rounded-lg outline outline-1 outline-offset-[-1px] outline-neutral-300 text-stone-900 text-sm font-sans resize-none focus:outline-yellow-400"
                     />
+                    <IconButton size="sm" className="issue-draft-button" aria-label="Draft with AI" title={drafting ? 'Drafting your message…' : 'Draft with AI'} aria-busy={drafting} disabled={drafting || !accessToken} onClick={() => void generateDraft()}><AutoAwesomeRounded className={drafting ? 'motion-safe:animate-pulse' : ''} /></IconButton>
+                    </div>
+                    <div id="issue-draft-feedback" className="text-xs font-sans">
+                      {drafting && <p role="status" className="text-stone-500">Drafting your message…</p>}
+                      {draftMessage && <p role="status" className="text-stone-500">{draftMessage}</p>}
+                      {draftError && <p role="alert" className="text-red-500">{draftError}</p>}
+                    </div>
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
@@ -208,7 +270,7 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, outletLabel,
             <div className="w-full p-4 bg-blue-50 rounded-md flex flex-col gap-1">
               <h4 className="text-stone-900 text-sm font-semibold font-sans">Your delivery will remain open</h4>
               <p className="text-stone-900 text-sm font-normal font-sans">
-                Submitting records {accepted} accepted cases and sends the {damaged} {casesLabel.toLowerCase()} to the depot for review. Confirm the receipt once it is settled.
+                Submitting records {accepted} accepted cases and sends the {damaged} damaged cases to the depot for review. Confirm the receipt once it is settled.
               </p>
             </div>
           </div>
@@ -224,7 +286,7 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, outletLabel,
             <Button type="button" variant="outline" onClick={() => changeOpen(false)} className="w-44 h-10 bg-white border-neutral-200 text-stone-800 font-semibold font-sans shadow-none">
               Cancel
             </Button>
-            <Button type="submit" disabled={form.formState.isSubmitting} className="flex-1 h-10 bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold font-sans shadow-none">
+            <Button type="submit" disabled={drafting || form.formState.isSubmitting} className="flex-1 h-10 bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold font-sans shadow-none">
               {form.formState.isSubmitting ? 'Submitting…' : 'Submit issue'}
             </Button>
           </div>

@@ -50,6 +50,11 @@ Run `npm run check:profiles` for focused profile/role guards and API payload che
 
 ## Floating assistant
 
+Assistant answers use `react-markdown` and `remark-gfm` for readable headings,
+emphasis, lists and tables, styled with WayPoint tokens. User messages and source
+excerpts remain plain text. Raw HTML and remote images are not rendered; links
+allow only explicit HTTP/HTTPS URLs and open with `noopener noreferrer`.
+
 Signed-in dispatchers and store managers have a bottom-right chat button on portal
 pages. It opens a modal side panel without resizing the page; small screens use the
 full width. Close with the close button, Escape or the backdrop. Chat remains in

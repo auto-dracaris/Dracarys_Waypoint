@@ -157,7 +157,7 @@ export function confirmReceipt(token: string, orderId: number, receivedUnits: nu
   return apiRequest<StoreOrder>(API_ENDPOINTS.orders.receipt(orderId), { method: 'PATCH', token, body: { receivedUnits } })
 }
 
-export function reportIssue(token: string, issue: { type: ReceiptIssueType; orderReference: string; affectedCases: number; note: string }): Promise<unknown> {
+export function reportIssue(token: string, issue: { type: ReceiptIssueType; orderReference: string; affectedCases?: number; note: string }): Promise<unknown> {
   return apiRequest(API_ENDPOINTS.issues.list, {
     method: 'POST',
     token,

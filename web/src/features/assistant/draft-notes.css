@@ -1,0 +1,18 @@
+@reference "../../index.css";
+
+.issue-notes-wrap { position: relative; }
+.issue-notes-wrap textarea { padding-right: calc(var(--wp-space-5xl) + var(--wp-space-lg)); }
+.issue-draft-button.icon-button {
+  position: absolute;
+  top: var(--wp-space-md);
+  right: var(--wp-space-md);
+  width: var(--wp-space-4xl);
+  height: var(--wp-space-4xl);
+  background: var(--wp-yellow-100);
+  color: var(--wp-text-primary);
+  border-color: var(--wp-yellow-200);
+  border-radius: var(--wp-radius-md);
+}
+.issue-draft-button.icon-button:hover { background: var(--wp-yellow-200); }
+.issue-draft-button svg { width: var(--wp-space-xl); height: var(--wp-space-xl); }
+.issue-draft-button:disabled { opacity: 0.5; }

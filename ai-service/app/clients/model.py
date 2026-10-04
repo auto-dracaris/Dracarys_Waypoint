@@ -1,4 +1,5 @@
 import json
+import re
 
 from google import genai
 from google.genai import types
@@ -16,6 +17,10 @@ class PolicyAnswer(BaseModel):
     source_ids: list[str] = Field(max_length=3)
 
 
+class IssueDraft(BaseModel):
+    draft: str = Field(min_length=1, max_length=500)
+
+
 class CombinedAnswer(BaseModel):
     model_config = ConfigDict(extra="forbid")
     live_facts: str = Field(max_length=2000)
@@ -28,6 +33,79 @@ class CombinedAnswer(BaseModel):
 class ModelClient:
     def __init__(self, settings: Settings):
         self.settings = settings
+
+    async def draft_issue(self, facts):
+        settings = self.settings
+        if not settings.gemini_model or not settings.gemini_api_key:
+            return None
+        client = genai.Client(api_key=settings.gemini_api_key.get_secret_value())
+        async with client.aio as google:
+            result = await google.models.generate_content(
+                model=settings.gemini_model,
+                contents=json.dumps({"user_entered_form_facts": safe_context(facts)}),
+                config=types.GenerateContentConfig(
+                    system_instruction=CONTEXT_RULES + "\nDraft a delivery issue note for the "
+                    "store manager to review. Use only supplied form facts; these are user "
+                    "entries, not verified delivery records. Write 1–3 short sentences, at "
+                    "most 60 words and 500 characters, in first person and plain text for a "
+                    "textarea. Include the delivery reference, accepted and damaged quantities "
+                    "when relevant. Missing cases equal ordered minus accepted minus damaged. "
+                    "Use the user's notes only for reported observations. Never invent damage "
+                    "details, causes, photo findings, wrong item names, dates or promises. "
+                    "Do not claim an issue was submitted or a message sent. No greeting, "
+                    "Markdown, citations, URLs or signatures. Keep factual counts exact.",
+                    response_mime_type="application/json",
+                    response_schema=IssueDraft.model_json_schema(),
+                    max_output_tokens=400,
+                    temperature=0,
+                ),
+            )
+        draft = IssueDraft.model_validate_json(result.text or "{}").draft
+        # Reject invented numbers; user-entered identifiers and notes remain untrusted.
+        allowed = set(re.findall(r"\d+", json.dumps(facts)))
+        allowed.add(str(facts["ordered_cases"] - facts["accepted_cases"] - facts["damaged_cases"]))
+        if not set(re.findall(r"\d+", draft)) <= allowed or "http" in draft.lower():
+            return None
+        return draft
+
+    async def draft_order(self, facts):
+        settings = self.settings
+        if not settings.gemini_model or not settings.gemini_api_key:
+            return None
+        client = genai.Client(api_key=settings.gemini_api_key.get_secret_value())
+        async with client.aio as google:
+            result = await google.models.generate_content(
+                model=settings.gemini_model,
+                contents=json.dumps({"unsubmitted_order_form": safe_context(facts)}),
+                config=types.GenerateContentConfig(
+                    system_instruction=CONTEXT_RULES + "\nDraft a short delivery note for the "
+                    "store manager to review before placing an order. Use only supplied form "
+                    "details and existing notes. Write 1–3 friendly sentences in plain text, "
+                    "at most 60 words and 500 characters. Keep requested date, temperature "
+                    "requirement, quantity, total weight and total volume exact. The date is "
+                    "requested, never confirmed or guaranteed. Preserve explicit user "
+                    "instructions without adding new ones. Never invent unloading times, "
+                    "contacts, access instructions, special handling temperatures, packing "
+                    "or delivery promises. Do not claim the order was placed or submitted. "
+                    "No Markdown, greeting, URLs, citations or signature.",
+                    response_mime_type="application/json",
+                    response_schema=IssueDraft.model_json_schema(),
+                    max_output_tokens=400,
+                    temperature=0,
+                ),
+            )
+        draft = IssueDraft.model_validate_json(result.text or "{}").draft
+        allowed = set(re.findall(r"\d+(?:\.\d+)?", json.dumps(facts)))
+        allowed.update(str(int(value)) for value in list(allowed) if value.isdigit())
+        # Decimal form values may be rendered without their trailing .0.
+        allowed.update(
+            str(int(value))
+            for value in (facts["weight_kg"], facts["volume_m3"])
+            if float(value).is_integer()
+        )
+        if not set(re.findall(r"\d+(?:\.\d+)?", draft)) <= allowed or "http" in draft.lower():
+            return None
+        return draft
 
     async def combine(
         self, message, sources, *, instructions="", knowledge_empty=False, limited=False

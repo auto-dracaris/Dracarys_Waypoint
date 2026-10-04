@@ -4,7 +4,7 @@ import { SummaryCard } from '@/features/store-manager/components/my-deliveries/s
 import { DeliveryHistoryTable, type DeliveryTab } from '@/features/store-manager/components/deliveries/delivery-history-table'
 import { DeliveryDetailsPanel } from '@/features/store-manager/components/deliveries/delivery-details-panel'
 import { ReportIssueDialog } from '@/features/store-manager/components/deliveries/report-issue-dialog'
-import { confirmReceipt, fetchMyDeliveries, reportIssue, type MyDeliveries, type StoreOrder } from '@/features/store-manager/api'
+import { confirmReceipt, fetchMyDeliveries, reportIssue, type MyDeliveries, type ReceiptIssueType, type StoreOrder } from '@/features/store-manager/api'
 import { awaitsReceipt, canReportIssue, toDeliveryPanel, toHistoryItem } from '@/features/store-manager/delivery-format'
 import { formatLongDay, outletLabel } from '@/features/store-manager/order-format'
 import type { ReportIssueFormValues } from '@/features/store-manager/types'
@@ -13,6 +13,13 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping'
 import Schedule from '@mui/icons-material/Schedule'
 import MoveDown from '@mui/icons-material/MoveDown'
 import { useNavigate } from 'react-router-dom'
+
+// The form's issue types (which the AI draft also uses) as the issues API's.
+const issueTypes: Record<ReportIssueFormValues['issueType'], ReceiptIssueType> = {
+  'Damaged goods': 'receipt_damage',
+  'Missing goods': 'receipt_shortfall',
+  'Wrong items': 'other',
+}
 
 // Today where Waypoint operates, as YYYY-MM-DD.
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Colombo' }).format(new Date())
@@ -97,10 +104,14 @@ export function DeliveriesPage() {
   async function submitIssue(order: StoreOrder, data: ReportIssueFormValues) {
     if (!accessToken) return
     const delivered = order.assignment?.deliveredUnits ?? 0
+    // Missing cases are whatever of the order was neither accepted nor damaged.
+    const missing = order.orderUnits - data.acceptedCases - data.damagedCases
+    if (data.issueType === 'Missing goods' && missing < 1) throw new Error('The quantities do not show any missing cases. Please check them.')
+    const affectedCases = data.issueType === 'Missing goods' ? missing : data.damagedCases || undefined
     await reportIssue(accessToken, {
-      type: data.issueType,
+      type: issueTypes[data.issueType],
       orderReference: order.reference,
-      affectedCases: data.damagedCases,
+      affectedCases,
       note: [`Accepted ${data.acceptedCases} of ${delivered} delivered cases.`, data.notes?.trim()].filter(Boolean).join(' '),
     })
     setActionError('')

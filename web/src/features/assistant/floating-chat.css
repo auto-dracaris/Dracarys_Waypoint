@@ -58,6 +58,27 @@
 .assistant-message--assistant { align-self: flex-start; width: 100%; border: 1px solid var(--wp-warm-neutral-200); background: var(--wp-warm-neutral-50); }
 .assistant-author { color: var(--wp-text-secondary); margin-bottom: var(--wp-space-xs); }
 .assistant-answer { white-space: pre-wrap; }
+.assistant-markdown { white-space: normal; line-height: 1.6; }
+.assistant-markdown > :first-child { margin-top: 0; }
+.assistant-markdown > :last-child { margin-bottom: 0; }
+.assistant-markdown :is(p, ul, ol, blockquote, pre, .assistant-table-scroll) { margin-block: var(--wp-space-md); }
+.assistant-markdown :is(h1, h2, h3, h4, h5, h6) { font-size: inherit; font-weight: 600; line-height: 1.4; margin-top: var(--wp-space-lg); margin-bottom: var(--wp-space-md); }
+.assistant-markdown strong { font-weight: 600; }
+.assistant-markdown ul { list-style: disc; padding-left: var(--wp-space-xl); }
+.assistant-markdown ol { list-style: decimal; padding-left: var(--wp-space-xl); }
+.assistant-markdown li + li { margin-top: var(--wp-space-xs); }
+.assistant-markdown li > p { margin-block: var(--wp-space-xs); }
+.assistant-markdown a { color: var(--wp-text-primary); text-decoration: underline; text-underline-offset: var(--wp-space-xxs); }
+.assistant-markdown a:focus-visible { outline: 2px solid var(--wp-yellow-500); outline-offset: var(--wp-space-xxs); }
+.assistant-markdown blockquote { border-left: var(--wp-space-xxs) solid var(--wp-yellow-400); padding-left: var(--wp-space-lg); color: var(--wp-text-secondary); }
+.assistant-markdown code { font-family: monospace; background: var(--wp-warm-neutral-100); padding-inline: var(--wp-space-xxs); border-radius: var(--wp-radius-sm); }
+.assistant-markdown pre { overflow-x: auto; padding: var(--wp-space-md); background: var(--wp-warm-neutral-100); border-radius: var(--wp-radius-md); }
+.assistant-markdown pre code { padding: 0; white-space: pre; }
+.assistant-markdown hr { margin-block: var(--wp-space-lg); border: 0; border-top: 1px solid var(--wp-warm-neutral-200); }
+.assistant-table-scroll { max-width: 100%; overflow-x: auto; }
+.assistant-markdown table { border-collapse: collapse; width: 100%; }
+.assistant-markdown :is(th, td) { padding: var(--wp-space-md); border: 1px solid var(--wp-warm-neutral-200); text-align: left; }
+.assistant-markdown th { background: var(--wp-warm-neutral-100); font-weight: 600; }
 .assistant-sources { margin-top: var(--wp-space-lg); border-top: 1px solid var(--wp-warm-neutral-200); padding-top: var(--wp-space-md); }
 .assistant-sources summary { cursor: pointer; }
 .assistant-sources ol { list-style: decimal; margin-top: var(--wp-space-md); padding-left: var(--wp-space-2xl); }

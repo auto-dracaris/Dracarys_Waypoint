@@ -1,0 +1,2 @@
+# Keep the Linux deployment script executable by Bash after Windows checkouts.
+ai-service/deploy.sh text eol=lf

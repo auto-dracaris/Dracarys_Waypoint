@@ -36,8 +36,9 @@ rather than an answered business question.
 
 Each role has its own task instructions and shares the presentation rules in
 `app/agent/prompts.py`. Replies lead with the answer, use short paragraphs or
-plain-text bullets, and use numbered steps for procedures. The chat currently
-renders plain text, so prompts avoid Markdown tables, bold markers and code blocks.
+Markdown bullets, and use numbered steps for procedures. The chat renders
+Markdown with styled emphasis, headings and lists. Prompts prefer concise lists
+over tables on the narrow panel and avoid HTML or wrapping replies in code blocks.
 Dispatcher summaries highlight counts and scope; store-manager replies focus on
 their orders and cutoffs; driver replies focus on trips and recorded route changes;
 loader replies distinguish planned quantities from confirmed loading.

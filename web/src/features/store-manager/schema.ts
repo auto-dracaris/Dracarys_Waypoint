@@ -50,10 +50,18 @@ export const placeOrderSchema = z.object({
   notes: z.string().max(500, 'Notes cannot exceed 500 characters.').optional().default(''), // Give it a default empty string so it never yields undefined
 })
 
-// Mirrors api/src/modules/issues/dto/create-issue.dto.ts; the accepted count goes into its note.
+// Submitted as api/src/modules/issues/dto/create-issue.dto.ts; see the deliveries page for how each type maps.
 export const reportIssueSchema = z.object({
-  issueType: z.enum(['receipt_damage', 'receipt_shortfall', 'other']),
-  acceptedCases: z.number().int('Must be a whole number').min(0, 'Cannot be negative'),
-  damagedCases: z.number().int('Must be a whole number').min(1, 'You must report at least 1 case'),
-  notes: z.string().max(400, 'Notes cannot exceed 400 characters.').optional(),
+  issueType: z.enum(['Damaged goods', 'Missing goods', 'Wrong items']),
+  acceptedCases: z.number().int('Use whole cases').min(0, 'Cannot be negative'),
+  damagedCases: z.number().int('Use whole cases').min(0, 'Cannot be negative'),
+  // The issues API takes 500 characters; the page adds the accepted count in front.
+  notes: z.string().max(450, 'Notes cannot exceed 450 characters.').optional(),
+}).superRefine((values, context) => {
+  if (values.issueType === 'Damaged goods' && values.damagedCases < 1) {
+    context.addIssue({ code: 'custom', path: ['damagedCases'], message: 'You must report at least 1 damaged case' })
+  }
+  if (values.issueType === 'Wrong items' && !values.notes?.trim()) {
+    context.addIssue({ code: 'custom', path: ['notes'], message: 'Describe which items were wrong' })
+  }
 })

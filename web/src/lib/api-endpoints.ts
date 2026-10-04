@@ -34,13 +34,16 @@ export const API_ENDPOINTS = {
     cancel: (id: number) => `/orders/${id}/cancel`,
     defer: (id: number) => `/orders/${id}/defer`,
   },
-  issues: {
-    list: '/issues',
-  },
   planning: {
     plan: '/planning',
     run: '/planning/run',
     publish: '/planning/publish',
+  },
+  issues: {
+    list: '/issues',
+    detail: (id: string) => `/issues/${encodeURIComponent(id)}`,
+    acknowledge: (id: string) => `/issues/${encodeURIComponent(id)}/acknowledge`,
+    resolve: (id: string) => `/issues/${encodeURIComponent(id)}/resolve`,
   },
   outlets: {
     list: '/outlets',
