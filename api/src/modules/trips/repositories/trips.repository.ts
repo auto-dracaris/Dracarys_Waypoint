@@ -66,13 +66,13 @@ export class TripsRepository extends BaseRepository<Trip> {
   }
 
   /**
-   * One page of a day's live trips. A trip is a driver's if it names them, or
+   * One page of live trips, optionally for one day. A trip is a driver's if it names them, or
    * names nobody yet and they are on its vehicle. The page is picked first and
    * its trips loaded in full after, since joining the stops would multiply rows.
    */
   async findForDay(
     scope: TripScope,
-    date: string,
+    date: string | undefined,
     query: TripListQueryDto,
   ): Promise<[Trip[], number, TripTabCounts]> {
     const page = query.page ?? 1;
@@ -82,13 +82,16 @@ export class TripsRepository extends BaseRepository<Trip> {
       .createQueryBuilder('trip')
       .innerJoin('trip.vehicle', 'vehicle')
       .select('trip.id', 'id')
-      .where('trip.serviceDate = :date', { date })
-      .andWhere('trip.status NOT IN (:...hidden)', {
+      .where('trip.status NOT IN (:...hidden)', {
         hidden:
           'driverId' in scope
             ? [TripStatus.DRAFT, TripStatus.CANCELLED]
             : [TripStatus.CANCELLED],
       });
+
+    if (date) {
+      qb.andWhere('trip.serviceDate = :date', { date });
+    }
 
     if ('driverId' in scope) {
       qb.andWhere(
@@ -102,7 +105,7 @@ export class TripsRepository extends BaseRepository<Trip> {
     } else {
       qb.andWhere('trip.depotId = :depotId', { depotId: scope.depotId });
     }
-    // Counts describe the whole visible day, independent of the tab, page,
+    // Counts describe all visible dates (or the requested day), independent of the tab, page,
     // or incremental sync cursor.
     const statusCounts = await qb
       .clone()

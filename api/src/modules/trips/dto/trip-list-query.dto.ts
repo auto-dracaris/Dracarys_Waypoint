@@ -9,7 +9,7 @@ export class TripListQueryDto extends PaginationQueryDto {
   @IsEnum(TripListStatus)
   status?: TripListStatus;
 
-  // The delivery day. Defaults to today.
+  // Optional delivery day. Omit to retrieve trips across all dates.
   @IsOptional()
   @IsDateString({ strict: true }, { message: 'date must be a valid date' })
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'date must be YYYY-MM-DD' })
