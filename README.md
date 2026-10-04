@@ -10,6 +10,7 @@ WayPoint plans and tracks deliveries from depots to retail outlets. Store manage
 | [`web/`](web/) | Web app for the dispatcher hub and store managers | React, Vite, Tailwind |
 | [`ai-service/`](ai-service/) | AI assistant: document Q&A, business tools, note drafting | Python, FastAPI, Qdrant, Gemini |
 | [`mobile/driver_app/`](mobile/driver_app/) | Driver app that works offline | Flutter |
+| [`mobile/loader_app/`](mobile/loader_app/) | Loader app  | Flutter |
 | [`osrm_setup/`](osrm_setup/) | Road routing for Sri Lanka, with van and truck profiles | OSRM, Nginx |
 | [`infra/`](infra/) | Optional local AI infrastructure and monitoring | Docker Compose |
 | [`docs/`](docs/) | Architecture diagrams and design notes | draw.io, Markdown |
