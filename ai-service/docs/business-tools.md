@@ -49,12 +49,14 @@ logged internally; successful record fallback replies do not expose model or
 planning diagnostics. Prompt rules guide model output; they are not a guarantee
 of identical formatting for every provider response.
 
-Replies target 40–80 words, with a maximum of 120 words or 900 characters and up
-to four bullets. Follow-ups explain one part at a time. A shared guard applies to
-all three workflows before storing the conversation, including deterministic
-fallbacks. If an answer exceeds the maximum, the service returns a short request
-to narrow the question with `sources_only` status and retains all source cards.
-It does not cut facts mid-sentence or discard evidence to fit the limit.
+The model's system prompt targets around 120 words and up to three bullets, with
+shorter replies for simple questions. This is a style target, not a hard limit.
+Longer answers and deterministic fallbacks are returned and stored without being
+replaced by a length warning. Secret and citation checks still apply to replies.
+Generated guidance uses simple language and relevant paraphrases rather than copied
+legal clauses or unconfirmed placeholders. If synthesis is unavailable, the reply
+preserves live business facts and briefly points to document source cards instead
+of pasting policy chunks into the chat.
 
 Base URL configured by `AI_NESTJS_BASE_URL`: `http://localhost:5000/api`.
 

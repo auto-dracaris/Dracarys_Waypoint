@@ -1,0 +1,43 @@
+@reference "../../index.css";
+
+.store-manager-shell {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 100svh;
+  background: var(--wp-warm-neutral-50);
+}
+.store-manager-content {
+  flex: 1;
+  min-width: 0;
+  height: 100svh;
+  overflow-y: auto;
+}
+.store-manager-shell > .sidebar {
+  font-family: var(--font-waypoint);
+}
+.store-manager-shell .sidebar :is(button, a):focus-visible,
+.store-navigation-toggle:focus-visible {
+  outline: 2px solid var(--wp-yellow-500);
+  outline-offset: var(--wp-space-xxs);
+}
+.store-navigation-toggle {
+  display: none;
+}
+@media (max-width: 767px) {
+  .store-navigation-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--wp-space-md);
+    margin: var(--wp-space-xl);
+    padding: var(--wp-space-md) var(--wp-space-lg);
+    border-radius: var(--wp-radius-md);
+    color: var(--wp-text-primary);
+    background: var(--wp-warm-neutral-100);
+    cursor: pointer;
+  }
+  .store-navigation-toggle svg {
+    width: var(--wp-space-3xl);
+    height: var(--wp-space-3xl);
+  }
+}

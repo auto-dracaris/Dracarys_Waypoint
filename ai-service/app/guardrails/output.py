@@ -1,7 +1,6 @@
 import logging
 import re
 
-from app.agent.response_limits import limit_reply
 from app.guardrails.context import safe_sources
 from app.guardrails.policy import contains_secret
 
@@ -44,4 +43,4 @@ def guarded_reply(result, token=None):
             "Please rephrase your question or review the available sources.",
             "status": "sources_only" if sources else "needs_input",
         }
-    return limit_reply({**result, "sources": sources})
+    return {**result, "sources": sources}

@@ -72,13 +72,5 @@
   .profile-signed-in { position: absolute; top: calc(var(--wp-spacing-40) + var(--wp-space-xl)); right: var(--wp-space-xl); }
   .profile-card { padding: var(--wp-space-xl); }
   .profile-assignment { gap: var(--wp-space-xl); }
-  .store-profile-shell { flex-direction: column; }
-  .store-profile-shell > aside { width: 100%; min-height: auto; align-items: stretch; }
-  .store-profile-shell > aside > div:first-child { gap: var(--wp-space-md); }
-  .store-profile-shell > aside nav { flex-direction: row; flex-wrap: wrap; }
-  .store-profile-shell > aside nav > div { width: auto; flex: 1; }
-  .store-profile-shell > aside > div:last-child { padding: var(--wp-space-md); }
-  .store-profile-shell > aside > div:last-child > div { flex-direction: row; align-items: center; justify-content: space-between; }
-  .store-profile-shell > aside > div:last-child > div > div:nth-child(2) { display: none; }
   .store-profile-shell > div:last-child { width: 100%; height: auto; }
 }

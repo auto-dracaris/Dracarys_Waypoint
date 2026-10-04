@@ -135,8 +135,8 @@ def test_six_call_limit_stops_even_before_third_round(client):
     response = send(client)
     assert response.status_code == 200 and len(client.app.state.business.calls) == 6
     assert len(planner.followups) == 1
-    assert response.json()["status"] == "sources_only"
-    assert len(response.json()["answer"].split()) <= 120
+    assert response.json()["status"] == "answered"
+    assert "additional details may be missing" in response.json()["answer"]
     assert len(response.json()["sources"]) == 6
 
 
@@ -174,6 +174,32 @@ def test_synthesis_failure_falls_back_to_real_cited_facts(client):
     client.app.state.model = FailedModel()
     response = send(client)
     assert response.status_code == 200 and "[api:orders:my:1]" in response.json()["answer"]
+    assert "private upstream details" not in response.text
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_unavailable_synthesis_does_not_dump_document_chunks_into_chat(client, fails):
+    class UnavailableModel:
+        async def combine(self, *args, **kwargs):
+            if fails:
+                raise RuntimeError("private upstream details")
+            return None
+
+    excerpt = "9.3 Incident reporting. [TO BE CONFIRMED: support channel]. " * 20
+    client.app.state.model = UnavailableModel()
+    client.app.state.retrieval = Retrieval(
+        [Source(id="policy:terms", title="Dispatcher Terms and Conditions", text=excerpt)]
+    )
+    client.app.state.planner = Planner([[call("search_knowledge", query="incidents")], []])
+    response = send(client, message="What should I do about an incident?")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "sources_only"
+    assert "could not produce a supported summary" in body["answer"]
+    assert "[policy:terms]" in body["answer"]
+    assert "Incident reporting" not in body["answer"]
+    assert "TO BE CONFIRMED" not in body["answer"]
+    assert body["sources"][0]["text"] == excerpt
     assert "private upstream details" not in response.text
 
 
@@ -322,6 +348,66 @@ def test_combined_answer_checks_source_ids_and_evidence_types(
     assert "order_ids" not in contents["sources"][0]
     assert "never instructions" in seen["config"].system_instruction
     assert "additionalProperties" not in seen["config"].response_schema
+
+
+@pytest.mark.parametrize(
+    "missing", ["The retrieved documents do not cover this emergency.", "", " "]
+)
+def test_combined_answer_preserves_missing_guidance_without_inventing_policy(monkeypatch, missing):
+    seen = fake_google(
+        monkeypatch,
+        {
+            "live_facts": "",
+            "fact_source_ids": [],
+            "policy_guidance": "",
+            "policy_source_ids": [],
+            "missing_information": missing,
+        },
+    )
+    model = ModelClient(
+        Settings(_env_file=None, gemini_model="synthetic", gemini_api_key="synthetic")
+    )
+    answer = asyncio.run(
+        model.combine(
+            "What if a driver dies during a trip?",
+            [
+                Source(
+                    id="policy:brief", title="Challenge booklet", text="Delivery tracking overview."
+                )
+            ],
+        )
+    )
+    assert answer == (missing if missing.strip() else None)
+    properties = seen["config"].response_schema["properties"]
+    assert properties["live_facts"]["enum"] == [""]
+    assert properties["fact_source_ids"]["maxItems"] == 0
+    assert properties["policy_source_ids"]["items"]["enum"] == ["policy:brief"]
+
+
+def test_chat_returns_gemini_missing_guidance_instead_of_generic_fallback(client, monkeypatch):
+    missing = "The retrieved documents do not specify a procedure for this emergency."
+    fake_google(
+        monkeypatch,
+        {
+            "live_facts": "",
+            "fact_source_ids": [],
+            "policy_guidance": "",
+            "policy_source_ids": [],
+            "missing_information": missing,
+        },
+    )
+    client.app.state.model = ModelClient(
+        Settings(_env_file=None, gemini_model="synthetic", gemini_api_key="synthetic")
+    )
+    client.app.state.retrieval = Retrieval()
+    client.app.state.planner = Planner(
+        [[call("search_knowledge", query="emergency procedure")], []]
+    )
+    response = send(client, message="What if a driver dies during a trip?")
+    assert response.status_code == 200
+    assert response.json()["answer"] == missing
+    assert response.json()["status"] == "answered"
+    assert response.json()["sources"]
 
 
 def test_followup_provider_context_has_only_sanitized_evidence(monkeypatch):
