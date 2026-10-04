@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { useEffect, useRef, useState } from 'react'
 import RefreshRounded from '@mui/icons-material/RefreshRounded'
 import LocalShippingRounded from '@mui/icons-material/LocalShippingRounded'
@@ -62,6 +63,7 @@ export function IssuesPage({ onOpenNavigation, navigationOpen }: { onOpenNavigat
       </div>
       <Button className="issues-refresh" size="md" leadingIcon={<RefreshRounded fontSize="inherit" />} loading={loading} loadingLabel="Refreshing…" disabled={!!selectedId} onClick={refresh}>Refresh issues</Button>
     </header>
+    <HubBreadcrumbs />
     <section className="issues-summary" aria-label="Issue summary">
       {stats.map(({ label, value, Icon, tone }) => <div key={label} className={`issue-stat issue-stat--${tone}`} title={label === 'Urgent' ? 'Urgency is not provided by the current API' : undefined}>
         <div><Icon aria-hidden="true" /><span className="type-text-md-medium">{label}</span></div>

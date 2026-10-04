@@ -1,0 +1,7 @@
+@reference "../index.css";
+
+.hub-breadcrumbs { color: var(--wp-text-quaternary); }
+.hub-breadcrumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wp-space-sm); list-style: none; padding: 0; margin: 0; }
+.hub-breadcrumbs li { display: flex; align-items: center; gap: var(--wp-space-sm); }
+.hub-breadcrumbs a:hover { color: var(--wp-text-secondary); }
+.hub-breadcrumbs a:focus-visible { outline: 2px solid var(--wp-yellow-500); outline-offset: var(--wp-space-xs); border-radius: var(--wp-radius-sm); }

@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { IconButton } from '@/components/ui/icon-button'
 import { useEffect, useRef, useState } from 'react'
 import NotificationsRounded from '@mui/icons-material/NotificationsRounded'
@@ -217,6 +218,7 @@ export function OrdersPage({ onOpenNavigation, navigationOpen }: { onNavigate: (
           {summary ? `${summary.awaiting} ${summary.awaiting === 1 ? 'order awaits' : 'orders await'} planning` : 'Orders awaiting planning'}
         </Button>
       </header>
+      <HubBreadcrumbs />
       <section className="fleet-summary" aria-label="Order summary">
         {cards.map(({ label, value, Icon, tone }) => (
           <div key={label} className={`fleet-stat fleet-stat--${tone}`}>

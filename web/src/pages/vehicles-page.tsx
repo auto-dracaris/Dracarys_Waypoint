@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { NotificationsButton } from '@/features/notifications/components/notifications-button'
 import { IconButton } from '@/components/ui/icon-button'
 import { useEffect, useRef, useState } from 'react'
@@ -184,17 +185,7 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
           <NotificationsButton />
         </div>
       </header>
-      <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">
-        {['Home', 'Dashboard', 'Management'].map((label) => (
-          <span key={label}>
-            <button onClick={() => onNavigate(label)}>{label}</button>
-            <span aria-hidden="true">/</span>
-          </span>
-        ))}
-        <strong aria-current="page" className="text-wp-text-primary type-text-sm-semibold">
-          Vehicles
-        </strong>
-      </nav>
+      <HubBreadcrumbs />
       <FleetSummary totals={totals} onReview={() => onNavigate('Vehicle change impact review')} />
       {message && (
         <p role="status" className="fleet-update-message type-text-sm-medium">

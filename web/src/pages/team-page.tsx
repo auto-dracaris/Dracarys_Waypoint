@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { NotificationsButton } from '@/features/notifications/components/notifications-button'
 import { IconButton } from '@/components/ui/icon-button'
 import { useEffect, useRef, useState } from 'react'
@@ -128,17 +129,7 @@ export function TeamPage({
           <NotificationsButton />
         </div>
       </header>
-      <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">
-        {['Home', 'Dashboard', 'Management'].map((label) => (
-          <span key={label}>
-            <button onClick={() => onNavigate(label)}>{label}</button>
-            <span aria-hidden="true">/</span>
-          </span>
-        ))}
-        <strong aria-current="page" className="text-wp-text-primary type-text-sm-semibold">
-          Team
-        </strong>
-      </nav>
+      <HubBreadcrumbs />
       <section className="team-metrics" aria-label="Team summary">
         {metrics.map(({ label, filter: group, Icon }) => (
           <div className="team-metric" key={label}>

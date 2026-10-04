@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { NotificationsButton } from '@/features/notifications/components/notifications-button'
 import { IconButton } from '@/components/ui/icon-button'
 import { useState } from 'react'
@@ -22,6 +23,7 @@ export function OverviewPage({ onNavigate, onOpenNavigation, navigationOpen }: {
         </div>
         <NotificationsButton />
       </header>
+      <HubBreadcrumbs />
       <ActiveRoutes onNavigate={onNavigate} />
       <PlanningSummary date={date} onDateChange={setDate} onNavigate={onNavigate} />
     </div>
