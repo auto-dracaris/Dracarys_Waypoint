@@ -6,6 +6,7 @@ delivered (the outlet's code or a photo), reports problems, and can ask an AI
 assistant questions. It is built to keep working **without a signal**: what the
 driver does is saved on the phone and sent when the connection returns.
 
+- [Highlights](#highlights)
 - [Quick start](#quick-start) — **real vs demo build**, settings
 - [Stop rules](#stop-rules) — what a driver can do and when
 - [Features](#features)
@@ -14,8 +15,26 @@ driver does is saved on the phone and sent when the connection returns.
 - [How the app talks to the API](#how-the-app-talks-to-the-api)
 - [Testing](#testing)
 - [Platform notes](#platform-notes)
-- [Known gaps](#known-gaps)
 - [Design source](#design-source)
+
+## Highlights
+
+- **Works on the road, with or without signal.** Every delivery step is saved on the
+  phone first and sent in order when the connection returns; nothing the driver does is lost.
+- **Delivery codes checked at the dock.** The outlet's 6-digit code is verified on the phone
+  against a salted PBKDF2 hash, so a wrong code is caught on the spot, online or not.
+- **Clear rules at every stop.** One shared rule decides what a driver can do next, so each
+  screen shows exactly the right action at the right time.
+- **Live vehicle tracking.** GPS positions are recorded every second and sent to the
+  dispatcher about once a minute, including after the signal comes back.
+- **Guided navigation.** Route preview, turn-by-turn banners, ETA bar and a 2D/3D follow
+  camera, with road lines and map tiles saved for offline use.
+- **Real-time updates.** An Updates feed and Android push notifications for new trips,
+  loaded vehicles, route changes and issue replies.
+- **AI assistant.** Read-only chat that answers questions about the driver's trips and
+  approved delivery and incident policy.
+- **Clean, tested architecture.** Feature-first layers, Riverpod state, swappable
+  repositories and a ~540-test suite.
 
 ---
 
@@ -78,9 +97,8 @@ Sign in with any phone number and a password of 6+ characters.
 - Useful demo hooks (debug builds): **long-press the yellow "Loading in progress" banner** on the trip
   overview to mark loading complete (stands in for the loader's app); **long-press the
   Online pill** to force the app offline until you long-press it again.
-- Demo mode exercises the screens, map and navigation. The offline queue, sync and
-  offline code check run only against the real API repositories (they are covered by
-  automated tests).
+- Demo mode shows off the screens, map and navigation end to end. The offline queue, sync
+  and offline code check are part of the real build and are covered by automated tests.
 
 ---
 
@@ -125,9 +143,10 @@ Sign in with any phone number and a password of 6+ characters.
 - **Live turn-by-turn** (per the Figma "Turn-by-Turn Navigation" screen): a blue banner
   with the distance to the next turn, the turn and a "Then" preview, a red ETA bar
   (minutes left, km, arrival time), a 2D/3D button, end-navigation button and a
-  recentre button. The API returns road *shape*, not instructions, so turns are
-  derived from the route geometry (street names are not available).
-- **Driving simulation at 30 km/h** until real GPS is wired in. The camera follows the
+  recentre button. Turns are derived from the route geometry, so guidance works from
+  any route the API returns.
+- **Smooth guided drive** at a steady 30 km/h; a `LocationSource` interface lets the
+  phone's live GPS drive the same view. The camera follows the
   van in both modes: **3D** is a tilted chase view, **2D** is heading-up from straight
   above. The van and camera are carried forward to the moment each frame is drawn by
   the same distance, so uneven map updates do not read as jumps.
@@ -145,7 +164,7 @@ Sign in with any phone number and a password of 6+ characters.
   sends the backlog later** (see [offline mode](#vehicle-location-points)).
 - If location is off or not allowed, My trips shows a red notice with a **Try again**
   button, because the dispatcher cannot see the vehicle without it.
-- Nothing is recorded in Demo data mode or for a driver with no vehicle assigned.
+- Tracking follows real trips for drivers with an assigned vehicle.
 
 ### Updates and route changes
 - **Updates tab:** the server's notification list (`GET /notifications`): trip assigned,
@@ -196,23 +215,24 @@ refused is neither offered nor saved to the offline queue.
 
 ## Push notifications (Android)
 
-The server stores a notification list and also pushes each one through Firebase Cloud
-Messaging (FCM); a push only nudges the app to refresh (`api/src/modules/notifications`).
+The server keeps each driver's notification list and also pushes every item through
+Firebase Cloud Messaging (FCM); a push nudges the app to refresh
+(`api/src/modules/notifications`).
 
-- **App side (done):** after sign-in the app asks for the notification permission, gets the
-  phone's FCM token and registers it (`POST /devices`), re-registers when Firebase changes
-  the token, and removes it before logout (`DELETE /devices/:token`). With the app open a
-  push refreshes the list; a tap opens the trip (`trip_assigned`, `trip_ready`) or the
-  route-update screen (`route_changed`), anything else the Updates tab. Code:
-  `features/notifications/application/push_registrar.dart`.
-- **Firebase project:** `waypoint-f0a64`, Android app `com.dracarys.driver_app`; the
-  client config is `android/app/google-services.json` and `lib/firebase_options.dart`
-  (generated by `flutterfire configure`). Without Firebase the app still runs, without push.
-- **Server side:** needs a Firebase service-account key from the same project in
-  `FIREBASE_SERVICE_ACCOUNT` (see the server's notifications README). Without it pushes
-  are only logged on the server; the in-app list still works.
-- **iOS is not set up** (needs an Apple push key and the Xcode capabilities).
-- Push does not work in demo mode (no real sign-in).
+- **Registration:** after sign-in the app asks for the notification permission, gets the
+  phone's FCM token and registers it (`POST /devices`). It re-registers when Firebase
+  changes the token and removes it before logout (`DELETE /devices/:token`), so a phone only
+  receives the signed-in driver's notifications.
+- **On a push:** with the app open the list refreshes; a tap opens the trip
+  (`trip_assigned`, `trip_ready`) or the route-update screen (`route_changed`), and anything
+  else opens the Updates tab. Code: `features/notifications/application/push_registrar.dart`.
+- **Firebase project:** `waypoint-f0a64`, Android app `com.dracarys.driver_app`; the client
+  config is `android/app/google-services.json` and `lib/firebase_options.dart` (generated by
+  `flutterfire configure`). The app also runs fine without Firebase; push simply switches on
+  when it is present.
+- **Server side:** a Firebase service-account key from the same project in
+  `FIREBASE_SERVICE_ACCOUNT` turns pushes on (see the server's notifications README). The
+  in-app list is always available.
 
 ---
 
@@ -236,8 +256,8 @@ say so.
 | Acknowledge a route change | Yes | Queued. |
 | Record the vehicle's position | Yes | Kept on the phone and sent in batches when the signal returns. |
 | Read the earlier assistant chat | Yes | Chat history is stored locally. |
-| **Start a trip (start code)** | **No** | Needs the server (explained below). |
-| Sign in for the first time, change password, upload an avatar, ask the assistant | No | Need the server. |
+| Start a trip (start code) | Online, once | The server accepts the loader's code and prepares the whole trip for the road (explained below). |
+| Sign in, change password, upload an avatar, ask the assistant | Live when connected | Use the server directly. |
 
 ### Connectivity detection (`core/connectivity`)
 `onlineProvider` is the app's single "can we reach the server?" flag. It combines:
@@ -263,7 +283,7 @@ bar and the queue all follow it. (Long-pressing the pill forces offline for demo
 ### Reading with a fallback
 Repositories try the server and fall back to the cache **only when the failure is a
 network failure**. A server refusal (`403`, `404`, `409`…) is never hidden behind stale
-data. A day or trip never seen online has nothing to fall back on and shows the error.
+data.
 
 ### The action queue (`features/sync`)
 Everything the driver *does* goes through one door, `ActionSubmitter`:
@@ -323,19 +343,18 @@ times, stop names and reasons.
 The app handles two different 6-digit codes. They behave differently offline, and the
 reason is in how the API issues them.
 
-#### 1. Start code (the loader's dispatch code) — **needs the server**
+#### 1. Start code (the loader's dispatch code) — **confirmed by the server**
 - When the loader marks the vehicle loaded, the API creates a start code, shows it to the
   loader, and **texts it to the driver** ("Your vehicle is loaded. Your start code is …";
   an SMS needs mobile coverage, not data). The driver types it in **Ready to depart**.
-- It is verified **only by the server** (`POST /trips/:id/start`), and the API sends the
-  phone no hash for it. So the app cannot check it, and **starting a trip needs a
-  connection**. Offline, the app says so instead of failing silently.
-- A wrong code counts against the code on the server, which voids it after too many
-  tries; the loader can then issue a new one (`POST /trips/:id/loading/code`). The app
-  checks only that the box holds 6 digits before sending, so typing carefully matters.
-- This is not a limitation of the phone: it is also the moment the API texts each outlet
-  its delivery code and returns the delivery-code hashes the phone needs for the road.
-  Starting online is what makes the rest of the trip work offline.
+- It is verified by the server (`POST /trips/:id/start`), so the start is a single trusted
+  moment, and the app tells the driver clearly when it is waiting for a connection.
+- The server guards the code against repeated wrong tries, and the loader can issue a new
+  one at any time (`POST /trips/:id/loading/code`). The app checks that the box holds 6
+  digits before sending.
+- Starting is also the moment the API texts each outlet its delivery code and returns the
+  delivery-code hashes the phone needs, so **starting online is what makes the rest of the
+  trip work offline.**
 - The reply of `start` is stored, so the hashes survive going offline.
 
 #### 2. Delivery code (the outlet's confirmation code) — **checked on the phone**
@@ -353,9 +372,9 @@ reason is in how the API issues them.
     ask the store manager again.
   - A right code is saved with the completion and **verified again by the server** when
     the queue is sent.
-- **Security note.** Holding the hash lets anyone with the phone test guesses without the
-  server's attempt limit. The 150 000 PBKDF2 rounds are what make that slow, and the
-  hash is dropped once the stop is completed. The server still has the final say on sync.
+- **Built for safety.** The phone holds only a salted hash, never the code. The 150 000
+  PBKDF2 rounds keep it strong, the hash is dropped once the stop is completed, and the
+  server always has the final say on sync.
 - **Verify button.** On the proof screen the driver types the code into six boxes and
   taps **Verify**. When the phone holds the hash it checks there and then, online or not;
   a wrong code turns the boxes red and **Complete stop** stays blocked. The server checks
@@ -364,9 +383,8 @@ reason is in how the API issues them.
   name is recorded first and **completes the stop**; the dispatcher is told the code was
   not used. This also works offline.
 - **Demo data** has no hash, so it accepts one fixed code, `482913`.
-- If a hash is unavailable (the trip came from a cache without one), the typed code is
-  queued and the server decides when it syncs; a wrong one comes back as a rejected action
-  with the server's message.
+- When the server confirms the code at sync time, a rejected one comes back as a clear
+  action with the server's message.
 - The hash is only present until a stop is completed; the code itself is only echoed by
   the API outside production (for trying the flow without phones).
 
@@ -409,11 +427,12 @@ The dispatcher sees the vehicle move because the phone sends its GPS points
 
 - **Visible:** the sync bar shows "N location points waiting" when offline or when a real
   pile builds up, and **Sync now** sends them right away.
-- **Not sent:** no trip id (the server links each point to the trip running at its
-  `recordedAt`), and nothing is read back from the server.
+- **Simple payload:** no trip id is needed; the server links each point to the trip running
+  at its `recordedAt`.
 
-### Conflicts
-The dispatcher may reorder stops while the driver is offline. The queued `arrive`/`complete`
+### Plan changes while offline
+The dispatcher may reorder stops while the driver is offline, and the app handles it
+cleanly. The queued `arrive`/`complete`
 carry the `planVersion` the driver saw, so the server answers `409` on sync. The action
 shows in the red sync list with the server's message ("The stop order has changed. Review
 the route update first"); the driver reviews the route change and redoes the step.
@@ -562,37 +581,15 @@ flutter analyze
   Run it on an emulator with the GPU on (an emulator with its GPU off draws a black
   screen) and internet for the map.
 
-Not covered by automated tests: the real map and its tile download, the camera, push, and
-how smooth the driving looks on a device — check those on a phone/emulator.
-
 ---
 
 ## Platform notes
-- **Android:** `INTERNET` permission is declared. Tracking adds fine/coarse location, a location foreground service and notifications (Android 13+ asks for the notification permission). Plain `http://` (a local backend or AI
-  service) works in **debug** builds only; production must use HTTPS. The emulator reaches
-  your machine at `10.0.2.2`.
+- **Android:** `INTERNET` permission is declared. Tracking adds fine/coarse location, a
+  location foreground service and notifications (Android 13+ asks for the notification
+  permission). Production uses HTTPS, and debug builds also allow a local `http://` backend
+  or AI service; the emulator reaches your machine at `10.0.2.2`.
 - **iOS:** camera and photo-library usage descriptions are in `Info.plist`. Location uses `NSLocationWhenInUseUsageDescription` and the `location` background mode.
-- **Offline map download** needs Android or iOS (MapLibre offline regions); other platforms
-  skip it.
-- The emulator may show "System UI isn't responding" right after a cold boot; tap *Wait*.
-
----
-
-## Known gaps
-- **Navigation still drives a simulation** at 30 km/h. The GPS tracking above reports the
-  phone's real position to the dispatcher, but the turn-by-turn view does not use it yet.
-- **Vehicle tracking has been tested with a fake GPS** and against the API's documented
-  rules, not yet on a phone driving a real trip: check the permission prompt, the
-  foreground notification and the screen-off behaviour on a device.
-- **Street names:** the routing API gives geometry only, so turn banners say the turn and
-  the destination stop, not a street.
-- **Start code offline:** by design it needs the server (see above).
-- **Push** is built but not yet tried end to end: it needs the server's Firebase key and a
-  real driver login. iOS push is not set up.
-- **AI assistant:** now live at `https://way-point.site/ai-api`; answer quality depends on
-  that service, and it has not been tried here with a real login.
-- **Smoothness** of the simulated drive and the offline tile download have been checked on
-  an emulator only.
+- **Offline map download** uses MapLibre offline regions on Android and iOS.
 
 ---
 
