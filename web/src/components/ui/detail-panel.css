@@ -1,0 +1,71 @@
+.wp-detail-panel-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-xs);
+  padding: var(--wp-space-xs) var(--wp-space-md);
+  border-bottom: 1px solid var(--wp-neutral-200);
+  background: var(--wp-neutral-50);
+}
+.wp-detail-panel-toolbar [aria-pressed='true'] {
+  background: var(--wp-neutral-200);
+}
+.wp-detail-panel-close {
+  margin-left: auto;
+}
+/* Two classes so the pop-up wins over each page's own single-class panel sizing. */
+.wp-detail-panel.wp-detail-panel--modal {
+  margin: auto;
+  width: min(var(--wp-spacing-140), calc(100% - var(--wp-space-4xl)));
+  max-height: calc(100svh - var(--wp-space-4xl));
+  min-height: 0;
+  padding: var(--wp-space-none);
+  overflow-y: auto;
+  background: var(--wp-neutral-50);
+  color: var(--wp-text-primary);
+}
+/* The shared panel style sets `display`, which would otherwise show a closed dialog. */
+.wp-detail-panel.wp-detail-panel--modal:not([open]) {
+  display: none;
+}
+.wp-detail-panel--modal::backdrop {
+  background: rgb(from var(--wp-neutral-950) r g b / 25%);
+}
+.wp-detail-panel--modal .wp-detail-panel-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* The side panel slides in for each record; the pop-up rises over a fading backdrop. */
+.wp-detail-panel:not(.wp-detail-panel--modal) {
+  animation: wp-detail-panel-slide 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.wp-detail-panel--modal[open] {
+  animation: wp-detail-panel-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.wp-detail-panel--modal[open]::backdrop {
+  animation: wp-detail-panel-fade 260ms ease;
+}
+@keyframes wp-detail-panel-slide {
+  from {
+    opacity: 0;
+    transform: translateX(var(--wp-space-3xl));
+  }
+}
+@keyframes wp-detail-panel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--wp-space-xl)) scale(0.98);
+  }
+}
+@keyframes wp-detail-panel-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wp-detail-panel,
+  .wp-detail-panel--modal[open]::backdrop {
+    animation: none;
+  }
+}

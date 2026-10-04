@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { User } from '../../../database/entities/user.entity';
+import { Vehicle } from '../../../database/entities/vehicle.entity';
 
 @Injectable()
 export class UserAuthRepository {
@@ -10,16 +11,26 @@ export class UserAuthRepository {
     private readonly repository: Repository<User>,
   ) {}
 
-  findByEmail(email: string): Promise<User | null> {
-    return this.repository.findOneBy({ email });
-  }
-
+  // Both carry the avatar image, so a response can give its URL.
   findByPhone(phone: string): Promise<User | null> {
-    return this.repository.findOneBy({ phone });
+    return this.repository.findOne({
+      where: { phone },
+      relations: { avatarImage: true },
+    });
   }
 
   findById(id: number): Promise<User | null> {
-    return this.repository.findOneBy({ id });
+    return this.repository.findOne({
+      where: { id },
+      relations: { avatarImage: true },
+    });
+  }
+
+  /** The vehicle a driver is assigned to; a driver is on one vehicle at a time. */
+  findVehicleOfDriver(driverId: number): Promise<Vehicle | null> {
+    return this.repository.manager
+      .getRepository(Vehicle)
+      .findOneBy({ driverId, isActive: true });
   }
 
   create(data: import('typeorm').DeepPartial<User>): User {

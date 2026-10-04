@@ -10,9 +10,9 @@ http:
     type: json
     data: |-
       {
-        "phone": "{{phone}}",
-        "otp": "{{otp}}",
-        "otpId": {{otpId}}
+        "phone": "0711120401",
+        "otp": "689451",
+        "otpId": "2"
       }
 
 settings:

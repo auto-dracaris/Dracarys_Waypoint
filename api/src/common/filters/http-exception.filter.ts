@@ -41,6 +41,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
           data = resObj.message; // keep the full set for debugging
         } else if (resObj.message) {
           message = resObj.message;
+          // A service may attach `data` to an error — e.g. the current trip
+          // on a 409, so a handset can reconcile with it.
+          data = resObj.data ?? null;
         }
       }
     } else if (exception instanceof Error) {

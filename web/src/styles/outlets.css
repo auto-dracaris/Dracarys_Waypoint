@@ -1,0 +1,245 @@
+@reference "../index.css";
+
+.outlet-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--wp-space-xl);
+}
+.outlet-metric {
+  border: 1px solid var(--wp-neutral-200);
+  border-radius: var(--wp-radius-sm);
+  padding: var(--wp-space-md) var(--wp-space-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--wp-space-xs);
+}
+.outlet-metric > div {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wp-space-md);
+}
+.outlet-metric svg {
+  width: var(--wp-space-4xl);
+  height: var(--wp-space-4xl);
+  color: var(--wp-text-secondary);
+  flex-shrink: 0;
+}
+.outlet-workspace {
+  margin-top: var(--wp-space-xs);
+}
+.outlet-filters {
+  flex-shrink: 0;
+}
+.outlet-filters button {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+}
+.outlet-table tbody tr:nth-child(even) td:last-child {
+  background: transparent;
+}
+.outlet-details {
+  min-height: var(--wp-spacing-180);
+}
+/* Original Figma store slot, texture dimensions, and image crop. */
+.outlet-texture {
+  position: absolute;
+  width: 496px;
+  height: 124px;
+  top: -1px;
+  left: -6px;
+  max-width: none;
+  object-fit: cover;
+  mix-blend-mode: soft-light;
+}
+.outlet-store-crop {
+  position: absolute;
+  width: 143px;
+  height: 143px;
+  top: -20px;
+  left: -6px;
+  overflow: hidden;
+}
+.outlet-store-crop img {
+  position: absolute;
+  width: 300%;
+  height: 100%;
+  top: -0.03%;
+  left: -15.04%;
+  max-width: none;
+}
+.outlet-details-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-3xl);
+  padding: var(--wp-space-xl) var(--wp-space-lg);
+  flex: 1;
+}
+.outlet-requirements {
+  border: 1px solid var(--wp-neutral-200);
+  background: var(--wp-neutral-50);
+  border-radius: var(--wp-radius-xl);
+  padding: var(--wp-space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xl);
+}
+.outlet-requirements > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-sm);
+}
+.outlet-requirement-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-md);
+}
+.outlet-requirement-rows > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--wp-space-md);
+}
+.outlet-requirement-rows dt {
+  flex-shrink: 0;
+}
+.outlet-requirement-rows dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.outlet-edit-action {
+  display: flex;
+  justify-content: flex-end;
+}
+.outlet-edit-action .wp-button {
+  padding: var(--wp-space-sm) var(--wp-space-md);
+}
+.outlet-next-delivery,
+.outlet-activity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-md);
+}
+.outlet-schedule {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-md);
+  flex-wrap: wrap;
+}
+.outlet-schedule > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-xs);
+  padding-right: var(--wp-space-md);
+  border-right: 1px solid var(--wp-neutral-200);
+}
+.outlet-schedule svg,
+.outlet-orders-link svg {
+  width: var(--wp-space-2xl);
+  height: var(--wp-space-2xl);
+  flex-shrink: 0;
+}
+.outlet-order-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wp-space-md);
+  flex-wrap: wrap;
+}
+.outlet-tags {
+  display: flex;
+  gap: var(--wp-space-md);
+}
+.outlet-tags span {
+  display: inline-flex;
+  align-items: center;
+  height: var(--wp-space-2xl);
+  padding-inline: var(--wp-space-md);
+  background: var(--wp-blue-100);
+  color: var(--wp-blue-700);
+  border-radius: var(--wp-radius-lg);
+}
+.outlet-orders-link {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-xs);
+  cursor: pointer;
+}
+.outlet-activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--wp-space-md);
+}
+.outlet-activity-item > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+}
+.outlet-activity-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--wp-space-3xl);
+  height: var(--wp-space-3xl);
+  border: 1px solid currentColor;
+  border-radius: var(--wp-radius-xs);
+  flex-shrink: 0;
+}
+.outlet-activity-icon svg {
+  width: var(--wp-space-2xl);
+  height: var(--wp-space-2xl);
+}
+.outlet-activity-icon--success {
+  color: var(--wp-text-success-primary);
+}
+.outlet-activity-icon--warning {
+  color: var(--wp-text-warning-primary);
+}
+@container (max-width: 800px) {
+  .outlet-toolbar {
+    flex-direction: column;
+  }
+  .outlet-toolbar .fleet-search {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    flex: none;
+  }
+}
+@media (max-width: 1199px) {
+  .outlet-details {
+    min-height: auto;
+  }
+}
+@media (max-width: 767px) {
+  .outlet-metrics {
+    gap: var(--wp-space-md);
+  }
+  .outlet-metric {
+    padding: var(--wp-space-md);
+  }
+  .outlet-metric > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .outlet-metric strong {
+    @apply type-display-md-semibold;
+  }
+  .outlet-metric span {
+    @apply type-text-xs-medium;
+  }
+  .outlet-filters {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .outlet-filters button {
+    @apply type-text-xs-regular;
+    padding-inline: var(--wp-space-md);
+  }
+  .outlet-filters .route-filter--active {
+    @apply type-text-xs-medium;
+  }
+}

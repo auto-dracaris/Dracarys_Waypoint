@@ -1,24 +1,54 @@
-import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
-import { BaseBaseEntity } from '../../common/entities/base-base.entity';
-import { Depot } from '../../common/enums/depot.enum';
-import { VehicleTemp } from '../../common/enums/vehicle-temp.enum';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
+import type { Relation } from 'typeorm';
+import { AutoIncBaseEntity } from '../../common/entities/autoinc-base.entity';
+import { FuelType } from '../../common/enums/fuel-type.enum';
+import { VehicleStatus } from '../../common/enums/vehicle-status.enum';
 import { VehicleType } from '../../common/enums/vehicle-type.enum';
+import { decimalTransformer } from '../../common/utils/decimal.transformer';
+import { Depot } from './depot.entity';
+import { Trip } from './trip.entity';
+import { User } from './user.entity';
 
 @Entity('vehicles')
-@Index(['depot'])
+@Index(['depotId'])
 @Index(['type'])
-@Index(['temp'])
-export class Vehicle extends BaseBaseEntity {
-  @PrimaryColumn({ name: 'vehicle_id', type: 'varchar', length: 20 })
-  vehicleId: string;
+@Index(['isRefrigerated'])
+export class Vehicle extends AutoIncBaseEntity {
+  // The dataset's identifier, e.g. VEH001.
+  @Column({ name: 'unique_id', type: 'varchar', length: 20, unique: true })
+  uniqueId: string;
+
+  // Not in the shared dataset, so nullable until an operator fills it in.
+  @Column({
+    name: 'registration_no',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+    unique: true,
+  })
+  registrationNo: string | null;
 
   @Column({ type: 'enum', enum: VehicleType })
   type: VehicleType;
 
-  @Column({ type: 'enum', enum: VehicleTemp })
-  temp: VehicleTemp;
+  // `temp = reefer` in the dataset. Only these may carry chilled orders.
+  @Column({ name: 'is_refrigerated', type: 'boolean', default: false })
+  isRefrigerated: boolean;
 
-  @Column({ name: 'weight_cap_kg', type: 'int' })
+  @Column({
+    name: 'weight_cap_kg',
+    type: 'decimal',
+    precision: 8,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   weightCapKg: number;
 
   @Column({
@@ -26,31 +56,87 @@ export class Vehicle extends BaseBaseEntity {
     type: 'decimal',
     precision: 6,
     scale: 2,
-    transformer: {
-      to: (value: number) => value,
-      from: (value: string) => (value ? parseFloat(value) : value),
-    },
+    transformer: decimalTransformer,
   })
   volumeCapM3: number;
 
-  @Column({ name: 'fuel_type', type: 'varchar', length: 30, default: 'diesel' })
-  fuelType: string;
+  @Column({
+    name: 'fuel_type',
+    type: 'enum',
+    enum: FuelType,
+    default: FuelType.DIESEL,
+  })
+  fuelType: FuelType;
 
   @Column({
     name: 'km_per_l',
     type: 'decimal',
     precision: 4,
     scale: 2,
-    transformer: {
-      to: (value: number) => value,
-      from: (value: string) => (value ? parseFloat(value) : value),
-    },
+    transformer: decimalTransformer,
   })
   kmPerL: number;
 
-  @Column({ name: 'weekly_fuel_quota_l', type: 'int' })
+  @Column({
+    name: 'weekly_fuel_quota_l',
+    type: 'decimal',
+    precision: 7,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   weeklyFuelQuotaL: number;
 
-  @Column({ type: 'enum', enum: Depot })
-  depot: Depot;
+  // Unique: a driver is on one vehicle at a time.
+  @Column({ name: 'driver_id', type: 'int', nullable: true, unique: true })
+  driverId: number | null;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'driver_id' })
+  driver?: Relation<User> | null;
+
+  // Home depot: the vehicle serves only this depot's outlets.
+  @Column({ name: 'depot_id', type: 'int' })
+  depotId: number;
+
+  @ManyToOne(() => Depot)
+  @JoinColumn({ name: 'depot_id' })
+  depot?: Relation<Depot>;
+
+  @Column({
+    type: 'enum',
+    enum: VehicleStatus,
+    default: VehicleStatus.AVAILABLE,
+  })
+  status: VehicleStatus;
+
+  // Latest point from `vehicle_locations`, kept here for cheap map reads.
+  @Column({
+    name: 'last_lat',
+    type: 'decimal',
+    precision: 9,
+    scale: 6,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
+  lastLat: number | null;
+
+  @Column({
+    name: 'last_lng',
+    type: 'decimal',
+    precision: 9,
+    scale: 6,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
+  lastLng: number | null;
+
+  @Column({ name: 'last_location_at', type: 'timestamptz', nullable: true })
+  lastLocationAt: Date | null;
+
+  @OneToMany(() => Trip, (trip) => trip.vehicle)
+  trips?: Relation<Trip[]>;
+
+  // Not a column: filled by `VehiclesRepository.findWithFilters` with the
+  // vehicle's trip count for the requested date.
+  plannedTrips?: number;
 }

@@ -1,0 +1,4 @@
+name: prod
+variables:
+  - name: baseUrl
+    value: https://api.way-point.site/api

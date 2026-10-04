@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "phone": "0770000000",
+        "phone": "0711120401",
         "password": "111111"
       }
 

@@ -1,0 +1,306 @@
+@reference "../index.css";
+
+/* One tile per role plus the total: five across when there is room, wrapping before they get cramped. */
+.team-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--wp-space-xl);
+}
+.team-metric {
+  border: 1px solid var(--wp-neutral-200);
+  border-radius: var(--wp-radius-sm);
+  padding: var(--wp-space-md) var(--wp-space-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--wp-space-xs);
+}
+.team-metric > div {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wp-space-md);
+}
+.team-metric svg {
+  width: var(--wp-space-4xl);
+  height: var(--wp-space-4xl);
+  color: var(--wp-text-secondary);
+  flex-shrink: 0;
+}
+.team-metric > div > span {
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.team-workspace {
+  margin-top: var(--wp-space-xs);
+}
+/* Five role tabs: the search box drops below them, and the tabs wrap, before anything overflows. */
+.team-toolbar {
+  flex-wrap: wrap;
+}
+.team-filters {
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.team-table {
+  min-width: var(--wp-spacing-192);
+}
+.team-member-column {
+  width: 27%;
+}
+.team-table tbody tr:nth-child(even) td:last-child {
+  background: transparent;
+}
+.team-table tbody td {
+  height: var(--wp-space-8xl);
+}
+.team-table tbody td:first-child {
+  padding: var(--wp-space-xl);
+}
+.team-member {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-lg);
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+.team-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--wp-space-6xl);
+  height: var(--wp-space-6xl);
+  border-radius: var(--wp-radius-full);
+  background: var(--wp-neutral-100);
+  flex-shrink: 0;
+}
+.team-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xxs);
+  min-width: 0;
+}
+.team-identity strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.team-identity .wp-status-badge {
+  align-self: flex-start;
+}
+/* Preserve the original illustration slot and source crop from Figma. */
+.team-driver-crop {
+  position: absolute;
+  width: 149px;
+  height: 149px;
+  left: -14px;
+  top: -25px;
+  overflow: hidden;
+}
+.team-driver-crop img {
+  position: absolute;
+  width: 300.3%;
+  height: 100%;
+  left: -96.64%;
+  top: 26.98%;
+  max-width: none;
+}
+.team-details {
+  align-self: stretch;
+  min-height: var(--wp-spacing-180);
+}
+.team-details-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-3xl);
+  padding: var(--wp-space-xl) var(--wp-space-lg) 0;
+  flex: 1;
+}
+.team-work-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-lg);
+  padding-top: var(--wp-space-2xl);
+  min-height: var(--wp-spacing-48);
+}
+.team-detail-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-lg);
+}
+.team-detail-rows > div {
+  display: grid;
+  grid-template-columns: var(--wp-spacing-32) minmax(0, 1fr);
+  gap: var(--wp-space-md);
+}
+.team-detail-rows dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.team-access-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-lg);
+}
+.team-access-form .team-detail-rows > label {
+  display: grid;
+  grid-template-columns: var(--wp-spacing-32) minmax(0, 1fr);
+  gap: var(--wp-space-md);
+  align-items: center;
+}
+.team-access-status {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-md);
+  min-width: 0;
+}
+.team-access-status .wp-form-control {
+  flex: 1;
+}
+.team-access-status .wp-status-badge {
+  flex-shrink: 0;
+}
+.team-callout {
+  padding: var(--wp-space-md) var(--wp-space-lg);
+  border-radius: var(--wp-radius-md);
+  border: 1px solid var(--wp-neutral-200);
+  background: var(--wp-neutral-100);
+  color: var(--wp-text-secondary);
+}
+.team-callout--warning {
+  background: var(--wp-yellow-50);
+  border-color: var(--wp-yellow-200);
+}
+.team-callout--error {
+  background: var(--wp-red-50);
+  border-color: var(--wp-red-200);
+  color: var(--wp-red-700);
+}
+.team-access-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-md);
+  padding-top: var(--wp-space-lg);
+  border-top: 1px solid var(--wp-neutral-200);
+}
+.team-access-dirty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wp-space-md);
+}
+.team-vehicle-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wp-space-md);
+  text-decoration: underline;
+  color: var(--wp-yellow-500);
+  cursor: pointer;
+  align-self: flex-start;
+}
+.team-vehicle-link svg {
+  width: var(--wp-space-2xl);
+  height: var(--wp-space-2xl);
+}
+.team-today-trips {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-md);
+  padding-top: var(--wp-space-xl);
+  padding-bottom: var(--wp-space-xl);
+}
+.team-trip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wp-space-md);
+  min-height: var(--wp-space-8xl);
+  padding: var(--wp-space-lg) var(--wp-space-2xl);
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--wp-neutral-200);
+  border-radius: var(--wp-radius-lg);
+  cursor: pointer;
+}
+.team-trip:hover {
+  background: var(--wp-warm-neutral-100);
+}
+.team-trip > svg {
+  width: var(--wp-space-2xl);
+  height: var(--wp-space-2xl);
+  flex-shrink: 0;
+}
+.team-trip-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xs);
+  min-width: 0;
+}
+.team-trip-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-3xl);
+  flex-wrap: wrap;
+}
+.team-trip-status {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--wp-space-xs) var(--wp-space-lg);
+  border-radius: var(--wp-radius-full);
+  white-space: nowrap;
+}
+.team-trip-status--completed {
+  color: var(--wp-lime-800);
+  background: var(--wp-lime-100);
+}
+.team-trip-status--progress {
+  color: var(--wp-blue-700);
+  background: var(--wp-blue-100);
+}
+.team-update-time {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-md);
+}
+.team-update-time svg {
+  width: var(--wp-space-2xl);
+  height: var(--wp-space-2xl);
+  flex-shrink: 0;
+}
+@media (max-width: 1199px) {
+  .team-details {
+    min-height: auto;
+  }
+}
+@media (max-width: 767px) {
+  .team-metrics {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--wp-space-xs);
+  }
+  .team-metric {
+    padding: var(--wp-space-sm);
+  }
+  .team-metric > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .team-metric strong {
+    @apply type-display-md-semibold;
+  }
+  .team-metric span {
+    @apply type-text-xs-medium;
+  }
+  .team-filters button {
+    @apply type-text-xs-regular;
+  }
+  .team-filters .route-filter--active {
+    @apply type-text-xs-medium;
+  }
+  .team-detail-rows > div,
+  .team-access-form .team-detail-rows > label {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

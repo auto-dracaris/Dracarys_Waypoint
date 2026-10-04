@@ -1,0 +1,26 @@
+info:
+  name: Vehicle Summary
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{baseUrl}}/vehicles/summary?depot=Peliyagoda&date=2026-10-03"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  The status cards and the review alert at the top of the Vehicles page. Dispatcher only.
+
+  Query (both optional):
+  - `depot`: Peliyagoda | Kandy. Omit for the whole fleet.
+  - `date`: YYYY-MM-DD. Defaults to today.
+
+  Response `data`: `{ total, available, inWorkshop, unavailable, needsReview }`.
+
+  `unavailable` is the `breakdown` status. `needsReview` counts vehicles that are not available yet still hold draft or planned trips from `date` on ("n vehicle changes need review").

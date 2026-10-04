@@ -4,7 +4,6 @@ import { UserRole } from '../enums/user-role.enum';
 
 export interface AuthenticatedUser {
   userId: number;
-  email: string;
   role: UserRole;
   // The live `user_sessions` row this request's access token was issued
   // under — set by JwtStrategy.validate() once it has confirmed the session

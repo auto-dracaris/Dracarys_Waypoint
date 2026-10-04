@@ -42,14 +42,14 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
     constructor(@InjectRepository(User) repository: Repository<User>) {
       super(repository);
     }
-    // only entity-specific queries go here, e.g. findByEmail(email)
+    // only entity-specific queries go here, e.g. findByPhone(phone)
   }
   ```
 - `BaseCrudService<T>` (`src/common/services/base-crud.service.ts`) implements
   `create`/`findAll`/`findOne`/`update` — 404 handling, pagination shaping,
   `ApiResponseDto` wrapping. Concrete services call `super(repository, 'EntityName')`
   and override the `protected beforeCreate(dto)` / `protected beforeUpdate(id, dto, entity)`
-  hooks for business-rule checks that need a DB lookup (e.g. email uniqueness) —
+  hooks for business-rule checks that need a DB lookup (e.g. phone uniqueness) —
   those hooks are no-ops by default. Anything beyond plain CRUD (an extra route
   like `PATCH /:id/status`, or a bespoke flow like `login`) stays hand-written in
   the concrete service, using the inherited `repository` and `findOrThrow(id)`.
@@ -79,7 +79,7 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
   validation in controllers or services.
 - **All input validation happens at the DTO level only.** Services must not
   re-validate what a DTO decorator can express. Service-layer checks are limited to
-  business rules needing DB/state lookups ("email already in use", "session
+  business rules needing DB/state lookups ("phone already in use", "session
   revoked") — not shape or format checks.
 - Paginated endpoints take `@Query() query: PaginationQueryDto`
   (`src/common/dto/pagination-query.dto.ts`) — never `@Query('page')` parsed by hand.
@@ -128,7 +128,7 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
   `UserRole.DISPATCHER` is the admin: user management is
   `@Roles(UserRole.DISPATCHER)`. Adding a protected route means choosing which roles
   may call it. `@Roles(A, B)` is **OR**.
-- `JwtStrategy.validate` returns the role (and email) from the `users` row it loads,
+- `JwtStrategy.validate` returns the role from the `users` row it loads,
   not from the token payload, so a role change applies on the user's next request.
   `PATCH /users/:id/role` and `/status` refuse to change the caller's own account, so a
   dispatcher cannot lock themselves out.
@@ -164,6 +164,11 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
 - Entities extend `AutoIncBaseEntity` (the default) or `UuidBaseEntity`
   (`src/common/entities/`), both of which carry the audit columns from
   `BaseBaseEntity`.
+- **A string is never the primary key.** Identifiers that come from the dataset
+  (`OUT001`, `VEH001`) live in a unique `unique_id` column next to a generated `id`;
+  depots and districts are identified by a unique `name`. Seeds link rows by those
+  columns, not by assumed ids. The two exceptions are `calendar` (keyed by its date) and
+  `service_allowance` (keyed by brand + dock type).
 - TS properties are camelCase; every DB column is explicitly snake_cased via
   `@Column({ name: 'foo_bar' })`. Table names are explicit snake_case plurals.
 - Rows are retired by a status column, not deleted, so the audit trail and historical
@@ -176,7 +181,10 @@ concrete `@Injectable()` class; it just inherits shared CRUD methods.
 - Placeholders in raw SQL are `$1, $2, …`, not `?`.
 - Quote `"key"`, `"value"`, `"type"` and friends in raw SQL. Keep identifiers
   snake_case so unquoted case-folding is never an issue.
-- Timestamps are `type: 'timestamp'`.
+- Timestamps on the auth tables are `type: 'timestamp'`. The delivery tables
+  (orders, trips, trip stops, vehicle locations, issues) use `timestamptz`, because
+  driver handsets send device times with an offset and those must not shift on
+  storage.
 
 ## Structure
 

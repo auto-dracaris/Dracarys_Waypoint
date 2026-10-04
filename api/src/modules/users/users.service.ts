@@ -3,20 +3,28 @@ import {
   ConflictException,
   HttpStatus,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { DeepPartial } from 'typeorm';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
+import { DepotsRepository } from '../../common/repositories/depots.repository';
 import { BaseCrudService } from '../../common/services/base-crud.service';
 import { formatPhoneNumber } from '../../common/utils/phone.util';
 import { User } from '../../database/entities/user.entity';
+import { OutletsRepository } from '../outlets/repositories/outlets.repository';
 import { PatchUserRoleDto } from './dto/patch-user-role.dto';
 import { PatchUserStatusDto } from './dto/patch-user-status.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UserListQueryDto } from './dto/user-list-query.dto';
 import { UsersRepository } from './repositories/users.repository';
 
 @Injectable()
 export class UsersService extends BaseCrudService<User> {
-  constructor(private readonly usersRepository: UsersRepository) {
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly depotsRepository: DepotsRepository,
+    private readonly outletsRepository: OutletsRepository,
+  ) {
     super(usersRepository, 'User');
   }
 
@@ -25,9 +33,6 @@ export class UsersService extends BaseCrudService<User> {
     dto: DeepPartial<User>,
     entity: User,
   ): Promise<void> {
-    if (dto.email && dto.email !== entity.email) {
-      await this.assertEmailIsFree(dto.email);
-    }
     if (dto.phone && dto.phone !== entity.phone) {
       await this.assertPhoneIsFree(dto.phone);
     }
@@ -58,7 +63,7 @@ export class UsersService extends BaseCrudService<User> {
   }
 
   async findOne(id: string | number): Promise<ApiResponseDto> {
-    const user = await this.findOrThrow(id);
+    const user = await this.findWithDepotOrThrow(Number(id));
     return new ApiResponseDto(
       HttpStatus.OK,
       'User retrieved successfully',
@@ -89,6 +94,43 @@ export class UsersService extends BaseCrudService<User> {
   }
 
   /**
+   * `PUT /users/:id` — profile fields plus the home depot and, for a store
+   * manager, their outlet. Both arrive by name/id as the dataset spells them,
+   * so they are resolved to their rows before the plain update runs.
+   */
+  async updateProfile(
+    id: number,
+    dto: UpdateUserDto,
+    actorId: number,
+  ): Promise<ApiResponseDto> {
+    const { depot: depotName, outlet: outletId, ...fields } = dto;
+    const changes: DeepPartial<User> = fields;
+    if (depotName) {
+      const depot = await this.depotsRepository.findByName(depotName);
+      if (!depot) {
+        throw new BadRequestException('Depot not found');
+      }
+      changes.depotId = depot.id;
+    }
+    if (outletId === null) {
+      changes.outletId = null;
+    } else if (outletId !== undefined) {
+      const outlet = await this.outletsRepository.findByUniqueId(outletId);
+      if (!outlet) {
+        throw new BadRequestException('Outlet not found');
+      }
+      changes.outletId = outlet.id;
+    }
+    await this.update(id, changes, actorId);
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'User updated successfully',
+      this.toPublic(await this.findWithDepotOrThrow(id)),
+    );
+  }
+
+  /**
    * Status is the only way a user leaves the system — rows are never hard
    * deleted, so the audit trail and every historical reference stay intact.
    */
@@ -106,7 +148,7 @@ export class UsersService extends BaseCrudService<User> {
     return new ApiResponseDto(
       HttpStatus.OK,
       'User status updated successfully',
-      this.toPublic(saved),
+      this.toPublic(await this.findWithDepotOrThrow(saved.id)),
     );
   }
 
@@ -128,7 +170,7 @@ export class UsersService extends BaseCrudService<User> {
     return new ApiResponseDto(
       HttpStatus.OK,
       'User role updated successfully',
-      this.toPublic(saved),
+      this.toPublic(await this.findWithDepotOrThrow(saved.id)),
     );
   }
 
@@ -153,13 +195,6 @@ export class UsersService extends BaseCrudService<User> {
     }
   }
 
-  private async assertEmailIsFree(email: string): Promise<void> {
-    const existing = await this.usersRepository.findByEmail(email);
-    if (existing) {
-      throw new ConflictException('Email is already in use by another user');
-    }
-  }
-
   private async assertPhoneIsFree(phone: string): Promise<void> {
     const existing = await this.usersRepository.findByPhone(phone);
     if (existing) {
@@ -169,8 +204,18 @@ export class UsersService extends BaseCrudService<User> {
     }
   }
 
+  /** With the depot and outlet rows, so the response carries their names. */
+  private async findWithDepotOrThrow(id: number): Promise<User> {
+    const user = await this.usersRepository.findWithDepot(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return user;
+  }
+
+  // Without the password hash, and with the profile picture as its URL.
   private toPublic(user: User) {
-    const { passwordHash: _passwordHash, ...result } = user;
-    return result;
+    const { passwordHash: _passwordHash, avatarImage, ...result } = user;
+    return { ...result, avatar: avatarImage?.url ?? null };
   }
 }

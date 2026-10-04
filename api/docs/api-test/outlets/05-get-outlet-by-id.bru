@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseURL}}/api/outlets/OUT001
+  url: {{baseURL}}/api/outlets/1
   body: none
   auth: none
 }
@@ -16,10 +16,11 @@ headers {
 
 assert {
   res.status: eq 200
-  res.body.data.outletId: eq OUT001
+  res.body.data.id: eq 1
+  res.body.data.uniqueId: eq OUT001
   res.body.data.brand: eq Fresh
-  res.body.data.district: eq Colombo
-  res.body.data.depot: eq Peliyagoda
+  res.body.data.district.name: eq Colombo
+  res.body.data.depot.name: eq Peliyagoda
   res.body.data.dockType: eq street
   res.body.data.parkingConstraint: eq van_only
 }

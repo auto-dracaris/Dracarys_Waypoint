@@ -1,0 +1,26 @@
+info:
+  name: Update Vehicle Status
+  type: http
+  seq: 3
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/vehicles/{{vehicleId}}/status"
+  body:
+    type: json
+    data: |-
+      {
+        "status": "in_workshop"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  The "Update availability" action: available | in_workshop | breakdown. Dispatcher only.
+
+  Response `data` is the vehicle plus `affectedTrips`: how many of its draft or planned trips from today on now need review (0 when the vehicle is available).

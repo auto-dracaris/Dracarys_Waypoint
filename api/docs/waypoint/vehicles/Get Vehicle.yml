@@ -1,0 +1,24 @@
+info:
+  name: Get Vehicle
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/vehicles/{{vehicleId}}?date=2026-10-03"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  One vehicle for the detail panel. Dispatcher only. `date` (YYYY-MM-DD) is optional and defaults to today.
+
+  On top of the vehicle's own fields, `data` has:
+  - `depot`: the home depot
+  - `driver`: `{ id, firstName, lastName, phone }` or null
+  - `fuelQuotaRemainingL`: the weekly quota minus the planned fuel of the vehicle's non-cancelled trips in the ISO week containing `date`
+  - `trips`: the non-cancelled trips on `date`, each `{ id, tripNo, status, plannedDepartAt, plannedEndAt, stops, recordedStops, nextStop, orders }` (`stops` counts outlets, `recordedStops` the outlets where every order has an outcome, `nextStop` is the next outlet's name or null, `orders` counts orders)
