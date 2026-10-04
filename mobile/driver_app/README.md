@@ -76,32 +76,6 @@ By default the app talks to the hosted API, `https://api.way-point.site/api`.
 | `HIDE_DEMO_UI` | `false` | Hide the "Demo data" switch, for a recording. |
 | `DEMO_SPEED_KMH` | `30` | How fast the simulated van drives. |
 
-These demo settings are already in `config/demo.json`.
-
-### Demo data (no server needed)
-
-A **Demo data** switch is on the sign-in screen and at the bottom of the Account tab
-(debug builds only, and hidden by `HIDE_DEMO_UI`). When on, every repository is swapped
-for built-in fake data: trips, fake route changes, notifications, a scripted assistant.
-Sign in with any phone number and a password of 6+ characters.
-
-- **Colombo story** (`DEMO_AREA=colombo`): *Trip 1*, already loaded, four stops about
-  1 km apart through Pettah, Slave Island, Galle Face and the World Trade Centre (tall
-  buildings for the 3D view), and *Trip 2*, still loading. The demo depot is at the Fort.
-- **Delivery code in demo:** type **`482913`** on the proof screen; any other code is
-  refused, so a wrong-code moment can be shown too.
-
-- Switching sends you back to sign-in (demo data has its own session). Your real
-  session is untouched and returns when you switch back.
-- The choice is remembered between launches.
-- Useful demo hooks (debug builds): **long-press the yellow "Loading in progress" banner** on the trip
-  overview to mark loading complete (stands in for the loader's app); **long-press the
-  Online pill** to force the app offline until you long-press it again.
-- Demo mode shows off the screens, map and navigation end to end. The offline queue, sync
-  and offline code check are part of the real build and are covered by automated tests.
-
----
-
 ## Features
 
 ### Sign-in and account
