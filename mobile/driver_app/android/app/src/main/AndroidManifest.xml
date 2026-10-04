@@ -1,6 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Needed in release builds to load map tiles. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Vehicle tracking while a trip is under way. The location foreground
+         service keeps the points flowing with the screen off; its notification
+         is what tells the driver the phone is sharing its position. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="driver_app"
         android:name="${applicationName}"

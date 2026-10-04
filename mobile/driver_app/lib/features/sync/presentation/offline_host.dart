@@ -9,6 +9,7 @@ import '../../auth/presentation/auth_controller.dart';
 import '../../navigation/data/offline_map_service.dart';
 import '../../trips/data/trips_providers.dart';
 import '../../trips/domain/trip.dart';
+import '../../tracking/application/location_tracker.dart';
 import '../application/sync_service.dart';
 
 /// Sits above the whole app and keeps the offline machinery running: starts the
@@ -46,7 +47,9 @@ class _OfflineHostState extends ConsumerState<OfflineHost>
   }
 
   void _prefetchMaps(List<Trip> trips) {
-    if (ref.read(demoModeProvider) || !ref.read(mapTilesEnabledProvider)) return;
+    if (ref.read(demoModeProvider) || !ref.read(mapTilesEnabledProvider)) {
+      return;
+    }
     if (!ref.read(onlineProvider)) return;
     final driver = ref.read(authControllerProvider).value;
     final depot = driver?.depotLat != null && driver?.depotLng != null
@@ -66,6 +69,8 @@ class _OfflineHostState extends ConsumerState<OfflineHost>
   Widget build(BuildContext context) {
     // Watching starts the service and keeps it alive for the whole session.
     ref.watch(syncServiceProvider);
+    // And the vehicle tracking, which records and sends its position during a trip.
+    ref.watch(locationTrackerProvider.select((s) => s.tracking));
     ref.listen(tripsProvider, (_, next) {
       final trips = next.value;
       if (trips != null) _prefetchMaps(trips);
