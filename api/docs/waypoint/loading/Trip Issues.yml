@@ -13,7 +13,7 @@ http:
 runtime:
   variables:
     - name: tripId
-      value: 9c9acd3e-5f21-4f79-b22a-51979d334687
+      value: 6e4152e8-35c3-4647-81fe-2f5762014a35
 
 settings:
   encodeUrl: true

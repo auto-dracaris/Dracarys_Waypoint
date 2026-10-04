@@ -1,0 +1,20 @@
+info:
+  name: Mark Read
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/notifications/{{notificationId}}/read"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Marks one notification read; safe to repeat. 404 if the id is not one of the caller's. Set `{{notificationId}}` from List Notifications.
+
+  `POST /notifications/read-all` marks everything read.

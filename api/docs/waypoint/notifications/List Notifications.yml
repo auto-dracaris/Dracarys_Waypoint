@@ -1,0 +1,31 @@
+info:
+  name: List Notifications
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/notifications?page=1&limit=10"
+  params:
+    - name: page
+      value: "1"
+      type: query
+    - name: limit
+      value: "10"
+      type: query
+    - name: unread
+      value: "true"
+      type: query
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  The caller's notifications, newest first. `data` is `{ items, meta, unreadCount }`; `unreadCount` is the total unread whatever the filter. Enable `unread=true` to leave out what has been read.
+
+  Each item is `{ id, type, severity, title, body, data, read, createdAt }`. `data` holds the ids of what it is about (`tripId`, `orderId`, `issueId`, `date`).

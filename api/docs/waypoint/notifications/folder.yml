@@ -1,0 +1,13 @@
+info:
+  name: notifications
+  type: folder
+  seq: 5
+
+request:
+  auth:
+    type: bearer
+    token: "{{accessToken}}"
+
+docs:
+  content: Notifications (`/api/notifications`, `/api/devices`), any signed-in role. Requests use Bearer `{{accessToken}}`, the token of whoever logged in last with Auth → Login; each caller only reaches their own notifications.
+  type: text/markdown

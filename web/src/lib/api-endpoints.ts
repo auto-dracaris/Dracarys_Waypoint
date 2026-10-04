@@ -60,4 +60,9 @@ export const API_ENDPOINTS = {
     status: (id: number) => `/vehicles/${id}/status`,
     driver: (id: number) => `/vehicles/${id}/driver`,
   },
+  notifications: {
+    list: '/notifications',
+    read: (id: string) => `/notifications/${id}/read`,
+    readAll: '/notifications/read-all',
+  },
 } as const

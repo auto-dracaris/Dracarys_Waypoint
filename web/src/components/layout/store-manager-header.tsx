@@ -1,6 +1,7 @@
 import React from 'react'
 import { Button } from '@/components/ui/shadcn/button'
-import { Calendar, ShoppingCart, Bell, ChevronDown } from 'lucide-react'
+import { Calendar, ShoppingCart, ChevronDown } from 'lucide-react'
+import { NotificationDialog } from '@/features/store-manager/components/notification-dialog'
 
 export interface BreadcrumbItem {
   label: string
@@ -13,11 +14,10 @@ export interface HeaderProps {
   dateLabel: string // e.g., "Tuesday, 29 September"
   breadcrumbs: BreadcrumbItem[]
   onPlaceOrder?: () => void
-  onOpenNotifications?: () => void
   onDateSelect?: () => void
 }
 
-export function Header({ title, deliveryCode, dateLabel, breadcrumbs, onPlaceOrder, onOpenNotifications, onDateSelect }: HeaderProps) {
+export function Header({ title, deliveryCode, dateLabel, breadcrumbs, onPlaceOrder, onDateSelect }: HeaderProps) {
   return (
     <div className="self-stretch flex flex-col gap-5">
       <div className="self-stretch flex justify-between items-start">
@@ -42,10 +42,7 @@ export function Header({ title, deliveryCode, dateLabel, breadcrumbs, onPlaceOrd
             <ShoppingCart className="h-5 w-5" />
           </Button>
 
-          <Button variant="outline" size="icon" onClick={onOpenNotifications} className="h-10 w-10 bg-white border-neutral-200">
-            <Bell className="h-5 w-5 text-stone-800" />
-            <span className="sr-only">Notifications</span>
-          </Button>
+          <NotificationDialog />
         </div>
       </div>
 

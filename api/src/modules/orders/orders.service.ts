@@ -21,6 +21,8 @@ import { OrderDeferral } from '../../database/entities/order-deferral.entity';
 import { Order } from '../../database/entities/order.entity';
 import { Outlet } from '../../database/entities/outlet.entity';
 import { TripStop } from '../../database/entities/trip-stop.entity';
+import { notice } from '../notifications/notification.catalog';
+import { NotificationsService } from '../notifications/notifications.service';
 import { OutletsRepository } from '../outlets/repositories/outlets.repository';
 import { RoutingService } from '../routing/routing.service';
 import { UsersRepository } from '../users/repositories/users.repository';
@@ -55,6 +57,7 @@ export class OrdersService {
     private readonly usersRepository: UsersRepository,
     private readonly routingService: RoutingService,
     private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /** What the order form needs: the caller's outlet and the days still open. */
@@ -525,6 +528,12 @@ export class OrdersService {
     } finally {
       await queryRunner.release();
     }
+    void this.notificationsService.notify([
+      {
+        to: { storeManagersOfOutlets: [order.outletId] },
+        ...notice.orderDeferred(order.id, dto.reason, deferredToDate),
+      },
+    ]);
 
     return new ApiResponseDto(
       HttpStatus.OK,

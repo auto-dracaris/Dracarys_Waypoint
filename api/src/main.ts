@@ -9,6 +9,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import {
   buildRmqConsumerOptions,
   locationQueue,
+  notificationQueue,
   smsQueue,
 } from './common/rmq/rmq.options';
 
@@ -47,6 +48,13 @@ async function bootstrap() {
   // up position fixes waiting behind it.
   app.connectMicroservice<MicroserviceOptions>(
     buildRmqConsumerOptions(configService, locationQueue(configService), 20),
+  );
+  app.connectMicroservice<MicroserviceOptions>(
+    buildRmqConsumerOptions(
+      configService,
+      notificationQueue(configService),
+      10,
+    ),
   );
   await app.startAllMicroservices();
 

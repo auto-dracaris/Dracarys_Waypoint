@@ -1,0 +1,44 @@
+info:
+  name: Report Driver Trip Issue
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/issues"
+  body:
+    type: json
+    data: |-
+      {
+        "clientId": "{{issueId}}",
+        "type": "vehicle_breakdown",
+        "tripId": "{{tripId}}",
+        "note": "Engine overheating on the Kandy road, stopped at Kadawatha"
+      }
+  auth:
+    type: bearer
+    token: "{{driverAccessToken}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  A driver reports something about the trip itself. `type` is one of `delay`, `vehicle_breakdown`, `delivery_problem`, `other`.
+
+  Only `tripId` is required. `orderId` may be added to tie it to one order on the trip; `affectedCases` is not needed.
+
+  `vehicle_breakdown` (and `temperature_breach`) reach the dispatcher as an urgent, red notification; the rest as a warning.
+
+  **Response** `201` with the issue: `{ id, type, title, status: "open", statusLabel, description, affectedCases, recordedAt, createdAt, reportedBy, order, trip, photoUrl, resolvedBy, resolvedAt, resolutionNote }`. Every active dispatcher gets an `issue_reported` notification.
+
+  **Sending it twice.** `clientId` (a UUID from the caller) becomes the issue's id. The same `clientId` again returns the stored issue with `200` and creates nothing; someone else's `clientId` is `409`. Leave it out and the server makes the id.
+
+  **Optional fields.** `note` (up to 500 characters; without one the description is the type's title), `photoImageId` (an image the caller uploaded with purpose `issue_photo`, else `400`), `recordedAt` (the reporter's own clock, ISO timestamp; defaults to now).
+
+  **Errors**
+  - `400` a type a driver cannot report, or `tripId` missing
+  - `403` the trip is not assigned to this driver
+  - `404` the trip does not exist, or `orderId` was given and is not on this trip
