@@ -22,16 +22,18 @@ class AuthController extends AsyncNotifier<Driver?> {
     required String lastName,
     required String phone,
     required String password,
-  }) =>
-      _repo.signUp(
-          firstName: firstName,
-          lastName: lastName,
-          phone: phone,
-          password: password);
+  }) => _repo.signUp(
+    firstName: firstName,
+    lastName: lastName,
+    phone: phone,
+    password: password,
+  );
 
-  Future<void> verifyOtp(
-          {required String phone, required String otp, required int otpId}) =>
-      _repo.verifyOtp(phone: phone, otp: otp, otpId: otpId);
+  Future<void> verifyOtp({
+    required String phone,
+    required String otp,
+    required int otpId,
+  }) => _repo.verifyOtp(phone: phone, otp: otp, otpId: otpId);
 
   Future<int> resendOtp({required String phone}) =>
       _repo.resendOtp(phone: phone);
@@ -39,11 +41,14 @@ class AuthController extends AsyncNotifier<Driver?> {
   Future<void> forgotPassword({required String phone}) =>
       _repo.forgotPassword(phone: phone);
 
-  Future<void> resetPassword(
-          {required String phone,
-          required String otp,
-          required String newPassword}) =>
-      _repo.resetPassword(phone: phone, otp: otp, newPassword: newPassword);
+  Future<void> resetPassword({
+    required String phone,
+    required String otp,
+    required String newPassword,
+  }) => _repo.resetPassword(phone: phone, otp: otp, newPassword: newPassword);
+
+  /// The signed-in driver changed their own details (profile edit).
+  void setDriver(Driver driver) => state = AsyncData(driver);
 
   Future<void> logout() async {
     await _repo.logout();
@@ -51,5 +56,6 @@ class AuthController extends AsyncNotifier<Driver?> {
   }
 }
 
-final authControllerProvider =
-    AsyncNotifierProvider<AuthController, Driver?>(AuthController.new);
+final authControllerProvider = AsyncNotifierProvider<AuthController, Driver?>(
+  AuthController.new,
+);

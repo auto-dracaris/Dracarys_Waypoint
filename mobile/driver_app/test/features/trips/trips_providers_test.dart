@@ -13,20 +13,23 @@ class CountingTripsRepository extends MockTripsRepository {
   int calls = 0;
 
   @override
-  Future<List<Trip>> getTrips() {
+  Future<List<Trip>> getTrips({DateTime? date}) {
     calls++;
-    return super.getTrips();
+    return super.getTrips(date: date);
   }
 }
 
 void main() {
   test('trips reload when the signed-in driver changes', () async {
     final trips = CountingTripsRepository();
-    final container = ProviderContainer(overrides: [
-      authRepositoryProvider
-          .overrideWithValue(MockAuthRepository(latency: Duration.zero)),
-      tripsRepositoryProvider.overrideWithValue(trips),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(
+          MockAuthRepository(latency: Duration.zero),
+        ),
+        tripsRepositoryProvider.overrideWithValue(trips),
+      ],
+    );
     addTearDown(container.dispose);
 
     await container.read(authControllerProvider.future);

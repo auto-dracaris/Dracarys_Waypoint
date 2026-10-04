@@ -12,8 +12,7 @@ class MockRouteChangesRepository implements RouteChangesRepository {
         tripId: 'trip-1',
         planVersion: 3,
         updatedAt: t.subtract(const Duration(minutes: 2)),
-        reason:
-            'Gampaha Mall access restricted until 08:00 — stops reordered to avoid waiting.',
+        reason: 'Gampaha Mall access restricted until 08:00 — stops reordered to avoid waiting.',
         previous: const [
           SequenceStop(name: 'Keells Wattala', completed: true),
           SequenceStop(name: 'CargoPack Depot', completed: true),
@@ -24,13 +23,15 @@ class MockRouteChangesRepository implements RouteChangesRepository {
           SequenceStop(name: 'Keells Wattala', completed: true),
           SequenceStop(name: 'CargoPack Depot', completed: true),
           SequenceStop(
-              name: 'Gampaha Mall',
-              area: 'Gampaha',
-              movement: StopMovement.up),
+            name: 'Gampaha Mall',
+            area: 'Gampaha',
+            movement: StopMovement.up,
+          ),
           SequenceStop(
-              name: 'Waypoint Fresh',
-              area: 'Ja-Ela',
-              movement: StopMovement.down),
+            name: 'Waypoint Fresh',
+            area: 'Ja-Ela',
+            movement: StopMovement.down,
+          ),
         ],
         impactStopName: 'Waypoint Fresh',
         impactArrivalNow: '07:25 AM',

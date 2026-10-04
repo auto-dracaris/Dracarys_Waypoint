@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
@@ -46,9 +48,11 @@ class AddPhotoTile extends StatelessWidget {
 
 /// A 72 px photo with a small remove button.
 class PhotoThumb extends StatelessWidget {
-  const PhotoThumb({super.key, required this.asset, required this.onRemove});
+  const PhotoThumb({super.key, this.asset, this.bytes, required this.onRemove})
+    : assert(asset != null || bytes != null);
 
-  final String asset;
+  final String? asset;
+  final Uint8List? bytes;
   final VoidCallback onRemove;
 
   @override
@@ -61,7 +65,9 @@ class PhotoThumb extends StatelessWidget {
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.asset(asset, fit: BoxFit.cover, cacheWidth: 216),
+              child: bytes != null
+                  ? Image.memory(bytes!, fit: BoxFit.cover, cacheWidth: 216)
+                  : Image.asset(asset!, fit: BoxFit.cover, cacheWidth: 216),
             ),
           ),
           Positioned(
@@ -74,7 +80,9 @@ class PhotoThumb extends StatelessWidget {
                 width: 20,
                 height: 20,
                 decoration: const BoxDecoration(
-                    color: Color(0xAB000000), shape: BoxShape.circle),
+                  color: Color(0xAB000000),
+                  shape: BoxShape.circle,
+                ),
                 child: const Icon(Icons.close, size: 12, color: Colors.white),
               ),
             ),
@@ -93,8 +101,9 @@ class _DashedBorder extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-          Offset.zero & size, const Radius.circular(8)));
+      ..addRRect(
+        RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(8)),
+      );
     for (final metric in path.computeMetrics()) {
       var distance = 0.0;
       while (distance < metric.length) {

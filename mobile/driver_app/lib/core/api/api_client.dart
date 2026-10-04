@@ -3,12 +3,30 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 
 import 'api_exception.dart';
 import 'token_store.dart';
 
-const _unreachable =
-    ApiException(0, "Can't reach the server. Check your connection.");
+const _unreachable = ApiException(
+  0,
+  "Can't reach the server. Check your connection.",
+);
+
+/// A file sent as multipart form data, e.g. a photo for `POST /images`.
+class Upload {
+  const Upload({
+    required this.field,
+    required this.bytes,
+    required this.filename,
+    this.contentType = 'image/jpeg',
+  });
+
+  final String field;
+  final List<int> bytes;
+  final String filename;
+  final String contentType;
+}
 
 /// Thin client for the Waypoint API. Returns the envelope's `data`, throws
 /// [ApiException] otherwise, and refreshes the access token once on a 401.
@@ -18,29 +36,43 @@ class ApiClient {
     required this.tokens,
     http.Client? client,
     this.onSignedOut,
+    this.onReachability,
     this.timeout = const Duration(seconds: 15),
   }) : _http = client ?? http.Client();
 
   final String baseUrl;
   final TokenStore tokens;
   final void Function()? onSignedOut;
+
+  /// Told after every request whether the server could be reached (true) or
+  /// the call died on the network (false). Feeds the app's online state.
+  final void Function(bool reachable)? onReachability;
   final Duration timeout;
   final http.Client _http;
 
   Future<bool>? _refreshing;
 
-  Future<Object?> get(String path,
-          {Map<String, String>? query, bool auth = true}) =>
-      _request('GET', path, query: query, auth: auth);
+  Future<Object?> get(
+    String path, {
+    Map<String, String>? query,
+    bool auth = true,
+  }) => _request('GET', path, query: query, auth: auth);
 
   Future<Object?> post(String path, {Object? body, bool auth = true}) =>
       _request('POST', path, body: body, auth: auth);
 
   Future<Object?> put(String path, {Object? body, bool auth = true}) =>
       _request('PUT', path, body: body, auth: auth);
-
   Future<Object?> patch(String path, {Object? body, bool auth = true}) =>
       _request('PATCH', path, body: body, auth: auth);
+
+  /// Sends [file] with [fields] as `multipart/form-data` (the API's one file
+  /// route is `POST /images`).
+  Future<Object?> upload(
+    String path, {
+    required Upload file,
+    Map<String, String> fields = const {},
+  }) => _request('POST', path, auth: true, fields: fields, file: file);
 
   Future<Object?> _request(
     String method,
@@ -48,14 +80,21 @@ class ApiClient {
     Object? body,
     Map<String, String>? query,
     required bool auth,
+    Map<String, String> fields = const {},
+    Upload? file,
   }) async {
-    var response =
-        await _send(method, path, body: body, query: query, auth: auth);
+    Future<http.Response> attempt() => _send(
+      method,
+      path,
+      body: body,
+      query: query,
+      auth: auth,
+      fields: fields,
+      file: file,
+    );
+    var response = await attempt();
     if (response.statusCode == 401 && auth) {
-      if (await _refresh()) {
-        response =
-            await _send(method, path, body: body, query: query, auth: auth);
-      }
+      if (await _refresh()) response = await attempt();
     }
     return _unwrap(response);
   }
@@ -66,26 +105,49 @@ class ApiClient {
     Object? body,
     Map<String, String>? query,
     required bool auth,
+    Map<String, String> fields = const {},
+    Upload? file,
   }) async {
     final uri = Uri.parse('$baseUrl$path').replace(queryParameters: query);
-    final request = http.Request(method, uri)
-      ..headers['Accept'] = 'application/json';
-    if (body != null) {
-      request.headers['Content-Type'] = 'application/json';
-      request.body = jsonEncode(body);
+    final http.BaseRequest request;
+    if (file != null) {
+      request = http.MultipartRequest(method, uri)
+        ..fields.addAll(fields)
+        ..files.add(
+          http.MultipartFile.fromBytes(
+            file.field,
+            file.bytes,
+            filename: file.filename,
+            contentType: MediaType.parse(file.contentType),
+          ),
+        );
+    } else {
+      final plain = http.Request(method, uri);
+      if (body != null) {
+        plain.headers['Content-Type'] = 'application/json';
+        plain.body = jsonEncode(body);
+      }
+      request = plain;
     }
+    request.headers['Accept'] = 'application/json';
     if (auth) {
       final token = await tokens.readAccess();
       if (token != null) request.headers['Authorization'] = 'Bearer $token';
     }
     try {
-      return await http.Response.fromStream(
-          await _http.send(request).timeout(timeout));
+      final response = await http.Response.fromStream(
+        await _http.send(request).timeout(timeout),
+      );
+      onReachability?.call(true);
+      return response;
     } on TimeoutException {
+      onReachability?.call(false);
       throw _unreachable;
     } on SocketException {
+      onReachability?.call(false);
       throw _unreachable;
     } on http.ClientException {
+      onReachability?.call(false);
       throw _unreachable;
     }
   }
@@ -106,16 +168,21 @@ class ApiClient {
       await _signOut();
       return false;
     }
-    final response = await _send('POST', '/auth/refresh',
-        body: {'refreshToken': refresh}, auth: false);
+    final response = await _send(
+      'POST',
+      '/auth/refresh',
+      body: {'refreshToken': refresh},
+      auth: false,
+    );
     final body = response.statusCode == 200 ? _decode(response) : null;
     final data = body?['data'];
     if (data is Map &&
         data['accessToken'] is String &&
         data['refreshToken'] is String) {
       await tokens.save(
-          access: data['accessToken'] as String,
-          refresh: data['refreshToken'] as String);
+        access: data['accessToken'] as String,
+        refresh: data['refreshToken'] as String,
+      );
       return true;
     }
     // Only a rejected token ends the session. A 5xx or a garbled reply is the
@@ -125,7 +192,9 @@ class ApiClient {
       return false;
     }
     throw ApiException(
-        response.statusCode, "Couldn't refresh the session. Try again.");
+      response.statusCode,
+      "Couldn't refresh the session. Try again.",
+    );
   }
 
   /// Ends the local session. Signals only when there was one to end, so stray

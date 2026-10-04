@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/clock.dart';
 import '../../../core/connectivity/online_provider.dart';
+import '../../../core/router/trip_destination.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/async_value_view.dart';
+import '../../../core/widgets/day_selector.dart';
 import '../../../core/widgets/online_status_pill.dart';
-import '../../../core/router/trip_destination.dart';
+import '../../sync/presentation/sync_status_bar.dart';
 import '../data/trips_providers.dart';
 import '../domain/trip.dart';
 import '../domain/vehicle.dart';
@@ -22,6 +25,8 @@ class MyTripsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final trips = ref.watch(tripsProvider);
     final vehicle = ref.watch(vehicleProvider);
+    final day = ref.watch(tripsDateProvider);
+    final now = ref.watch(clockProvider)();
     void retry() {
       ref.invalidate(tripsProvider);
       ref.invalidate(vehicleProvider);
@@ -31,6 +36,13 @@ class MyTripsScreen extends ConsumerWidget {
       body: Column(
         children: [
           AppHeader(onBellTap: () => context.go('/updates')),
+          const _TitleRow(),
+          DaySelector(
+            day: day,
+            today: now,
+            onChanged: ref.read(tripsDateProvider.notifier).set,
+          ),
+          const SyncStatusBar(),
           Expanded(
             child: AsyncValueView(
               value: trips,
@@ -50,6 +62,48 @@ class MyTripsScreen extends ConsumerWidget {
   }
 }
 
+class _TitleRow extends ConsumerWidget {
+  const _TitleRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final online = ref.watch(onlineProvider);
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Text(
+              'My trips',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.displaySm,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const OnlineStatusPill(),
+              if (online) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Synced just now',
+                  style: AppText.textXsRegular.copyWith(
+                    color: AppColors.inkMuted,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Content extends ConsumerWidget {
   const _Content({required this.vehicle, required this.trips});
 
@@ -62,55 +116,33 @@ class _Content extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final online = ref.watch(onlineProvider);
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        Container(
-          color: AppColors.surface,
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text('My trips',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppText.displaySm),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const OnlineStatusPill(),
-                  if (online) ...[
-                    const SizedBox(height: 4),
-                    Text('Synced just now',
-                        style: AppText.textXsRegular
-                            .copyWith(color: AppColors.inkMuted)),
-                  ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(tripsProvider);
+        await ref.read(tripsProvider.future);
+      },
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        children: [
+          VehicleBanner(vehicle: vehicle),
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              children: [
+                for (var i = 0; i < trips.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 8),
+                  TripCard(
+                    trip: trips[i],
+                    highlighted: i == 0,
+                    onViewTrip: () => _open(context, ref, trips[i]),
+                  ),
                 ],
-              ),
-            ],
-          ),
-        ),
-        VehicleBanner(vehicle: vehicle),
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            children: [
-              for (var i = 0; i < trips.length; i++) ...[
-                if (i > 0) const SizedBox(height: 8),
-                TripCard(
-                  trip: trips[i],
-                  highlighted: i == 0,
-                  onViewTrip: () => _open(context, ref, trips[i]),
-                ),
               ],
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

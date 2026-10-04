@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/demo_mode_switch.dart';
 import '../../../core/widgets/primary_button.dart';
 import 'auth_controller.dart';
 import 'auth_form_state.dart';
@@ -83,6 +84,7 @@ class _LoginScreenState extends AuthFormState<LoginScreen> {
           onPressed: () => context.go('/forgot-password'),
           child: const Text('Forgot password?'),
         ),
+        const DemoModeSwitch(),
       ],
     );
   }

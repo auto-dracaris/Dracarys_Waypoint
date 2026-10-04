@@ -68,6 +68,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Nimal Silva'), findsOneWidget);
 
+    await tester.scrollUntilVisible(find.byKey(const Key('sign-out')), 200);
     await tester.tap(find.byKey(const Key('sign-out')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('phone')), findsOneWidget);
