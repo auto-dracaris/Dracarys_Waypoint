@@ -80,4 +80,4 @@ Run the supporting services in Docker and the apps on your machine, so they relo
    ```
 
 
-To run the AI service and the driver app locally, follow [ai-service/README.md](https://www.google.com/search?q=ai-service/README.md) and [mobile/driver_app/README.md](https://www.google.com/search?q=mobile/driver_app/README.md).
+To run the AI service and the driver app locally, follow ai-service/README.md and mobile/driver_app/README.md.
