@@ -6,7 +6,8 @@ import {
   MaxLength,
 } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
-import { IssueStatus, IssueType } from '../enums';
+import { IssueStatus } from '../../../common/enums/issue-status.enum';
+import { IssueType } from '../../../common/enums/issue-type.enum';
 
 export class QueryIssueDto extends PaginationQueryDto {
   @IsOptional()

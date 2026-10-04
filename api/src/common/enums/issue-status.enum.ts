@@ -1,1 +1,5 @@
-export * from '../../modules/issues/enums/issue-status.enum';
+export enum IssueStatus {
+  OPEN = 'open',
+  ACKNOWLEDGED = 'acknowledged',
+  RESOLVED = 'resolved',
+}

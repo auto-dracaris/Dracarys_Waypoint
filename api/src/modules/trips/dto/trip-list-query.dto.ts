@@ -1,6 +1,6 @@
 import { IsDateString, IsEnum, IsOptional, Matches } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
-import { TripListStatus } from '../enums/trip-list-status.enum';
+import { TripListStatus } from '../../../common/enums/trip-list-status.enum';
 
 export { TripListStatus };
 

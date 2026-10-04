@@ -8,7 +8,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { IssueType } from '../enums';
+import { IssueType } from '../../../common/enums/issue-type.enum';
 
 /**
  * One body for every reporter. Which types a caller may use, and what the
