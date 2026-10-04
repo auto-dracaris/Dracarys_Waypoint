@@ -5,12 +5,14 @@ import {
   Logger,
   NestInterceptor,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Request, Response } from 'express';
 import { Observable } from 'rxjs';
 import { Repository } from 'typeorm';
 import { Activity } from '../../database/entities/activity.entity';
 import { AuthenticatedUser } from '../decorators/current-user.decorator';
+import { SKIP_ACTIVITY_KEY } from '../decorators/skip-activity.decorator';
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -21,11 +23,15 @@ export class ActivityInterceptor implements NestInterceptor {
   constructor(
     @InjectRepository(Activity)
     private readonly activityRepository: Repository<Activity>,
+    private readonly reflector: Reflector,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     // Also runs on RabbitMQ handlers (e.g. SmsConsumer), which have no HTTP request.
     if (context.getType() !== 'http') {
+      return next.handle();
+    }
+    if (this.reflector.get(SKIP_ACTIVITY_KEY, context.getHandler())) {
       return next.handle();
     }
 

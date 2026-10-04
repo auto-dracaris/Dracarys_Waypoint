@@ -388,11 +388,15 @@ Not built. `GET /notifications`, `POST /notifications/:id/read` and
 
 | Method & path | Body | Notes |
 |---|---|---|
-| `POST /vehicles/:id/locations` | `{ "points": [{ "clientId", "lat", "lng", "heading?", "speedKmh?", "recordedAt" }] }` | 1–50 fixes per call, about every 5 s while a trip is `in_progress`. `:id` is `driver.vehicle.id`. Only that vehicle's driver may send. Replaces `SimulatedLocationSource` |
+| `POST /vehicles/:id/locations` | `{ "points": [{ "clientId", "lat", "lng", "heading?", "speedKmh?", "recordedAt" }] }` | 1–500 fixes per call, about every 5 s while a trip is `in_progress`. `:id` is `driver.vehicle.id`. Only that vehicle's driver may send. Answers `202` with `{ received }`: the fixes are queued and stored moments later. Replaces `SimulatedLocationSource` |
 | `POST /routing/route` | `{ "waypoints": [{ "lat", "lng" }, …], "profile?": "van" \| "truck" }` | 2–25 points → `{ profile, geometry: [[lng,lat],…], distanceMeters, durationSeconds, legs: [{ distanceMeters, durationSeconds }] }`. `profile` defaults to the driver's own vehicle type |
 
 `heading` is whole degrees (0–360). Points captured offline can be sent later
-in batches; a point sent twice is stored once.
+in batches, oldest first; a point sent twice is stored once. Delete a batch
+from the handset only on `202`. On `503` (the queue is unreachable) or no
+answer, keep it and send it again. Each point is filed under the trip that was
+on the road at its `recordedAt`, so one sent after its trip ended still lands
+on that trip.
 
 `/routing/route` proxies the team's self-hosted OSRM (`osrm_setup/`), which has
 separate van and truck road profiles. Replace the public OSRM URL in
