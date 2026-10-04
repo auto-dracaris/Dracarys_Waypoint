@@ -16,13 +16,27 @@ interface DeliveryRouteMapProps {
 
 export function DeliveryRouteMap({ data }: DeliveryRouteMapProps) {
   const isClient = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot)
-  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>(data.route ?? [])
+  const hasDetailedCurves = Boolean(data.route && data.route.length > 10)
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>(() => {
+    return hasDetailedCurves ? (data.route ?? []) : []
+  })
+  const [isRouteLoading, setIsRouteLoading] = useState<boolean>(() => {
+    if (hasDetailedCurves) return false
+    const waypoints =
+      data.route && data.route.length >= 2
+        ? data.route
+        : [data.depot?.position, data.vehiclePosition, data.outletPosition].filter(
+            (p): p is [number, number] => p !== null,
+          )
+    return waypoints.length >= 2
+  })
 
   useEffect(() => {
     let cancelled = false
     // If route already contains detailed road curves (> 10 points), use directly
     if (data.route && data.route.length > 10) {
       setRouteCoordinates(data.route)
+      setIsRouteLoading(false)
       return
     }
 
@@ -34,14 +48,30 @@ export function DeliveryRouteMap({ data }: DeliveryRouteMapProps) {
           )
 
     if (waypoints.length >= 2) {
+      setIsRouteLoading(true)
+      // Suppress straight lines while loading
+      setRouteCoordinates([])
       const profile = data.vehicleType?.toLowerCase().includes('van') ? 'van' : 'truck'
-      fetchRoadRoute(waypoints, { profile }).then((res) => {
-        if (!cancelled && res.geometry && res.geometry.length > 1) {
-          setRouteCoordinates(res.geometry)
-        }
-      })
+      fetchRoadRoute(waypoints, { profile })
+        .then((res) => {
+          if (!cancelled) {
+            if (res.geometry && res.geometry.length > 1) {
+              setRouteCoordinates(res.geometry)
+            } else {
+              setRouteCoordinates(waypoints)
+            }
+            setIsRouteLoading(false)
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setRouteCoordinates(waypoints)
+            setIsRouteLoading(false)
+          }
+        })
     } else {
       setRouteCoordinates(data.route ?? [])
+      setIsRouteLoading(false)
     }
 
     return () => {
@@ -69,6 +99,7 @@ export function DeliveryRouteMap({ data }: DeliveryRouteMapProps) {
                 vehicleId={data.vehicleId}
                 vehicleKind={data.vehicleKind}
                 statusLabel={data.status}
+                isRouteLoading={isRouteLoading}
               />
             ) : (
               <p role="status">Loading delivery map…</p>

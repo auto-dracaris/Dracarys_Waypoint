@@ -36,6 +36,38 @@
   right: var(--wp-space-lg);
   pointer-events: none;
 }
+.delivery-map-route-loading {
+  position: absolute;
+  top: var(--wp-space-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+  padding: var(--wp-space-sm) var(--wp-space-md);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--wp-neutral-300);
+  border-radius: 9999px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  color: var(--wp-text-primary, #1c1917);
+  pointer-events: none;
+}
+.delivery-map-route-spinner {
+  width: 14px;
+  height: 14px;
+  animation: delivery-map-spin 1s linear infinite;
+  color: var(--wp-lime-700, #4d7c0f);
+}
+@keyframes delivery-map-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 .delivery-map-notice {
   bottom: var(--wp-space-4xl);
   left: var(--wp-space-lg);
@@ -295,33 +327,86 @@
   line-height: 1;
 }
 
-/* --- Unselected Vehicle Marker (Same Pin & Pointer as Selected, White) --- */
+/* --- Unselected Vehicle Marker (With Radial / Perimeter Trip Progress) --- */
 .wp-vehicle-marker--unselected {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transform: translate(-16px, -34px);
+  transform: translate(-18px, -40px);
   cursor: pointer;
   transition: transform 0.15s ease;
 }
 
 .wp-vehicle-marker--unselected:hover {
-  transform: translate(-16px, -36px) scale(1.05);
+  transform: translate(-18px, -42px) scale(1.05);
 }
 
 .wp-vehicle-marker--unselected .wp-vehicle-pin {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: #ffffff;
-  color: #1f2937;
-  border: 1.5px solid #d1d5db;
-  border-radius: 6px;
+  color: #333438;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.16);
   flex-shrink: 0;
+}
+
+/* Radial / Perimeter Progress Ring for Unselected Vehicles */
+.wp-vehicle-progress-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
+}
+
+.wp-progress-track {
+  fill: none;
+  stroke: #b5cca4;
+  stroke-width: 3.5px;
+}
+
+.wp-progress-bar {
+  fill: none;
+  stroke: #65a30d;
+  stroke-width: 3.5px;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+/* Center Vehicle Icon */
+.wp-vehicle-icon {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #333438;
+}
+
+.wp-vehicle-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: #333438;
+  stroke-width: 2.2px;
+  fill: none;
+  display: block;
+}
+
+.wp-vehicle-marker--selected .wp-vehicle-icon {
+  color: #111827;
+}
+
+.wp-vehicle-marker--selected .wp-vehicle-icon svg {
+  stroke: #111827;
 }
 
 .wp-vehicle-marker--unselected .wp-vehicle-pointer {
@@ -333,8 +418,9 @@
   height: 0;
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-top: 6px solid #ffffff;
-  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.12));
+  border-top: 6px solid #b5cca4;
+  z-index: 2;
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.1));
 }
 
 .wp-vehicle-marker--unselected .wp-vehicle-label {
@@ -354,18 +440,18 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transform: translate(-16px, -34px);
+  transform: translate(-18px, -40px);
   cursor: pointer;
   z-index: 1000 !important;
 }
 
 .wp-vehicle-marker--selected .wp-vehicle-pin {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: #facc15;
   color: #111827;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
