@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Polyline, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { Store, Truck, Van, Warehouse } from 'lucide-react'
+import { Loader2, Store, Truck, Van, Warehouse } from 'lucide-react'
 import L from 'leaflet'
 import { fetchRoadRoute } from '@/lib/routing'
 import { ALL_OUTLETS, PELIYAGODA_DEPOT, type MapPosition, type OutletMapItem, type RouteStopItem } from '../map-data'
@@ -1027,9 +1027,13 @@ export function DeliveryMap(props: DeliveryMapProps) {
     vehicleId: string
     coordinates: MapPosition[]
   } | null>(null)
+  const [isRouteLoading, setIsRouteLoading] = useState(false)
 
   useEffect(() => {
-    if (!selectedVehicle) return
+    if (!selectedVehicle) {
+      setIsRouteLoading(false)
+      return
+    }
 
     const stops = selectedVehicle.routeStops
     const depot = depots.find((d) => d.name === selectedVehicle.depotName) || depots[0]
@@ -1043,24 +1047,61 @@ export function DeliveryMap(props: DeliveryMapProps) {
       waypoints = selectedVehicle.routeCoordinates
     }
 
-    if (waypoints.length < 2) return
+    if (waypoints.length < 2) {
+      setIsRouteLoading(false)
+      return
+    }
+
+    // If route already contains detailed road curves (> 10 points), use directly
+    if (selectedVehicle.routeCoordinates && selectedVehicle.routeCoordinates.length > 10) {
+      setActiveRoadRoute({
+        vehicleId: selectedVehicle.id,
+        coordinates: selectedVehicle.routeCoordinates,
+      })
+      setIsRouteLoading(false)
+      return
+    }
+
+    if (activeRoadRoute && activeRoadRoute.vehicleId === selectedVehicle.id) {
+      setIsRouteLoading(false)
+      return
+    }
 
     let cancelled = false
-    fetchRoadRoute(waypoints, { profile: selectedVehicle.type }).then((res) => {
-      if (!cancelled && res.geometry && res.geometry.length > 1) {
-        setActiveRoadRoute({
-          vehicleId: selectedVehicle.id,
-          coordinates: res.geometry,
-        })
-      }
-    })
+    setIsRouteLoading(true)
+    fetchRoadRoute(waypoints, { profile: selectedVehicle.type })
+      .then((res) => {
+        if (!cancelled) {
+          if (res.geometry && res.geometry.length > 1) {
+            setActiveRoadRoute({
+              vehicleId: selectedVehicle.id,
+              coordinates: res.geometry,
+            })
+          } else {
+            setActiveRoadRoute({
+              vehicleId: selectedVehicle.id,
+              coordinates: waypoints,
+            })
+          }
+          setIsRouteLoading(false)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setActiveRoadRoute({
+            vehicleId: selectedVehicle.id,
+            coordinates: waypoints,
+          })
+          setIsRouteLoading(false)
+        }
+      })
 
     return () => {
       cancelled = true
     }
   }, [selectedVehicle, depots])
 
-  // Vehicle with resolved real-road outline coordinates
+  // Vehicle with resolved real-road outline coordinates (straight lines are suppressed while loading)
   const enhancedSelectedVehicle = useMemo(() => {
     if (!selectedVehicle) return null
     if (activeRoadRoute && activeRoadRoute.vehicleId === selectedVehicle.id) {
@@ -1069,8 +1110,18 @@ export function DeliveryMap(props: DeliveryMapProps) {
         routeCoordinates: activeRoadRoute.coordinates,
       }
     }
+    // If still loading or awaiting road route resolution, do NOT display straight-line coordinates
+    if (isRouteLoading || !activeRoadRoute || activeRoadRoute.vehicleId !== selectedVehicle.id) {
+      if (selectedVehicle.routeCoordinates && selectedVehicle.routeCoordinates.length > 10) {
+        return selectedVehicle
+      }
+      return {
+        ...selectedVehicle,
+        routeCoordinates: undefined,
+      }
+    }
     return selectedVehicle
-  }, [selectedVehicle, activeRoadRoute])
+  }, [selectedVehicle, activeRoadRoute, isRouteLoading])
 
   // Compute points for auto-fitting bounds
   const viewportPoints = useMemo(() => {
@@ -1136,6 +1187,13 @@ export function DeliveryMap(props: DeliveryMapProps) {
 
         <MapDragScrollLock />
       </MapContainer>
+
+      {isRouteLoading && selectedVehicle && (
+        <div className="delivery-map-route-loading type-text-xs-medium" role="status" aria-live="polite">
+          <Loader2 className="delivery-map-route-spinner" aria-hidden="true" />
+          <span>Calculating road route…</span>
+        </div>
+      )}
 
       <span className="delivery-map-demo type-text-xs-medium">
         {showRouteStops && selectedVehicle

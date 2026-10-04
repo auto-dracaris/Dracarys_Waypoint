@@ -36,6 +36,38 @@
   right: var(--wp-space-lg);
   pointer-events: none;
 }
+.delivery-map-route-loading {
+  position: absolute;
+  top: var(--wp-space-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+  padding: var(--wp-space-sm) var(--wp-space-md);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--wp-neutral-300);
+  border-radius: 9999px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  color: var(--wp-text-primary, #1c1917);
+  pointer-events: none;
+}
+.delivery-map-route-spinner {
+  width: 14px;
+  height: 14px;
+  animation: delivery-map-spin 1s linear infinite;
+  color: var(--wp-lime-700, #4d7c0f);
+}
+@keyframes delivery-map-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 .delivery-map-notice {
   bottom: var(--wp-space-4xl);
   left: var(--wp-space-lg);
