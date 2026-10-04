@@ -229,62 +229,124 @@
   line-height: 1.2;
 }
 
-/* --- Unselected Vehicle Pill (Image 2) --- */
-.wp-vehicle-marker--default {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #ffffff;
-  padding: 4px 9px;
-  border-radius: 8px;
-  border: 1.5px solid #65a30d;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
-  white-space: nowrap;
-  font-size: 12px;
-  font-weight: 700;
-  color: #1f2937;
-  cursor: pointer;
-  transform: translate(-50%, -50%);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.wp-vehicle-marker--default:hover {
-  transform: translate(-50%, -54%) scale(1.04);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-}
-
-.wp-vehicle-marker--default .wp-vehicle-icon {
-  color: #374151;
-  display: flex;
-  align-items: center;
-}
-
-/* --- Compact Vehicle Icon (Zoomed out, no text label) --- */
-.wp-vehicle-marker--compact {
+/* --- Standard Outlet Marker (Icon Only - Details on hover) --- */
+.wp-outlet-marker--icon-only {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: #ffffff;
+  transform: translate(-13px, -13px);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.wp-outlet-icon-circle {
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  border: 1.5px solid #65a30d;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
-  color: #374151;
-  cursor: pointer;
-  transform: translate(-50%, -50%);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.wp-vehicle-marker--compact:hover {
-  transform: translate(-50%, -50%) scale(1.15);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.22);
-}
-
-.wp-vehicle-marker--compact .wp-vehicle-icon {
+  background: #16a34a;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.wp-outlet-marker--icon-only:hover .wp-outlet-icon-circle {
+  transform: scale(1.18);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.45);
+  background: #15803d;
+}
+
+/* --- Outlet Cluster Marker (Icon + Number only) --- */
+.wp-outlet-cluster-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #ffffff;
+  padding: 3px 8px 3px 6px;
+  border-radius: 9999px;
+  border: 1.5px solid #16a34a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  pointer-events: auto;
+}
+
+.wp-outlet-cluster-marker:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+  border-color: #15803d;
+}
+
+.wp-outlet-cluster-marker .wp-outlet-cluster-icon {
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+}
+
+.wp-outlet-cluster-marker .wp-outlet-cluster-count {
+  font-size: 12px;
+  font-weight: 800;
+  color: #15803d;
+  line-height: 1;
+}
+
+/* --- Unselected Vehicle Marker (Same Pin & Pointer as Selected, White) --- */
+.wp-vehicle-marker--unselected {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-16px, -34px);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.wp-vehicle-marker--unselected:hover {
+  transform: translate(-16px, -36px) scale(1.05);
+}
+
+.wp-vehicle-marker--unselected .wp-vehicle-pin {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  background: #ffffff;
+  color: #1f2937;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+}
+
+.wp-vehicle-marker--unselected .wp-vehicle-pointer {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #ffffff;
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.12));
+}
+
+.wp-vehicle-marker--unselected .wp-vehicle-label {
+  background: #ffffff;
+  color: #1f2937;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+  white-space: nowrap;
 }
 
 /* --- Selected Vehicle Marker (Image 2 Yellow Pin & Tag) --- */

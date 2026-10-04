@@ -3,7 +3,7 @@ import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import { Button } from '@/components/ui/button'
 import { routes, type RouteFilter } from '../data'
-import { KANDY_DEPOT, PELIYAGODA_DEPOT } from '../map-data'
+import { ALL_OUTLETS, KANDY_DEPOT, PELIYAGODA_DEPOT } from '../map-data'
 import type { VehicleMapItem } from './delivery-map'
 import { RouteTimelineCard } from './route-timeline-card'
 import { VehiclePanel } from './vehicle-panel'
@@ -216,6 +216,7 @@ export function ActiveRoutes({ onNavigate }: { onNavigate: (title: string) => vo
               <DeliveryMap
                 vehicles={mapVehicles}
                 depots={depots}
+                outlets={ALL_OUTLETS}
                 selectedVehicleId={selected?.id ?? null}
                 showRouteStops={showRouteTimeline}
                 onSelectVehicle={(id) => {

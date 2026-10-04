@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Polyline, Tooltip, ZoomControl, useMap
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Store, Truck, Van, Warehouse } from 'lucide-react'
 import L from 'leaflet'
-import { PELIYAGODA_DEPOT, type MapPosition, type RouteStopItem } from '../map-data'
+import { ALL_OUTLETS, PELIYAGODA_DEPOT, type MapPosition, type OutletMapItem, type RouteStopItem } from '../map-data'
 import 'leaflet/dist/leaflet.css'
 import '@/styles/delivery-map.css'
 
@@ -32,6 +32,7 @@ export interface DepotMapItem {
 export interface DeliveryMapProps {
   vehicles?: VehicleMapItem[]
   depots?: DepotMapItem[]
+  outlets?: OutletMapItem[]
   selectedVehicleId?: string | null
   onSelectVehicle?: (vehicleId: string) => void
   onClearSelection?: () => void
@@ -101,6 +102,60 @@ function clusterVehiclesByZoom(
   return clusters
 }
 
+interface OutletCluster {
+  id: string
+  center: MapPosition
+  outlets: OutletMapItem[]
+}
+
+// Group outlets dynamically based on screen pixel distance at the current map zoom level
+function clusterOutletsByZoom(
+  items: OutletMapItem[],
+  map: L.Map,
+  zoom: number,
+  pixelRadius = 48,
+): OutletCluster[] {
+  const clusters: OutletCluster[] = []
+
+  for (const item of items) {
+    if (!item.position || !Number.isFinite(item.position[0]) || !Number.isFinite(item.position[1])) continue
+
+    const latLng = L.latLng(item.position[0], item.position[1])
+    const pt = map.project(latLng, zoom)
+
+    let matchedCluster: OutletCluster | null = null
+    let minDistance = Infinity
+
+    for (const cluster of clusters) {
+      const clusterLatLng = L.latLng(cluster.center[0], cluster.center[1])
+      const clusterPt = map.project(clusterLatLng, zoom)
+      const dist = Math.hypot(clusterPt.x - pt.x, clusterPt.y - pt.y)
+
+      if (dist < pixelRadius && dist < minDistance) {
+        minDistance = dist
+        matchedCluster = cluster
+      }
+    }
+
+    if (matchedCluster) {
+      matchedCluster.outlets.push(item)
+      const count = matchedCluster.outlets.length
+      matchedCluster.center = [
+        matchedCluster.outlets.reduce((sum, o) => sum + o.position[0], 0) / count,
+        matchedCluster.outlets.reduce((sum, o) => sum + o.position[1], 0) / count,
+      ]
+    } else {
+      clusters.push({
+        id: `outlet-cluster-${item.id}-${clusters.length}`,
+        center: [...item.position],
+        outlets: [item],
+      })
+    }
+  }
+
+  return clusters
+}
+
 // 1. Depot Icon (Yellow circle with warehouse icon + optional white label)
 function createDepotIcon(name: string, showLabel = true) {
   const svg = renderToStaticMarkup(<Warehouse size={16} strokeWidth={2.2} />)
@@ -117,7 +172,7 @@ function createDepotIcon(name: string, showLabel = true) {
   })
 }
 
-// 2. Single Vehicle Icon (Yellow for selected, White pill with label or compact circle when zoomed out)
+// 2. Single Vehicle Icon (Yellow pin for selected, White pin for unselected)
 function createVehicleIcon({
   vehicleId,
   type,
@@ -149,29 +204,19 @@ function createVehicleIcon({
     })
   }
 
-  if (!showLabel) {
-    return L.divIcon({
-      className: 'wp-map-marker-container',
-      html: `
-        <div class="wp-vehicle-marker wp-vehicle-marker--compact" title="${vehicleId}">
-          <span class="wp-vehicle-icon">${svg}</span>
-        </div>
-      `,
-      iconSize: [0, 0],
-      iconAnchor: [14, 14],
-    })
-  }
-
   return L.divIcon({
     className: 'wp-map-marker-container',
     html: `
-      <div class="wp-vehicle-marker wp-vehicle-marker--default">
-        <span class="wp-vehicle-icon">${svg}</span>
-        <span class="wp-vehicle-label">${vehicleId}</span>
+      <div class="wp-vehicle-marker wp-vehicle-marker--unselected" title="${vehicleId}">
+        <div class="wp-vehicle-pin">
+          <span class="wp-vehicle-icon">${svg}</span>
+          <span class="wp-vehicle-pointer"></span>
+        </div>
+        ${showLabel ? `<div class="wp-vehicle-label">${vehicleId}</div>` : ''}
       </div>
     `,
     iconSize: [0, 0],
-    iconAnchor: [30, 14],
+    iconAnchor: [16, 34],
   })
 }
 
@@ -256,7 +301,7 @@ function createOutletIcon(outletId: string, district?: string) {
   return L.divIcon({
     className: 'wp-map-marker-container',
     html: `
-      <div class="wp-outlet-marker" title="Destination: ${outletId}${district ? ` (${district})` : ''}">
+      <div class="wp-outlet-marker wp-outlet-marker--destination" title="Destination: ${outletId}${district ? ` (${district})` : ''}">
         <div class="wp-outlet-icon">${svg}</div>
         <div class="wp-outlet-label">
           <div class="wp-outlet-header-row">
@@ -268,6 +313,37 @@ function createOutletIcon(outletId: string, district?: string) {
     `,
     iconSize: [0, 0],
     iconAnchor: [16, 16],
+  })
+}
+
+// 6. Standard Outlet Icon (Shown all the time across the map: icon only, details on hover)
+function createStandardOutletIcon(outletId: string) {
+  const svg = renderToStaticMarkup(<Store size={14} strokeWidth={2.2} />)
+  return L.divIcon({
+    className: 'wp-map-marker-container',
+    html: `
+      <div class="wp-outlet-marker wp-outlet-marker--icon-only" title="${outletId}">
+        <span class="wp-outlet-icon-circle">${svg}</span>
+      </div>
+    `,
+    iconSize: [0, 0],
+    iconAnchor: [13, 13],
+  })
+}
+
+// 7. Clustered Outlets Icon (Icon + count number only)
+function createOutletClusterIcon(count: number) {
+  const svg = renderToStaticMarkup(<Store size={13} strokeWidth={2.2} />)
+  return L.divIcon({
+    className: 'wp-map-marker-container',
+    html: `
+      <div class="wp-outlet-cluster-marker" title="${count} outlets">
+        <span class="wp-outlet-cluster-icon">${svg}</span>
+        <span class="wp-outlet-cluster-count">${count}</span>
+      </div>
+    `,
+    iconSize: [0, 0],
+    iconAnchor: [18, 12],
   })
 }
 
@@ -350,6 +426,9 @@ function MapBackgroundClickHandler({ onClear }: { onClear?: () => void }) {
           target.closest('.leaflet-tooltip') ||
           target.closest('.leaflet-control') ||
           target.closest('.wp-cluster-popover') ||
+          target.closest('.wp-outlet-popover') ||
+          target.closest('.wp-outlet-marker') ||
+          target.closest('.wp-outlet-cluster-marker') ||
           target.closest('.route-timeline-card'))
       ) {
         return
@@ -524,9 +603,35 @@ function ClusterMarkerItem({
   )
 }
 
+interface OutletClusterMarkerItemProps {
+  cluster: OutletCluster
+  map: L.Map
+}
+
+function OutletClusterMarkerItem({ cluster, map }: OutletClusterMarkerItemProps) {
+  return (
+    <Marker
+      position={cluster.center}
+      icon={createOutletClusterIcon(cluster.outlets.length)}
+      zIndexOffset={250}
+      eventHandlers={{
+        click: (e) => {
+          e.originalEvent?.stopPropagation()
+          map.flyTo(cluster.center, Math.min(map.getZoom() + 2, 17), { duration: 0.35 })
+        },
+      }}
+    >
+      <Tooltip direction="top" offset={[0, -12]} className="wp-vehicle-tooltip">
+        <span>{cluster.outlets.length} Outlets · Click to zoom in</span>
+      </Tooltip>
+    </Marker>
+  )
+}
+
 interface VehicleMapLayersProps {
   allVehicles: VehicleMapItem[]
   depots: DepotMapItem[]
+  outlets?: OutletMapItem[]
   selectedVehicle: VehicleMapItem | null
   selectedVehicleId?: string | null
   onSelectVehicle?: (vehicleId: string) => void
@@ -538,6 +643,7 @@ interface VehicleMapLayersProps {
 function VehicleMapLayers({
   allVehicles,
   depots,
+  outlets = ALL_OUTLETS,
   selectedVehicle,
   selectedVehicleId,
   onSelectVehicle,
@@ -608,6 +714,32 @@ function VehicleMapLayers({
     return null
   }, [selectedVehicle])
 
+  // Set of outlet IDs that are rendered as route stops or destination for the selected vehicle
+  const activeRouteOutletIds = useMemo(() => {
+    const ids = new Set<string>()
+    if (showRouteStops && selectedVehicle?.routeStops) {
+      for (const stop of selectedVehicle.routeStops) {
+        if (stop.outletId) ids.add(stop.outletId)
+      }
+    }
+    if (destination?.outletId) {
+      ids.add(destination.outletId)
+    }
+    return ids
+  }, [showRouteStops, selectedVehicle, destination])
+
+  // Filter out outlets that are currently rendered as active destination or route stops
+  const clusterableOutlets = useMemo(
+    () => outlets.filter((o) => !activeRouteOutletIds.has(o.id)),
+    [outlets, activeRouteOutletIds],
+  )
+
+  // Dynamically cluster outlets based on screen pixel distance at the current zoom level
+  const outletClusters = useMemo(
+    () => clusterOutletsByZoom(clusterableOutlets, map, currentZoom, 48),
+    [clusterableOutlets, map, currentZoom],
+  )
+
   return (
     <>
       {/* Depots: render with high zIndexOffset so warehouse building is never covered */}
@@ -621,6 +753,47 @@ function VehicleMapLayers({
           alt={`${depot.name} marker`}
         />
       ))}
+
+      {/* Outlets & Outlet Clusters: grouped depending on closeness & zoom level */}
+      {outletClusters.map((cluster) => {
+        if (cluster.outlets.length === 1) {
+          const outlet = cluster.outlets[0]
+          return (
+            <Marker
+              key={`outlet-${outlet.id}`}
+              position={outlet.position}
+              icon={createStandardOutletIcon(outlet.id)}
+              zIndexOffset={200}
+            >
+              <Tooltip
+                direction="top"
+                offset={[0, -14]}
+                className="wp-vehicle-tooltip"
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span style={{ fontWeight: 700, fontSize: '12px', color: '#ffffff' }}>
+                    {outlet.id} · {outlet.locationName || outlet.district}
+                  </span>
+                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                    {outlet.district} · {outlet.brand} {outlet.depot ? `(${outlet.depot} Depot)` : ''}
+                  </span>
+                  <span style={{ fontSize: '10px', color: '#86efac', fontWeight: 600 }}>
+                    Window: {outlet.defaultWindow}
+                  </span>
+                </div>
+              </Tooltip>
+            </Marker>
+          )
+        }
+
+        return (
+          <OutletClusterMarkerItem
+            key={cluster.id}
+            cluster={cluster}
+            map={map}
+          />
+        )
+      })}
 
       {/* Vehicle Clusters and Single Vehicles */}
       {clusters.map((cluster) => {
@@ -762,6 +935,7 @@ export function DeliveryMap(props: DeliveryMapProps) {
   const {
     vehicles: propVehicles,
     depots: propDepots,
+    outlets: propOutlets,
     selectedVehicleId,
     onSelectVehicle,
     onClearSelection,
@@ -778,6 +952,11 @@ export function DeliveryMap(props: DeliveryMapProps) {
 
   const tiles = useRef<L.TileLayer>(null)
   const [tilesFailed, setTilesFailed] = useState(false)
+
+  const outlets: OutletMapItem[] = useMemo(() => {
+    if (propOutlets && propOutlets.length > 0) return propOutlets
+    return ALL_OUTLETS
+  }, [propOutlets])
 
   // Construct vehicles list from props or legacy single-vehicle props
   const allVehicles: VehicleMapItem[] = useMemo(() => {
@@ -848,6 +1027,7 @@ export function DeliveryMap(props: DeliveryMapProps) {
         <VehicleMapLayers
           allVehicles={allVehicles}
           depots={depots}
+          outlets={outlets}
           selectedVehicle={selectedVehicle}
           selectedVehicleId={selectedVehicleId}
           onSelectVehicle={onSelectVehicle}
