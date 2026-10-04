@@ -1,0 +1,35 @@
+info:
+  name: Report Shortfall
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/issues"
+  body:
+    type: json
+    data: |-
+      {
+        "clientId": "{{issueId}}",
+        "type": "load_shortfall",
+        "tripId": "{{tripId}}",
+        "orderId": "{{orderReference}}",
+        "affectedCases": 2,
+        "note": "Two cases missing on warehouse pallet"
+      }
+  auth:
+    type: bearer
+    token: "{{loaderAccessToken}}"
+
+runtime:
+  variables:
+    - name: tripId
+      value: 9c9acd3e-5f21-4f79-b22a-51979d334687
+    - name: orderReference
+      value: ORD0000001
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

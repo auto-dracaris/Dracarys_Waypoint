@@ -6,6 +6,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/api/error_message.dart';
+import '../../../core/clock.dart';
 import '../../../core/format.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
@@ -20,25 +22,30 @@ import '../../../core/widgets/vehicle_box.dart';
 import '../../trips/application/trip_actions.dart';
 import '../../trips/data/trips_providers.dart';
 import '../../trips/domain/stop.dart';
+import '../../auth/presentation/auth_controller.dart';
 import '../application/navigation_controller.dart';
 import '../application/route_providers.dart';
+import '../data/location_source.dart';
+import '../data/route_maneuvers.dart';
 import 'widgets/route_marker.dart';
+import 'widgets/turn_by_turn.dart';
 
-/// Where the driver starts, until real location services exist (Peliyagoda depot).
+/// Where the driver starts when their depot has no coordinates on file (the
+/// Peliyagoda depot); real location services replace this.
 const _depot = LatLng(6.9645, 79.8880);
 
 const _bearing = Distance();
 
 /// The vehicle's start: the last stop already delivered before [active],
 /// otherwise the depot.
-LatLng _originFor(List<Stop> stops, Stop active) {
+LatLng _originFor(List<Stop> stops, Stop active, LatLng depot) {
   Stop? previous;
   for (final s in stops) {
     if (s.sequence < active.sequence && s.status == StopStatus.completed) {
       previous = s;
     }
   }
-  return previous == null ? _depot : LatLng(previous.lat, previous.lng);
+  return previous == null ? depot : LatLng(previous.lat, previous.lng);
 }
 
 /// Route preview and simulated navigation to the active stop
@@ -58,6 +65,22 @@ class NavigationPreviewScreen extends ConsumerStatefulWidget {
       _NavigationPreviewScreenState();
 }
 
+/// Where the camera sits while following the van. Tilted mode is a chase view,
+/// aimed a few metres ahead of the van along its heading so you see more road
+/// ahead than behind. The zoom is deliberately not extreme: the closer the
+/// camera, the more screen pixels each metre of driving covers, so any hitch in
+/// the map's updates shows up as a visible jump.
+@visibleForTesting
+CameraTarget followTarget(LatLng point, double heading, MapMode mode) =>
+    mode == MapMode.tilted
+    ? CameraTarget(
+        point: const Distance(roundResult: false).offset(point, 6, heading),
+        bearing: heading,
+        zoom: 19.5,
+        pitch: 65,
+      )
+    : CameraTarget(point: point, zoom: 18.5);
+
 class _NavigationPreviewScreenState
     extends ConsumerState<NavigationPreviewScreen> {
   /// Camera follows the vehicle while navigating; a manual pan turns it off.
@@ -71,12 +94,10 @@ class _NavigationPreviewScreenState
 
   bool _busy = false;
 
-  StopRef get _ref => (tripId: widget.tripId, stopId: widget.stopId);
+  /// Turns along the leg being driven, found once when navigation starts.
+  List<Maneuver> _maneuvers = const [];
 
-  CameraTarget _targetFor(LatLng point, double heading, MapMode mode) =>
-      mode == MapMode.tilted
-      ? CameraTarget(point: point, bearing: heading, zoom: 20, pitch: 76)
-      : CameraTarget(point: point, zoom: 18.5);
+  StopRef get _ref => (tripId: widget.tripId, stopId: widget.stopId);
 
   Future<void> _arrived() async {
     setState(() => _busy = true);
@@ -85,9 +106,49 @@ class _NavigationPreviewScreenState
       if (mounted) {
         context.go(AppRoutes.arrived(widget.tripId, widget.stopId));
       }
+    } catch (e) {
+      if (mounted) showErrorSnack(context, e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  void _endNavigation() {
+    setState(() => _locate = null);
+    ref.read(navigationProvider.notifier).end();
+  }
+
+  Widget _modeButton(MapMode mode) => _RoundButton(
+    key: const Key('map-mode-toggle'),
+    onTap: () => ref.read(mapModeProvider.notifier).toggle(),
+    child: Text(
+      mode == MapMode.flat ? '3D' : '2D',
+      style: AppText.textSmMedium,
+    ),
+  );
+
+  Widget _banner(Stop stop, NavState nav, VehiclePosition pos) {
+    final along = nav.totalMeters - pos.remainingMeters;
+    final next = nextManeuver(_maneuvers, along);
+    return TurnBanner(
+      next: next,
+      distanceToNext: next == null ? 0 : next.atMeters - along,
+      destination: stop.name,
+      remainingMeters: pos.remainingMeters,
+      then: next == null ? null : nextManeuver(_maneuvers, along, skip: 1),
+    );
+  }
+
+  Widget _etaBar(Stop stop, NavState nav, VehiclePosition pos, MapMode mode) {
+    final minutes = math.max(1, (stop.etaMinutes * (1 - nav.progress)).ceil());
+    final arrival = ref.read(clockProvider)().add(Duration(minutes: minutes));
+    return EtaBar(
+      minutes: minutes,
+      kmLeft: pos.remainingMeters / 1000,
+      arrival: formatHm(arrival),
+      mapButton: _modeButton(mode),
+      onEnd: _endNavigation,
+    );
   }
 
   @override
@@ -111,12 +172,16 @@ class _NavigationPreviewScreenState
               onRetry: () => ref.invalidate(tripStopProvider(_ref)),
               data: (d) {
                 final stops = d.trip.stops;
+                final home = ref.watch(authControllerProvider).value;
+                final depot = home?.depotLat != null && home?.depotLng != null
+                    ? LatLng(home!.depotLat!, home.depotLng!)
+                    : _depot;
                 final points = [
-                  _depot,
+                  depot,
                   for (final s in stops) LatLng(s.lat, s.lng),
                 ];
                 final dest = LatLng(d.stop.lat, d.stop.lng);
-                final origin = _originFor(stops, d.stop);
+                final origin = _originFor(stops, d.stop, depot);
                 final leg = _swapped ? [dest, origin] : [origin, dest];
                 final legRoute =
                     ref.watch(roadRouteProvider(RouteRequest(leg))).value ??
@@ -133,7 +198,7 @@ class _NavigationPreviewScreenState
                 // locate target must not pull it back afterwards.
                 final CameraTarget? target =
                     nav.phase != NavPhase.idle && _following && pos != null
-                    ? _targetFor(vehicle, heading, mode)
+                    ? followTarget(vehicle, heading, mode)
                     : _locate;
 
                 return Stack(
@@ -144,7 +209,11 @@ class _NavigationPreviewScreenState
                         fit: points,
                         mode: mode,
                         cameraTarget: target,
-                        vehicle3d: Vehicle3D(point: vehicle, heading: heading),
+                        vehicle3d: Vehicle3D(
+                          point: vehicle,
+                          heading: heading,
+                          speedMps: (pos?.speedKmh ?? 0) / 3.6,
+                        ),
                         onUserMoved: () {
                           if (_following || _locate != null) {
                             setState(() {
@@ -175,42 +244,33 @@ class _NavigationPreviewScreenState
                       ),
                     ),
                     Positioned(
-                      left: 20,
-                      right: 20,
-                      top: 27,
-                      child: _RouteCallout(
-                        destination: d.stop.name,
-                        swapped: _swapped,
-                        live: navigating,
-                        toGo: navigating && pos != null
-                            ? '${(pos.remainingMeters / 1000).toStringAsFixed(1)} km to go'
-                            : null,
-                        onSwap: navigating
-                            ? null
-                            : () => setState(() => _swapped = !_swapped),
-                      ),
+                      left: 16,
+                      right: 16,
+                      top: 16,
+                      child: navigating && pos != null
+                          ? _banner(d.stop, nav, pos)
+                          : Padding(
+                              padding: const EdgeInsets.fromLTRB(4, 11, 4, 0),
+                              child: _RouteCallout(
+                                destination: d.stop.name,
+                                swapped: _swapped,
+                                live: false,
+                                toGo: null,
+                                onSwap: () =>
+                                    setState(() => _swapped = !_swapped),
+                              ),
+                            ),
                     ),
+                    if (!navigating)
+                      Positioned(right: 20, top: 150, child: _modeButton(mode)),
                     Positioned(
                       right: 20,
-                      top: 150,
-                      child: _RoundButton(
-                        key: const Key('map-mode-toggle'),
-                        onTap: () =>
-                            ref.read(mapModeProvider.notifier).toggle(),
-                        child: Text(
-                          mode == MapMode.flat ? '3D' : '2D',
-                          style: AppText.textSmMedium,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 20,
-                      top: 210,
+                      top: navigating ? 150 : 210,
                       child: _RoundButton(
                         key: const Key('locate-button'),
                         onTap: () => setState(() {
                           _following = true;
-                          _locate = _targetFor(vehicle, heading, mode);
+                          _locate = followTarget(vehicle, heading, mode);
                         }),
                         child: const Icon(
                           Icons.my_location,
@@ -221,29 +281,27 @@ class _NavigationPreviewScreenState
                     ),
                     Align(
                       alignment: Alignment.bottomCenter,
-                      child: _SummarySheet(
-                        stop: d.stop,
-                        nav: nav,
-                        busy: _busy,
-                        onToggle: () {
-                          if (navigating) {
-                            setState(() => _locate = null);
-                            ref.read(navigationProvider.notifier).end();
-                          } else {
-                            setState(() {
-                              _following = true;
-                              _locate = null;
-                            });
-                            ref
-                                .read(navigationProvider.notifier)
-                                .start(legRoute);
-                          }
-                        },
-                        onArrived: _arrived,
-                        // Full route details live on the trip overview.
-                        onDetails: () =>
-                            context.go(AppRoutes.trip(widget.tripId)),
-                      ),
+                      child: navigating && pos != null
+                          ? _etaBar(d.stop, nav, pos, mode)
+                          : _SummarySheet(
+                              stop: d.stop,
+                              nav: nav,
+                              busy: _busy,
+                              onToggle: () {
+                                setState(() {
+                                  _following = true;
+                                  _locate = null;
+                                  _maneuvers = findManeuvers(legRoute);
+                                });
+                                ref
+                                    .read(navigationProvider.notifier)
+                                    .start(legRoute);
+                              },
+                              onArrived: _arrived,
+                              // Full route details live on the trip overview.
+                              onDetails: () =>
+                                  context.go(AppRoutes.trip(widget.tripId)),
+                            ),
                     ),
                   ],
                 );

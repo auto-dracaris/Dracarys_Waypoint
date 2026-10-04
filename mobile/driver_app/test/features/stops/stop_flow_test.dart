@@ -8,12 +8,15 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../support/test_app.dart';
 
 Finder inCard(String orderId, Key key) => find.descendant(
-    of: find.byKey(Key('order-card-$orderId')), matching: find.byKey(key));
+  of: find.byKey(Key('order-card-$orderId')),
+  matching: find.byKey(key),
+);
 
 void main() {
   group('Stop info', () {
-    testWidgets('shows the next stop, its tiles, orders and actions',
-        (tester) async {
+    testWidgets('shows the next stop, its tiles, orders and actions', (
+      tester,
+    ) async {
       await pumpTripRoutes(tester, location: stop3);
 
       expect(find.text('My trips'), findsOneWidget);
@@ -37,8 +40,9 @@ void main() {
       expect(find.text('Mark arrived'), findsOneWidget);
     });
 
-    testWidgets('View orders expands the list and the header collapses it',
-        (tester) async {
+    testWidgets('View orders expands the list and the header collapses it', (
+      tester,
+    ) async {
       await pumpTripRoutes(tester, location: stop3);
 
       await tester.tap(find.text('View orders'));
@@ -56,8 +60,9 @@ void main() {
       expect(find.text('View orders'), findsOneWidget);
     });
 
-    testWidgets('the last stop reads "4 of 4" with a singular order',
-        (tester) async {
+    testWidgets('the last stop reads "4 of 4" with a singular order', (
+      tester,
+    ) async {
       await pumpTripRoutes(tester, location: stop4);
 
       expect(find.text('NEXT STOP · 4 OF 4'), findsOneWidget);
@@ -68,16 +73,21 @@ void main() {
       expect(find.text('Chilled'), findsNothing);
     });
 
-    testWidgets('an unknown stop shows an error, not a red screen',
-        (tester) async {
-      await pumpTripRoutes(tester,
-          location: '/trips/trip/trip-1/stop/trip-1-stop-99');
+    testWidgets('an unknown stop shows an error, not a red screen', (
+      tester,
+    ) async {
+      await pumpTripRoutes(
+        tester,
+        location: '/trips/trip/trip-1/stop/trip-1-stop-99',
+      );
       expect(find.text('Something went wrong'), findsOneWidget);
     });
 
     testWidgets('an unknown trip shows an error too', (tester) async {
-      await pumpTripRoutes(tester,
-          location: '/trips/trip/nope/stop/trip-1-stop-3');
+      await pumpTripRoutes(
+        tester,
+        location: '/trips/trip/nope/stop/trip-1-stop-3',
+      );
       expect(find.text('Something went wrong'), findsOneWidget);
     });
 
@@ -88,21 +98,22 @@ void main() {
       expect(find.text('Trips page'), findsOneWidget);
     });
 
-    testWidgets('Mark arrived records the arrival and opens the arrived screen',
-        (tester) async {
-      await pumpTripRoutes(tester, location: stop3);
+    testWidgets(
+      'Mark arrived records the arrival and opens the arrived screen',
+      (tester) async {
+        await pumpTripRoutes(tester, location: stop3);
 
-      await tester.tap(find.text('Mark arrived'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Mark arrived'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('ARRIVED · STOP 3 OF 4'), findsOneWidget);
-      expect(find.text('07:08 AM'), findsOneWidget);
-    });
+        expect(find.text('ARRIVED · STOP 3 OF 4'), findsOneWidget);
+        expect(find.text('07:08 AM'), findsOneWidget);
+      },
+    );
   });
 
   group('Navigation preview', () {
-    testWidgets('shows the route summary, callout and markers',
-        (tester) async {
+    testWidgets('shows the route summary, callout and markers', (tester) async {
       await pumpTripRoutes(tester, location: stop3);
       await tester.tap(find.text('Get Directions'));
       await tester.pumpAndSettle();
@@ -141,36 +152,56 @@ void main() {
     });
 
     group('live navigation', () {
-      const quick = SimulatedLocationSource(
-          speedKmh: 2.0e5, tick: Duration(milliseconds: 20));
+      // Widget tests run on fake time, which a real stopwatch cannot see, so
+      // the drive reads a scripted clock that moves 20 ms per reading.
+      Duration Function() steadyClock() {
+        var t = Duration.zero;
+        return () {
+          final now = t;
+          t += const Duration(milliseconds: 20);
+          return now;
+        };
+      }
+
+      final quick = SimulatedLocationSource(
+        speedKmh: 2.0e5,
+        tick: const Duration(milliseconds: 20),
+        elapsed: steadyClock(),
+      );
 
       Future<void> openDirections(WidgetTester tester) async {
-        await pumpTripRoutes(tester,
-            location: stop3,
-            overrides: [locationSourceProvider.overrideWithValue(quick)]);
+        await pumpTripRoutes(
+          tester,
+          location: stop3,
+          overrides: [locationSourceProvider.overrideWithValue(quick)],
+        );
         await tester.tap(find.text('Get Directions'));
         await tester.pumpAndSettle();
       }
 
-      testWidgets('the vehicle sits on the map before navigation starts',
-          (tester) async {
+      testWidgets('the vehicle sits on the map before navigation starts', (
+        tester,
+      ) async {
         await openDirections(tester);
         expect(find.byKey(const Key('vehicle-marker')), findsOneWidget);
-        expect(find.byKey(const Key('live-dot')), findsNothing);
+        expect(find.byKey(const Key('turn-banner')), findsNothing);
         expect(find.byKey(const Key('locate-button')), findsOneWidget);
       });
 
-      testWidgets('Start drives to arrival and offers the arrived action',
-          (tester) async {
+      testWidgets('Start drives to arrival and offers the arrived action', (
+        tester,
+      ) async {
         await openDirections(tester);
 
         await tester.tap(find.text('Start navigation'));
         await tester.pump(const Duration(milliseconds: 60));
-        expect(find.text('End navigation'), findsOneWidget);
-        expect(find.byKey(const Key('live-dot')), findsOneWidget);
+        expect(find.byKey(const Key('eta-minutes')), findsOneWidget);
+        expect(find.byKey(const Key('turn-banner')), findsOneWidget);
         expect(find.byKey(const Key('vehicle-marker')), findsOneWidget);
 
-        await tester.pumpAndSettle();
+        await tester.pump(
+          const Duration(seconds: 1),
+        ); // fake time: lets the drive finish
         expect(find.text('You have arrived'), findsOneWidget);
         expect(find.text("I've arrived"), findsOneWidget);
 
@@ -184,14 +215,13 @@ void main() {
         await tester.tap(find.text('Start navigation'));
         await tester.pump(const Duration(milliseconds: 60));
 
-        await tester.tap(find.text('End navigation'));
+        await tester.tap(find.byKey(const Key('nav-toggle')));
         await tester.pumpAndSettle();
         expect(find.text('Start navigation'), findsOneWidget);
-        expect(find.byKey(const Key('live-dot')), findsNothing);
+        expect(find.byKey(const Key('turn-banner')), findsNothing);
       });
 
-      testWidgets('swap flips the callout when idle, not while navigating',
-          (tester) async {
+      testWidgets('swap flips the callout when idle', (tester) async {
         await openDirections(tester);
         double dy(String t) => tester.getTopLeft(find.text(t)).dy;
         const dest = 'Waypoint Fresh — Ja-Ela';
@@ -200,15 +230,20 @@ void main() {
         await tester.tap(find.byKey(const Key('swap-button')));
         await tester.pumpAndSettle();
         expect(dy(dest), lessThan(dy('Your Location')));
+      });
 
-        await tester.tap(find.byKey(const Key('swap-button')));
-        await tester.pumpAndSettle();
+      testWidgets('navigating shows the turn banner and the ETA bar', (
+        tester,
+      ) async {
+        await openDirections(tester);
         await tester.tap(find.text('Start navigation'));
         await tester.pump(const Duration(milliseconds: 60));
-        await tester.tap(find.byKey(const Key('swap-button')));
-        await tester.pump();
-        expect(dy('Your Location'), lessThan(dy(dest)));
-        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('turn-banner')), findsOneWidget);
+        expect(find.byKey(const Key('turn-distance')), findsOneWidget);
+        expect(find.byKey(const Key('eta-minutes')), findsOneWidget);
+        expect(find.byKey(const Key('swap-button')), findsNothing);
+        await tester.pump(const Duration(seconds: 1));
       });
 
       testWidgets('the locate button can be tapped', (tester) async {
@@ -237,8 +272,9 @@ void main() {
       await pumpTripRoutes(tester, location: '$stop3/arrived', trips: repo);
     }
 
-    testWidgets('shows the arrival details, orders and actions',
-        (tester) async {
+    testWidgets('shows the arrival details, orders and actions', (
+      tester,
+    ) async {
       await pumpArrived(tester);
 
       expect(find.text('My trips'), findsOneWidget);
@@ -270,41 +306,49 @@ void main() {
       expect(find.text('Delivered'), findsNWidgets(2));
       expect(find.text('Handling: Keep cold chain intact.'), findsOneWidget);
       expect(
-          find.text(
-              'Verify quantities match before continuing to proof of delivery.'),
-          findsOneWidget);
+        find.text(
+          'Verify quantities match before continuing to proof of delivery.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Continue to proof of delivery'), findsOneWidget);
       expect(find.text('Report an issue'), findsOneWidget);
     });
 
-    testWidgets('delivered quantities start at planned and stay within 0..planned',
-        (tester) async {
-      await pumpArrived(tester);
-      final container =
-          ProviderScope.containerOf(tester.element(find.text('ORD-4522')));
+    testWidgets(
+      'delivered quantities start at planned and stay within 0..planned',
+      (tester) async {
+        await pumpArrived(tester);
+        final container = ProviderScope.containerOf(
+          tester.element(find.text('ORD-4522')),
+        );
 
-      // Starts at planned, so plus is inert.
-      await tester.tap(inCard('ORD-4522', const Key('stepper-plus')));
-      await tester.pump();
-      expect(container.read(deliveredQuantitiesProvider)['ORD-4522'] ?? 8, 8);
+        // Starts at planned, so plus is inert.
+        await tester.tap(inCard('ORD-4522', const Key('stepper-plus')));
+        await tester.pump();
+        expect(container.read(deliveredQuantitiesProvider)['ORD-4522'] ?? 8, 8);
 
-      await tester.tap(inCard('ORD-4522', const Key('stepper-minus')));
-      await tester.pump();
-      expect(container.read(deliveredQuantitiesProvider)['ORD-4522'], 7);
-      expect(
+        await tester.tap(inCard('ORD-4522', const Key('stepper-minus')));
+        await tester.pump();
+        expect(container.read(deliveredQuantitiesProvider)['ORD-4522'], 7);
+        expect(
           find.descendant(
-              of: find.byKey(const Key('order-card-ORD-4522')),
-              matching: find.text('7')),
-          findsOneWidget);
+            of: find.byKey(const Key('order-card-ORD-4522')),
+            matching: find.text('7'),
+          ),
+          findsOneWidget,
+        );
 
-      // The other order is untouched.
-      expect(container.read(deliveredQuantitiesProvider)['ORD-4521'], isNull);
-    });
+        // The other order is untouched.
+        expect(container.read(deliveredQuantitiesProvider)['ORD-4521'], isNull);
+      },
+    );
 
     testWidgets('quantity cannot go below zero', (tester) async {
       await pumpArrived(tester);
-      final container =
-          ProviderScope.containerOf(tester.element(find.text('ORD-4522')));
+      final container = ProviderScope.containerOf(
+        tester.element(find.text('ORD-4522')),
+      );
       for (var i = 0; i < 12; i++) {
         await tester.tap(inCard('ORD-4522', const Key('stepper-minus')));
         await tester.pump();
@@ -312,8 +356,9 @@ void main() {
       expect(container.read(deliveredQuantitiesProvider)['ORD-4522'], 0);
     });
 
-    testWidgets('a stop that has not been marked arrived shows a dash',
-        (tester) async {
+    testWidgets('a stop that has not been marked arrived shows a dash', (
+      tester,
+    ) async {
       await pumpTripRoutes(tester, location: '$stop3/arrived');
       expect(find.text('Arrived at'), findsOneWidget);
       expect(find.text('—'), findsOneWidget);

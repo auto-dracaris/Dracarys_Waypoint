@@ -25,7 +25,7 @@ Widget buildApp() => ProviderScope(
     );
 
 Future<void> signIn(WidgetTester tester) async {
-  await tester.enterText(find.byKey(const Key('email')), 'nimal@waypoint.lk');
+  await tester.enterText(find.byKey(const Key('phone')), '0770000002');
   await tester.enterText(find.byKey(const Key('password')), 'secret1');
   await tester.tap(find.byKey(const Key('login-submit')));
   await tester.pumpAndSettle();
@@ -37,19 +37,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('waypoint-logo')), findsOneWidget);
     expect(find.text('Sign in'), findsWidgets);
-    expect(find.byKey(const Key('email')), findsOneWidget);
+    expect(find.byKey(const Key('phone')), findsOneWidget);
   });
 
   testWidgets('invalid login shows inline validation and stays', (tester) async {
     await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('email')), '   ');
+    await tester.enterText(find.byKey(const Key('phone')), '   ');
     await tester.enterText(find.byKey(const Key('password')), '123');
     await tester.tap(find.byKey(const Key('login-submit')));
     await tester.pumpAndSettle();
-    expect(find.text('Enter a valid email'), findsOneWidget);
+    expect(find.text('Enter a valid mobile number'), findsOneWidget);
     expect(find.text('Password must be at least 6 characters'), findsOneWidget);
-    expect(find.byKey(const Key('email')), findsOneWidget);
+    expect(find.byKey(const Key('phone')), findsOneWidget);
   });
 
   testWidgets('login lands on trips, tabs work, sign out returns to login',
@@ -68,42 +68,46 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Nimal Silva'), findsOneWidget);
 
+    await tester.scrollUntilVisible(find.byKey(const Key('sign-out')), 200);
     await tester.tap(find.byKey(const Key('sign-out')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('email')), findsOneWidget);
+    expect(find.byKey(const Key('phone')), findsOneWidget);
     expect(find.text('Account'), findsNothing);
-    expect(GoRouter.of(tester.element(find.byKey(const Key('email')))).canPop(),
+    expect(GoRouter.of(tester.element(find.byKey(const Key('phone')))).canPop(),
         isFalse); // no way back into the shell
   });
 
-  testWidgets('sign up with a registered email shows an error and stays',
+  testWidgets('sign up with a registered phone shows an error and stays',
       (tester) async {
-    await tester.pumpWidget(buildApp());
-    await tester.pumpAndSettle();
-
-    Future<void> submitSignUp() async {
-      await tester.enterText(find.byKey(const Key('name')), 'Kasun Perera');
-      await tester.enterText(find.byKey(const Key('email')), 'k@y.lk');
-      await tester.enterText(find.byKey(const Key('password')), 'secret1');
-      await tester.enterText(find.byKey(const Key('confirm')), 'secret1');
-      await tester.tap(find.byKey(const Key('signup-submit')));
-      await tester.pumpAndSettle();
-    }
-
-    await tester.tap(find.byKey(const Key('go-signup')));
-    await tester.pumpAndSettle();
-    await submitSignUp(); // first time succeeds -> shell
-    expect(find.text('Trip 1'), findsOneWidget);
-
-    await tester.tap(find.text('Account'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('sign-out')));
+    final auth = MockAuthRepository(latency: Duration.zero);
+    // Real async: the mock's delay never fires inside the fake-async test zone.
+    await tester.runAsync(() => auth.signUp(
+        firstName: 'Kasun',
+        lastName: 'Perera',
+        phone: '0771111111',
+        password: 'Secret1!'));
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(auth),
+        tripsRepositoryProvider
+            .overrideWithValue(MockTripsRepository(latency: Duration.zero)),
+        splashDurationProvider.overrideWithValue(Duration.zero),
+      ],
+      child: const WaypointDriverApp(),
+    ));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('go-signup')));
     await tester.pumpAndSettle();
-    await submitSignUp(); // duplicate
-    expect(find.text('This email is already registered'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('firstName')), 'Kasun');
+    await tester.enterText(find.byKey(const Key('lastName')), 'Perera');
+    await tester.enterText(find.byKey(const Key('phone')), '077 111 1111');
+    await tester.enterText(find.byKey(const Key('password')), 'Secret1!');
+    await tester.enterText(find.byKey(const Key('confirm')), 'Secret1!');
+    await tester.tap(find.byKey(const Key('signup-submit')));
+    await tester.pumpAndSettle();
+    expect(
+        find.text('This phone number is already registered'), findsOneWidget);
     expect(find.byKey(const Key('confirm')), findsOneWidget);
   });
 }

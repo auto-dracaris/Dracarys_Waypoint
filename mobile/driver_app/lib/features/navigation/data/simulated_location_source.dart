@@ -3,8 +3,11 @@ import 'dart:math' as math;
 import 'package:latlong2/latlong.dart';
 
 import 'location_source.dart';
+import 'route_smoothing.dart';
 
-const _dist = Distance();
+// Unrounded: the default rounds every result to whole metres, which wrecks the
+// sub-metre segments of a corner arc.
+const _dist = Distance(roundResult: false);
 
 /// Walks a polyline by distance, giving the point and heading at any offset.
 class PolylineWalker {
@@ -72,40 +75,60 @@ class PolylineWalker {
   }
 }
 
-/// Drives the route at a steady [speedKmh], advancing by speed x [tick] each
-/// step so the pace is constant and testable under a fake clock.
+/// Drives the route at a steady [speedKmh]. Position is speed x elapsed time,
+/// not speed x tick count: timers fire late when the app janks, and a fixed
+/// step per tick would make the van speed up and slow down. [elapsed] is the
+/// clock (defaults to a stopwatch started at the first position), injectable
+/// so tests can script jank. The heading never turns faster than
+/// [maxTurnDegreesPerSecond].
 class SimulatedLocationSource implements LocationSource {
   const SimulatedLocationSource({
-    this.speedKmh = 45,
+    this.speedKmh = 30,
     this.tick = const Duration(milliseconds: 33),
+    this.elapsed,
+    this.maxTurnDegreesPerSecond = 120,
   });
 
   final double speedKmh;
   final Duration tick;
+  final Duration Function()? elapsed;
+  final double maxTurnDegreesPerSecond;
 
   @override
   Stream<VehiclePosition> follow(List<LatLng> route) async* {
     final walker = PolylineWalker(route);
+    final stopwatch = Stopwatch()..start();
+    final clock = elapsed ?? () => stopwatch.elapsed;
+    final smoother = HeadingSmoother(
+      maxDegreesPerSecond: maxTurnDegreesPerSecond,
+    );
+    var lastTime = clock();
 
-    VehiclePosition at(double m) {
+    VehiclePosition at(double m, Duration now) {
+      final dt = (now - lastTime).inMicroseconds / 1e6;
+      lastTime = now;
       final p = walker.at(m);
       return VehiclePosition(
         point: p.point,
-        heading: p.heading,
+        heading: smoother.step(p.heading, dt),
         speedKmh: p.remainingMeters == 0 ? 0 : speedKmh,
         remainingMeters: p.remainingMeters,
       );
     }
 
-    yield at(0);
+    yield at(0, lastTime);
     if (walker.totalMeters == 0) return;
     final metersPerSecond = speedKmh / 3.6;
-    final stepMeters = metersPerSecond * tick.inMicroseconds / 1e6;
+    final start = lastTime;
     var m = 0.0;
     while (m < walker.totalMeters) {
       await Future<void>.delayed(tick);
-      m = math.min(walker.totalMeters, m + stepMeters);
-      yield at(m);
+      final t = clock();
+      m = math.min(
+        walker.totalMeters,
+        metersPerSecond * (t - start).inMicroseconds / 1e6,
+      );
+      yield at(m, t);
     }
   }
 }

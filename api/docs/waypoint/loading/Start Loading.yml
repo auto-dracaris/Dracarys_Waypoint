@@ -1,0 +1,22 @@
+info:
+  name: Start Loading
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/trips/{{tripId}}/loading/start"
+  auth:
+    type: bearer
+    token: "{{loaderAccessToken}}"
+
+runtime:
+  variables:
+    - name: tripId
+      value: 9c9acd3e-5f21-4f79-b22a-51979d334687
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,8 @@
+info:
+  name: loading
+  type: folder
+  seq: 4
+
+docs:
+  content: Loader and dispatcher workflow. Log in as each role first. Set serviceDate, tripId, orderReference, issueId (a fresh UUID), startClientId (a fresh UUID), and startedAt (ISO timestamp) in the environment. Complete Loading saves dispatchCode for Driver Start. Use a planned trip with an assigned driver and an order with at least two cases. Resend Start Code is optional.
+  type: text/markdown

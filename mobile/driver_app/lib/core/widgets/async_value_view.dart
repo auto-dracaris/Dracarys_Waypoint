@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/api_exception.dart';
+
 class AsyncValueView<T> extends StatelessWidget {
   const AsyncValueView({
     super.key,
@@ -30,6 +32,13 @@ class AsyncValueView<T> extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text('Something went wrong'),
+            if (e is ApiException) ...[
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(e.message, textAlign: TextAlign.center),
+              ),
+            ],
             if (onRetry != null)
               TextButton(onPressed: onRetry, child: const Text('Try again')),
           ],

@@ -1,3 +1,4 @@
+import 'delivery_code_hash.dart';
 import 'order.dart';
 
 enum StopStatus { pending, arrived, completed }
@@ -18,6 +19,7 @@ class Stop {
     this.distanceKm = 0,
     this.status = StopStatus.pending,
     this.arrivedAt,
+    this.deliveryCode,
   });
 
   final String id;
@@ -37,10 +39,15 @@ class Stop {
   final StopStatus status;
   final DateTime? arrivedAt;
 
+  /// For checking the outlet's code offline; null once the stop is completed
+  /// or when the server gave none.
+  final DeliveryCodeHash? deliveryCode;
+
   Stop copyWith({
     StopStatus? status,
     DateTime? arrivedAt,
     List<Order>? orders,
+    DeliveryCodeHash? deliveryCode,
   }) =>
       Stop(
         id: id,
@@ -57,5 +64,6 @@ class Stop {
         distanceKm: distanceKm,
         status: status ?? this.status,
         arrivedAt: arrivedAt ?? this.arrivedAt,
+        deliveryCode: deliveryCode ?? this.deliveryCode,
       );
 }

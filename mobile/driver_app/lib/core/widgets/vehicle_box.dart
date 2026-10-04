@@ -14,11 +14,14 @@ const _cargoColor = '#FACC15'; // AppColors.primary
 const _cabColor = '#2B2422'; // AppColors.ink
 
 /// How long the van should be, in metres, so it measures about [pixels] on
-/// screen at [zoom] (clamped so it never vanishes or balloons).
-double vehicleLengthFor(double zoom, double latitude, {double pixels = 22}) {
+/// screen at [zoom]. Map tiles are 512 px, so a screen pixel spans
+/// 78271.5 * cos(latitude) / 2^(zoom + 1) metres. Sizing by pixels (not by a
+/// real-world minimum) keeps the van from ballooning over the road when the
+/// camera is close, because the map style draws roads at a fixed pixel width.
+double vehicleLengthFor(double zoom, double latitude, {double pixels = 64}) {
   final metersPerPixel =
-      78271.517 * math.cos(latitude * math.pi / 180) / math.pow(2, zoom);
-  return (pixels * metersPerPixel).clamp(2.5, 60.0).toDouble();
+      78271.517 * math.cos(latitude * math.pi / 180) / math.pow(2, zoom + 1);
+  return (pixels * metersPerPixel).clamp(0.3, 60.0).toDouble();
 }
 
 /// A delivery van as two extruded boxes (a tall cargo box behind a lower cab)
@@ -96,18 +99,54 @@ String vehicleBoxGeoJson(LatLng center, double heading, {double length = 4.8}) {
   });
 }
 
+/// A clock that only moves forward, shared by position samples and the map
+/// frames that show them.
+final Stopwatch _monotonic = Stopwatch()..start();
+int monotonicMicros() => _monotonic.elapsedMicroseconds;
+
 /// Where the 3D van is and which way it points.
+///
+/// Position samples reach the map at an uneven pace (the style update behind
+/// each frame takes a variable time), so a frame that simply shows the newest
+/// sample moves the van by a different amount each time, which reads as jumping.
+/// [speedMps] and [sampledAtMicros] let the map carry the van on from the
+/// sample to the moment the frame is actually drawn, which evens that out.
 @immutable
 class Vehicle3D {
-  const Vehicle3D({required this.point, required this.heading});
+  Vehicle3D({
+    required this.point,
+    required this.heading,
+    this.speedMps = 0,
+    int? sampledAtMicros,
+  }) : sampledAtMicros = sampledAtMicros ?? monotonicMicros();
 
   final LatLng point;
   final double heading;
+  final double speedMps;
+  final int sampledAtMicros;
 
+  /// Metres travelled since the sample was taken, at [nowMicros]. Capped at
+  /// [maxAgeMicros]: a sample that old is stale, not something to extrapolate.
+  double travelledMeters(int nowMicros, {int maxAgeMicros = 150000}) {
+    if (speedMps <= 0) return 0;
+    final age = (nowMicros - sampledAtMicros).clamp(0, maxAgeMicros);
+    return speedMps * age / 1e6;
+  }
+
+  /// [point] carried [meters] along [heading].
+  LatLng advancedBy(double meters) => meters <= 0
+      ? point
+      : const Distance(roundResult: false).offset(point, meters, heading);
+
+  // The sample time is not part of identity: a position is the same position
+  // however late it is looked at.
   @override
   bool operator ==(Object other) =>
-      other is Vehicle3D && other.point == point && other.heading == heading;
+      other is Vehicle3D &&
+      other.point == point &&
+      other.heading == heading &&
+      other.speedMps == speedMps;
 
   @override
-  int get hashCode => Object.hash(point, heading);
+  int get hashCode => Object.hash(point, heading, speedMps);
 }

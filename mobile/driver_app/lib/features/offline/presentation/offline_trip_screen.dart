@@ -16,6 +16,7 @@ import '../../../core/widgets/label_chip.dart';
 import '../../records/data/records_providers.dart';
 import '../../records/domain/saved_record.dart';
 import '../../route_update/data/route_changes_providers.dart';
+import '../../sync/presentation/sync_status_bar.dart';
 import '../../trips/data/trips_providers.dart';
 import '../../trips/domain/stop.dart';
 import '../../trips/domain/trip.dart';
@@ -38,6 +39,7 @@ class OfflineTripScreen extends ConsumerWidget {
       body: Column(
         children: [
           _Header(plate: plate, onBack: () => context.go(AppRoutes.trips)),
+          const SyncStatusBar(),
           Expanded(
             child: AsyncValueView(
               value: data,
