@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions } from '@nestjs/microservices';
 import morgan from 'morgan';
+import { setDefaultAutoSelectFamilyAttemptTimeout } from 'net';
 import { DataSource } from 'typeorm';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -12,6 +13,11 @@ import {
   notificationQueue,
   smsQueue,
 } from './common/rmq/rmq.options';
+
+// Node gives each address of a host 250 ms to connect before moving on. A
+// host far from here (the hosted OSRM, from a laptop) takes longer, and every
+// request to it then fails with ETIMEDOUT.
+setDefaultAutoSelectFamilyAttemptTimeout(2000);
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

@@ -13,6 +13,7 @@ import { Select } from '@/components/ui/select'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { RouteSchedule } from '@/features/planning/components/route-schedule'
 import { PlanReviewSidebar } from '@/features/planning/components/plan-review-sidebar'
+import { ConfirmPlanDialog } from '@/features/planning/components/confirm-plan-dialog'
 import { fetchPlan, publishPlan, runPlanning } from '@/features/planning/api'
 import type { DeliveryPlan } from '@/features/planning/data'
 import { depots } from '@/features/orders/data'
@@ -39,6 +40,8 @@ export function FinalPlanReviewPage({ onOpenNavigation, navigationOpen }: { onNa
   const [loaded, setLoaded] = useState<{ key: string; plan: DeliveryPlan | null; error: string } | null>(null)
   const [attempt, setAttempt] = useState(0)
   const [busy, setBusy] = useState<'run' | 'publish' | null>(null)
+  // The action waiting for the dispatcher's go-ahead.
+  const [confirming, setConfirming] = useState<'run' | 'publish' | null>(null)
   const [message, setMessage] = useState('')
   const [actionError, setActionError] = useState('')
   const key = `${date}:${depot}`
@@ -73,10 +76,11 @@ export function FinalPlanReviewPage({ onOpenNavigation, navigationOpen }: { onNa
     setMessage('')
     setActionError('')
   }
-  async function act(action: 'run' | 'publish') {
+  async function act(action: 'run' | 'publish', confirmed = false) {
     if (!accessToken || !plan) return
-    if (action === 'run' && plan.state === 'draft' && !window.confirm('Run planning again? The current draft will be replaced.')) return
-    if (action === 'publish' && !window.confirm(`Publish the ${depot} plan for ${dateLabel}? Loaders and drivers will see its trips, and the orders it leaves off will be deferred.`)) return
+    // Publishing, or running over a draft, is confirmed first.
+    if (!confirmed && (action === 'publish' || plan.state === 'draft')) return setConfirming(action)
+    setConfirming(null)
     setBusy(action)
     setMessage('')
     setActionError('')
@@ -207,6 +211,15 @@ export function FinalPlanReviewPage({ onOpenNavigation, navigationOpen }: { onNa
         </section>
         <PlanReviewSidebar plan={plan} />
       </div>
+      {confirming && (
+        <ConfirmPlanDialog
+          title={confirming === 'publish' ? `Publish the ${depot} plan for ${dateLabel}?` : 'Run planning again?'}
+          description={confirming === 'publish' ? 'Loaders and drivers will see its trips, and the orders it leaves off will be deferred.' : 'The current draft will be replaced.'}
+          confirmLabel={confirming === 'publish' ? 'Publish plan' : 'Run again'}
+          onClose={() => setConfirming(null)}
+          onConfirm={() => void act(confirming, true)}
+        />
+      )}
     </div>
   )
 }

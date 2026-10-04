@@ -14,7 +14,8 @@ const DeliveryMap = lazy(() => import('./delivery-map').then((module) => ({ defa
 export function ActiveRoutes({ onNavigate }: { onNavigate: (title: string) => void }) {
   const [filter, setFilter] = useState<RouteFilter>('All')
   const [query, setQuery] = useState('')
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null)
+  // Opens with a vehicle on the road selected, so its details panel is there from the start.
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(() => routes.find((route) => route.category === 'Success')?.id ?? null)
   const [showRouteTimeline, setShowRouteTimeline] = useState(false)
   const search = useRef<HTMLInputElement>(null)
   const mapSectionRef = useRef<HTMLDivElement>(null)
