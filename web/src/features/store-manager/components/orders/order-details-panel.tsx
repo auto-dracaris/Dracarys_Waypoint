@@ -1,134 +1,53 @@
-import { Check, Package } from 'lucide-react'
-import { Button } from '@/components/ui/shadcn/button'
-import { statusStyles } from '../../order-format'
+import CheckRounded from '@mui/icons-material/CheckRounded'
+import ViewInArOutlined from '@mui/icons-material/ViewInArOutlined'
+import AcUnitRounded from '@mui/icons-material/AcUnitRounded'
+import ScheduleRounded from '@mui/icons-material/ScheduleRounded'
+import ErrorOutlineRounded from '@mui/icons-material/ErrorOutlineRounded'
+import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
+import { Button } from '@/components/ui/button'
+import { StatusBadge } from '@/components/ui/status-badge'
 import type { OrderTableRow } from './orders-table'
+const orderStatusTones = { yellow: 'warning', green: 'success', red: 'error', gray: 'neutral' } as const
 
 export interface OrderDetailsData {
-  id: string
-  location: string
-  status: string
-  statusVariant: OrderTableRow['statusVariant']
-  timelineStatus: string
-  timelineTime: string
-  timelineMessage: string
-  requestedDelivery: string
-  requirement: string
-  quantity: string
-  totalWeight: string
-  totalVolume: string
-  receivingWindow: string
-  arrivalTime: string
-  notes: string
+  id: string; location: string; status: string; statusVariant: OrderTableRow['statusVariant']
+  timelineStatus: string; timelineTime: string; timelineMessage: string
+  requestedDelivery: string; requirement: string; quantity: string; totalWeight: string
+  totalVolume: string; receivingWindow: string; arrivalTime: string; notes: string
 }
-
 interface OrderDetailsPanelProps {
   data: OrderDetailsData | null
-  // Set while the order can still be withdrawn (confirmed, before its day closes).
   onCancel?: () => void
   cancelling?: boolean
   cancelError?: string
+  onViewFull?: () => void
+  full?: boolean
 }
-
-export function OrderDetailsPanel({ data, onCancel, cancelling = false, cancelError = '' }: OrderDetailsPanelProps) {
-  if (!data) return <div className="w-[420px] shrink-0 p-6 bg-white rounded-xl border border-neutral-200 text-stone-500 text-sm font-sans">Select an order to see its details.</div>
-
-  return (
-    <div className="w-[420px] shrink-0 bg-white rounded-xl border border-neutral-200 shadow-sm flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="p-6 border-b border-neutral-200 flex justify-between items-start">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-stone-900 text-3xl font-medium font-sans">{data.id}</h2>
-          <p className="text-stone-500 text-sm font-sans">{data.location}</p>
-        </div>
-        <div className={`px-2.5 py-1 rounded-full text-xs font-medium font-sans flex items-center gap-1.5 ${statusStyles[data.statusVariant]}`}>
-          <span className="text-xs">🕒</span> {/* Replace with Lucide Clock if preferred */}
-          {data.status}
-        </div>
-      </div>
-
-      {/* Content Scroll Area */}
-      <div className="flex-1 overflow-y-auto flex flex-col">
-        {/* Order Status Timeline Alert */}
-        <div className="p-6 border-b border-neutral-200 flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-lime-100 rounded-full flex items-center justify-center shrink-0">
-              <div className="w-5 h-5 bg-lime-500 rounded-full flex items-center justify-center text-white">
-                <Check className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-stone-900 text-sm font-semibold font-sans">{data.timelineStatus}</span>
-              <span className="text-stone-500 text-xs font-sans">{data.timelineTime}</span>
-            </div>
-          </div>
-          <p className="text-stone-500 text-sm font-sans leading-relaxed">{data.timelineMessage}</p>
-        </div>
-
-        {/* Order Details List */}
-        <div className="p-6 border-b border-neutral-200 flex flex-col gap-4">
-          <h3 className="text-stone-900 text-base font-semibold font-sans">Order details</h3>
-          <div className="flex flex-col gap-3">
-            <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">Requested delivery</span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">{data.requestedDelivery}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">Requirement</span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex items-center gap-2 flex-1">
-                <Package className="w-4 h-4 text-stone-700" />
-                {data.requirement}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">Quantity</span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">{data.quantity}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">Total weight</span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">{data.totalWeight}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">Total volume</span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">{data.totalVolume}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Delivery Info */}
-        <div className="p-6 flex flex-col gap-4">
-          <h3 className="text-stone-900 text-base font-semibold font-sans">Delivery</h3>
-          <div className="flex flex-col gap-3">
-            <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">Delivery window</span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">{data.receivingWindow}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-stone-500 text-sm font-sans w-40">Arrival time</span>
-              <span className="text-stone-900 text-sm font-semibold font-sans flex-1">{data.arrivalTime}</span>
-            </div>
-            {data.notes && (
-              <div className="flex justify-between items-start">
-                <span className="text-stone-500 text-sm font-sans w-40">Delivery notes</span>
-                <span className="text-stone-900 text-sm font-sans flex-1">{data.notes}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Footer Action */}
-      {onCancel && (
-        <div className="p-6 pt-0 bg-white flex flex-col gap-2">
-          {cancelError && (
-            <p role="alert" className="text-red-600 text-sm font-sans">
-              {cancelError}
-            </p>
-          )}
-          <Button variant="outline" disabled={cancelling} onClick={onCancel} className="w-full h-10 border-neutral-300 text-red-700 font-semibold shadow-none">
-            {cancelling ? 'Cancelling…' : 'Cancel order'}
-          </Button>
-        </div>
-      )}
+export function OrderDetailsPanel({ data, onCancel, cancelling = false, cancelError = '', onViewFull, full = false }: OrderDetailsPanelProps) {
+  if (!data) return <aside className="store-order-details store-order-details-empty type-text-sm-regular">Select an order to see its details.</aside>
+  const problem = data.statusVariant === 'red'
+  const fields = [
+    ['Requested delivery', data.requestedDelivery], ['Requirement', data.requirement],
+    ['Quantity', data.quantity], ['Total weight', data.totalWeight], ['Total volume', data.totalVolume],
+  ]
+  return <aside className={`store-order-details ${full ? 'store-order-details--full' : ''}`} aria-label={`Details for ${data.id}`}>
+    <header className="store-order-detail-header"><div><h2 className="type-display-md-medium">{data.id}</h2><p className="type-text-sm-regular">{data.location}</p></div><StatusBadge size="md" tone={orderStatusTones[data.statusVariant]} leadingIcon={<ScheduleRounded />}>{data.status}</StatusBadge></header>
+    <section className="store-order-received">
+      <div><span className={`store-order-received-icon ${problem ? 'store-order-received-icon--error' : ''}`}>{problem ? <ErrorOutlineRounded aria-hidden="true" /> : <CheckRounded aria-hidden="true" />}</span><div><h3 className="type-text-md-semibold">{data.timelineStatus}</h3><p className="type-text-sm-regular">{data.timelineTime}</p></div></div>
+      <p className="type-text-sm-regular">{data.timelineMessage}</p>
+    </section>
+    <section className="store-order-detail-section"><h3 className="type-text-md-semibold">Order details</h3>
+      <dl>{fields.map(([label, value]) => <div key={label}><dt className="type-text-sm-regular">{label}</dt><dd className="type-text-sm-semibold">{label === 'Requirement' && (value === 'Chilled' ? <AcUnitRounded aria-hidden="true" /> : <ViewInArOutlined aria-hidden="true" />)}{value}</dd></div>)}</dl>
+    </section>
+    <section className="store-order-detail-section"><h3 className="type-text-md-semibold">Delivery</h3><dl>
+      <div><dt className="type-text-sm-regular">Receiving window</dt><dd className="type-text-sm-semibold">{data.receivingWindow}</dd></div>
+      <div><dt className="type-text-sm-regular">Arrival time</dt><dd className="type-text-sm-semibold">{data.arrivalTime}</dd></div>
+      {full && <div><dt className="type-text-sm-regular">Delivery notes</dt><dd className="type-text-sm-regular">{data.notes || 'No additional notes'}</dd></div>}
+    </dl></section>
+    <div className="store-order-detail-actions">
+      {onViewFull && <Button size="md" trailingIcon={<ArrowForwardRounded />} onClick={onViewFull}>View full order</Button>}
+      {cancelError && <p role="alert" className="store-orders-error type-text-sm-regular">{cancelError}</p>}
+      {onCancel && <Button size="sm" loading={cancelling} loadingLabel="Cancelling…" onClick={onCancel}>Cancel order</Button>}
     </div>
-  )
+  </aside>
 }

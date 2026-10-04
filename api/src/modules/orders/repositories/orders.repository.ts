@@ -213,11 +213,37 @@ export class OrdersRepository extends BaseRepository<Order> {
   ): Promise<[Order[], number]> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
-    const qb = this.withOutlet().where('o.outletId = :outletId', { outletId });
-
-    if (query.status) {
+    const qb = this.myOrderQuery(outletId, query);
+    if (query.status)
       qb.andWhere('o.status = :status', { status: query.status });
-    }
+    const columns = {
+      reference: 'o.id',
+      requestedDate: 'o.requestedDate',
+      tempRequirement: 'o.tempRequirement',
+      orderUnits: 'o.orderUnits',
+      status: 'o.status',
+    };
+    qb.orderBy(
+      query.sortBy ? columns[query.sortBy] : 'o.placedAt',
+      query.sortBy ? (query.sortDirection ?? 'ASC') : 'DESC',
+    );
+    if (query.sortBy !== 'reference') qb.addOrderBy('o.id', 'DESC');
+    return qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+  }
+
+  private myOrderQuery(outletId: number, query: QueryMyOrderDto) {
+    const qb = this.withOutlet().where('o.outletId = :outletId', { outletId });
+    if (query.dateFrom)
+      qb.andWhere('o.requestedDate >= :dateFrom', { dateFrom: query.dateFrom });
+    if (query.dateTo)
+      qb.andWhere('o.requestedDate <= :dateTo', { dateTo: query.dateTo });
+    if (query.tempRequirement)
+      qb.andWhere('o.tempRequirement = :tempRequirement', {
+        tempRequirement: query.tempRequirement,
+      });
     if (query.search?.trim()) {
       // An id that cannot be a reference matches nothing.
       qb.andWhere('o.id = :id', {
@@ -225,11 +251,27 @@ export class OrdersRepository extends BaseRepository<Order> {
       });
     }
 
-    return qb
-      .orderBy('o.placedAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
+    return qb;
+  }
+
+  async countMyOrderStatuses(outletId: number, query: QueryMyOrderDto) {
+    const rows = await this.myOrderQuery(outletId, query)
+      .select('o.status', 'status')
+      .addSelect('COUNT(o.id)', 'count')
+      .groupBy('o.status')
+      .getRawMany<{ status: OrderStatus; count: string }>();
+    return {
+      all: rows.reduce((sum, row) => sum + Number(row.count), 0),
+      confirmed: Number(
+        rows.find((row) => row.status === OrderStatus.CONFIRMED)?.count ?? 0,
+      ),
+      deferred: Number(
+        rows.find((row) => row.status === OrderStatus.DEFERRED)?.count ?? 0,
+      ),
+      cancelled: Number(
+        rows.find((row) => row.status === OrderStatus.CANCELLED)?.count ?? 0,
+      ),
+    };
   }
 
   /**

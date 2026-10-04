@@ -1,6 +1,7 @@
 import { Tooltip } from '@/components/ui/tooltip'
+import { IconButton } from '@/components/ui/icon-button'
 import LogoutRounded from '@mui/icons-material/LogoutRounded'
-import { PanelLeft } from 'lucide-react'
+import ViewSidebarOutlined from '@mui/icons-material/ViewSidebarOutlined'
 import { sidebarNavigation, type SidebarRole } from './sidebar-navigation'
 import logo from '@/assets/overview/logo.svg'
 import '@/styles/sidebar.css'
@@ -60,10 +61,10 @@ export function Sidebar({
                 <span>{hubType}</span>
               </span>
             </div>
-            <Tooltip content={toggleLabel} placement="right" showArrow={false} disabled={!collapsed || open}>
-              <button type="button" className="sidebar-toggle" aria-label={toggleLabel} aria-expanded={open || !collapsed} aria-controls="main-navigation" onClick={open ? onClose : onToggleCollapsed}>
-                <PanelLeft aria-hidden="true" />
-              </button>
+            <Tooltip content={toggleLabel} placement="right" showArrow={false}>
+              <IconButton size="sm" className="sidebar-toggle" aria-label={toggleLabel} aria-expanded={open || !collapsed} aria-controls="main-navigation" onClick={open ? onClose : onToggleCollapsed}>
+                <ViewSidebarOutlined fontSize="inherit" />
+              </IconButton>
             </Tooltip>
           </div>
           <div className="sidebar-divider" />

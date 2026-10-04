@@ -63,7 +63,6 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
   const [sort, setSort] = useState<OutletSort>({ key: null, direction: 'ascending' })
   const [selectedId, setSelectedId] = useState('')
   const panel = useDetailPanel()
-  const [checked, setChecked] = useState(new Set<string>())
   const [editing, setEditing] = useState<{
     id?: string
     mode: 'create' | 'requirements' | 'availability'
@@ -147,14 +146,6 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
     setSort({
       key,
       direction: sort.key === key && sort.direction === 'ascending' ? 'descending' : 'ascending',
-    })
-  }
-  function toggleChecked(id: string) {
-    setChecked((previous) => {
-      const next = new Set(previous)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
     })
   }
   async function save(requirements: DeliveryRequirements, availability: OutletAvailability) {
@@ -254,7 +245,6 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
           </div>
           <OutletTable
             outlets={roster}
-            checked={checked}
             selectedId={selected?.id}
             sort={sort}
             loading={!outlets && !error}
@@ -263,7 +253,6 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
             meta={meta}
             onPage={setPage}
             onSort={onSort}
-            onCheck={toggleChecked}
             onSelect={(id) => {
               setSelectedId(id)
               panel.show()
