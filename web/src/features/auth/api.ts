@@ -52,4 +52,9 @@ export const verifyOtp = (body: VerifyOtpPayload) => apiRequest<null>(auth.verif
 
 export const resendOtp = (phone: string) => apiRequest<{ otpId: number }>(auth.resendOtp, { method: 'POST', body: { phone } })
 
+/** Texts a reset code to the number if it has an account; the answer is the same either way. */
+export const forgotPassword = (phone: string) => apiRequest<{ otp?: string }>(auth.forgotPassword, { method: 'POST', body: { phone } })
+
+export const resetPassword = (body: { phone: string; otp: string; newPassword: string }) => apiRequest<null>(auth.resetPassword, { method: 'POST', body })
+
 export const logout = (token: string) => apiRequest<null>(auth.logout, { method: 'POST', token })

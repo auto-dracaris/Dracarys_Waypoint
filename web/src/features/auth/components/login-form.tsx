@@ -1,5 +1,5 @@
 import { useForm, Controller } from 'react-hook-form'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { loginSchema } from '@/features/store-manager/schema'
 import { Field, FieldLabel, FieldError } from '@/components/ui/shadcn/field'
@@ -13,6 +13,8 @@ import { useUser } from '@/features/auth/user-context'
 
 export function LoginForm() {
   const { login } = useUser()
+  // A password reset lands here with a confirmation to show.
+  const notice = (useLocation().state as { notice?: string } | null)?.notice
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -45,6 +47,11 @@ export function LoginForm() {
 
       {/* Form Content */}
       <form onSubmit={form.handleSubmit(onSubmit)} className="w-full flex flex-col gap-5">
+        {notice && (
+          <p role="status" className="text-green-700 text-sm">
+            {notice}
+          </p>
+        )}
         {/* Phone Field */}
         <Controller
           name="phone"
@@ -94,9 +101,9 @@ export function LoginForm() {
               </div>
             )}
           />
-          <a href="#forgot" onClick={(e) => e.preventDefault()} className="text-blue-600 text-sm font-medium hover:underline">
+          <Link to="/forgot-password" className="text-blue-600 text-sm font-medium hover:underline">
             Forgot password?
-          </a>
+          </Link>
         </div>
 
         {form.formState.errors.root && (

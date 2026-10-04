@@ -14,6 +14,7 @@ services:
   # Van routing backend
   osrm-van:
     image: osrm/osrm-backend:latest
+    restart: unless-stopped
     volumes:
       - osm-data:/data:ro
     depends_on:
@@ -24,6 +25,7 @@ services:
   # Truck routing backend
   osrm-truck:
     image: osrm/osrm-backend:latest
+    restart: unless-stopped
     volumes:
       - osm-data:/data:ro
     depends_on:
@@ -34,6 +36,7 @@ services:
   # Gateway router (single access point on port 80)
   gateway:
     image: nginx:alpine
+    restart: unless-stopped
     ports:
       - "8081:80"
     volumes:

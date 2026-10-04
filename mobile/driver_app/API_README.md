@@ -96,6 +96,8 @@ Replaces `AuthRepository`.
 | `POST /auth/verify-otp` | `{ phone, otp, otpId }` | Activates the account |
 | `POST /auth/resend-otp` | `{ phone }` | |
 | `POST /auth/login` | `{ phone, password }` | → `{ accessToken, refreshToken, user }` |
+| `POST /auth/forgot-password` | `{ phone }` | Texts a 6-digit reset code if the number has an active account. Always `200` with the same message, whether or not it does. At most one code a minute |
+| `POST /auth/reset-password` | `{ phone, otp, newPassword }` | Sets the new password and signs the user out everywhere; sign in again. `400` for a wrong, expired or used code; the code is void after 5 wrong tries |
 | `POST /auth/refresh` | `{ refreshToken }` | → new `accessToken`, `refreshToken`, `user` |
 | `POST /auth/logout` | — | Revokes the session |
 | `GET /auth/me` | — | The `user` below |
@@ -140,9 +142,10 @@ Replaces `TripsRepository` (`getTrips / getTrip / startTrip / markArrived / comp
 |---|---|---|
 | `GET /trips?date=YYYY-MM-DD&updatedSince=<ISO>&page=&limit=` | — | My trips for the day (default today), summary form. `updatedSince` returns only trips changed after that instant |
 | `GET /trips/:id` | — | Full trip with stops and orders |
-| `POST /trips/:id/start` | `{ clientId, startedAt }` | `ready → in_progress`; `409` unless ready |
+| `POST /trips/:id/start` | `{ clientId, startedAt, otp }` | `ready → in_progress`; `409` unless ready. `otp` is the start code from the loader (see "Confirmation codes") |
 | `POST /trips/:id/stops/:stopId/arrive` | `{ clientId, planVersion, arrivedAt, lat?, lng? }` | Stop becomes `arrived` |
-| `POST /trips/:id/stops/:stopId/complete` | `{ clientId, planVersion, completedAt, deliveredCases }` | Stop becomes `completed`; the last one completes the trip |
+| `POST /trips/:id/stops/:stopId/complete` | `{ clientId, planVersion, completedAt, deliveredCases, deliveryCode? }` | Stop becomes `completed`; the last one completes the trip. `deliveryCode` is the outlet's code (see "Confirmation codes") |
+| `POST /trips/:id/stops/:stopId/delivery-code` | — | Sends the outlet a new code. Needs a connection; refetch the trip afterwards for the new hash |
 
 `deliveredCases` maps **every** order at the stop to the cases handed over:
 `{ "ORD0000012": 12, "ORD0000013": 0 }`. Each value is `0..cases`.
@@ -181,6 +184,8 @@ Every action returns the updated trip.
       "contactPhone": null,
       "status": "pending",
       "arrivedAt": null,
+      "deliveryCode": { "salt": "9f2c…", "iterations": 150000, "hash": "5b1e…" },
+      "codeVerified": null,
       "etaMinutes": 37,
       "distanceKm": 28,
       "orders": [
@@ -220,9 +225,55 @@ when testing:
 | Method & path | Body | Result |
 |---|---|---|
 | `POST /trips/:id/loading/start` | — | `assigned → loading` |
-| `POST /trips/:id/loading/complete` | `{ shortfall?: { orderId, shortCases, dispatcherNote? } }` | `→ ready`; a shortfall is shown on the trip |
+| `POST /trips/:id/loading/complete` | — | `→ ready`. The response has `dispatchCode`, the start code for the driver. A loader reports a shortfall with `POST /issues` (type `load_shortfall`), and the trip then shows it as `shortfall` |
+| `POST /trips/:id/loading/code` | — | A fresh `dispatchCode` if the first was lost or used up |
 
 A loader calling `GET /trips` gets their depot's trips for the day.
+
+### Confirmation codes
+
+Two handovers are confirmed with a 6-digit code.
+
+**Starting a trip.** When the loader marks the vehicle loaded, a start code is
+shown on the loader's screen and texted to the driver. Send it as `otp` to
+`POST /trips/:id/start`. A wrong code is `400` "Invalid start code"; after 5
+wrong tries the code is void and the loader issues a new one. The driver is at
+the depot here, so this step is online.
+
+**Completing a stop, with or without signal.** When the trip starts, each
+outlet's store manager is texted a delivery code. The driver asks for it at the
+stop and types it in. So that this works with no connection, the trip carries
+each stop's `deliveryCode: { salt, iterations, hash }` from the moment it
+starts (in the `start` response and `GET /trips/:id`). Save it with the trip.
+
+The app checks a typed code like this, with no network:
+
+```
+PBKDF2-HMAC-SHA256(
+  password   = the 6 digits, as UTF-8 text,
+  salt       = the bytes of `salt` (it is hex: decode it to 16 bytes),
+  iterations = `iterations`,
+  length     = 32 bytes
+) -> lowercase hex, must equal `hash`
+```
+
+In Dart, `Pbkdf2(macAlgorithm: Hmac.sha256(), iterations: …, bits: 256)` from
+the `cryptography` package does this. To check an implementation: password
+`password`, salt `73616c74` (the bytes of "salt"), 4096 iterations gives
+`c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a`. Run it off
+the UI thread; 150 000 iterations take a noticeable moment on a phone.
+
+Then send the code as `deliveryCode` in `complete` (now, or later from the
+offline queue). The server checks it again; a wrong one is `400` "Invalid
+delivery code".
+
+**If the store cannot give a code** (phone off, nobody there to ask): record a
+proof of delivery for the stop first (§3), then send `complete` without
+`deliveryCode`. Without a code or a proof, `complete` is `400`.
+
+On a completed stop, `codeVerified` is `true` if the outlet's code confirmed it
+and `false` if a proof stood in; it is `null` before that. `deliveryCode` is
+`null` before the trip starts and after the stop is completed.
 
 ## 3. Images and delivery records ✅
 
@@ -254,15 +305,33 @@ response already carries its URL: `avatar` on the user, `signatureUrl` and
 
 ### Proof of delivery and issues
 
-Both take ordinary JSON.
+All take ordinary JSON.
 
 | Method & path | Body |
 |---|---|
 | `POST /trips/:id/stops/:stopId/proof` | `{ clientId, receivedBy, notes?, signatureImageId?, photoImageId? }` — at least one of the two images. `signatureImageId` is an image of purpose `proof_signature` (the PNG from the in-app pad), `photoImageId` one of `proof_photo` |
-| `POST /trips/:id/stops/:stopId/orders/:orderId/issues` | `{ clientId, type, affectedCases, note?, photoImageId? }` — `affectedCases` is 1..order cases; `photoImageId` is an image of purpose `issue_photo` |
+| `POST /issues` | `{ clientId?, type, tripId, orderId?, affectedCases?, note?, photoImageId?, recordedAt? }` — see "Reporting an issue" below |
+| `GET /issues?page=&limit=` | — → the issues this driver reported, newest first, each with its `status` (`open`, `acknowledged`, `resolved`) and the dispatcher's `resolutionNote` |
 | `GET /trips/:id/records?page=&limit=` | — → `{ items, meta }` of `{ id, kind: arrival\|issue\|proof, title, savedAt, syncState }`, newest first |
 
-Issue `type`: `damaged | temperature_breach | short_delivery | wrong_items | other`.
+#### Reporting an issue
+
+Issues from every role go to the same `POST /issues`. For a driver:
+
+| Field | Notes |
+|---|---|
+| `type` | `damaged`, `temperature_breach`, `short_delivery`, `wrong_items` (about one order's goods), or `delivery_problem`, `delay`, `vehicle_breakdown`, `other` (about the trip) |
+| `tripId` | Required; the driver's own trip |
+| `orderId` | The order reference. Required for the four goods types |
+| `affectedCases` | Required for the four goods types; 1 to the order's cases |
+| `note` | Optional; up to 500 characters |
+| `photoImageId` | Optional; an image of purpose `issue_photo` |
+| `recordedAt` | Optional; the device's clock, for an issue noted offline |
+| `clientId` | Optional UUID; becomes the issue's id, so a retry stores nothing new (`200` instead of `201`) |
+
+Errors: `400` a type a driver cannot use, or a goods type without `orderId` and
+`affectedCases`; `403` not the driver's trip; `404` the order is not on the
+trip; `422` more cases than the order has.
 
 A proof response includes `signatureUrl` and `photoUrl`; an issue response
 includes `photoUrl`. Everything the server returns in `records` has
@@ -350,6 +419,9 @@ listener (the online pill is currently a long-press toggle).
   email to phone. Sign-up needs the OTP step (`/auth/register` then
   `/auth/verify-otp`).
 - **Vehicle** comes from `user.driver.vehicle`; drop the separate call.
+- **Confirmation codes.** A start-code field before starting a trip, and a
+  delivery-code field when completing a stop, checked on the handset against
+  the hash saved with the trip (§2, "Confirmation codes").
 - **Stop-specific calls.** `markArrived(tripId)` and the `RecordsRepository`
   calls must take the `stopId` and `planVersion`.
 - **Order ids** are references like `ORD0000012`.
@@ -371,7 +443,11 @@ listener (the online pill is currently a long-press toggle).
 2. On the web app, as the dispatcher: have orders placed, open **Planning**, run
    it and publish. If the demo driver's vehicle got no trip, assign the driver
    to a vehicle that did (Vehicles → Assign driver).
-3. As the loader, call `loading/start` then `loading/complete` on the trip.
-4. Sign in on the app as the driver: the trip is `ready`.
+3. As the loader, call `loading/start` then `loading/complete` on the trip. The
+   response's `dispatchCode` is the start code.
+4. Sign in on the app as the driver: the trip is `ready`. Start it with that
+   code.
+5. Outside production, the `start` response also gives each stop's delivery
+   code as `deliveryCode.code`, so a stop can be completed without the SMS.
 
 `api/docs/api-test/trips/` walks the same steps request by request.

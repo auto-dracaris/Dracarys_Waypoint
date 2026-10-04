@@ -11,19 +11,32 @@ export const loginSchema = z.object({
   rememberMe: z.boolean(),
 })
 
+// The rule a password must meet when it is set: at sign-up and on a reset.
+const newPassword = z
+  .string()
+  .min(6, 'Password must be at least 6 characters.')
+  .regex(/^(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).+$/, 'Password must contain at least one uppercase letter and one special character.')
+
 // Mirrors api/src/modules/auth/dto/register.dto.ts
 export const registerSchema = z.object({
   firstName: z.string().min(1, 'First name is required.').max(100),
   lastName: z.string().min(1, 'Last name is required.').max(100),
   phone: z.string().min(1, 'Phone number is required.').max(20, 'Phone number must be at most 20 characters.'),
-  password: z
-    .string()
-    .min(6, 'Password must be at least 6 characters.')
-    .regex(/^(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>]).+$/, 'Password must contain at least one uppercase letter and one special character.'),
+  password: newPassword,
 })
 
 export const otpSchema = z.object({
   otp: z.string().regex(/^\d{6}$/, 'OTP must be exactly 6 digits.'),
+})
+
+export const forgotPasswordSchema = z.object({
+  phone: z.string().min(1, 'Phone number is required.').max(20, 'Phone number must be at most 20 characters.'),
+})
+
+// Mirrors api/src/modules/auth/dto/reset-password.dto.ts; the phone comes from the step before.
+export const resetPasswordSchema = z.object({
+  otp: z.string().regex(/^\d{6}$/, 'OTP must be exactly 6 digits.'),
+  newPassword,
 })
 
 // Mirrors api/src/modules/orders/dto/create-order.dto.ts. The outlet is not part of the form: an order is always for the store manager's own outlet.

@@ -1,10 +1,12 @@
 import * as z from 'zod'
-import type { deferOrderSchema, loginSchema, otpSchema, placeOrderSchema, registerSchema, reportIssueSchema } from './schema'
+import type { deferOrderSchema, forgotPasswordSchema, loginSchema, otpSchema, placeOrderSchema, registerSchema, reportIssueSchema, resetPasswordSchema } from './schema'
 
 export type DeferOrderFormValues = z.infer<typeof deferOrderSchema>
 export type LoginFormValues = z.infer<typeof loginSchema>
 export type RegisterFormValues = z.infer<typeof registerSchema>
 export type OtpFormValues = z.infer<typeof otpSchema>
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>
 export type PlaceOrderFormValues = z.infer<typeof placeOrderSchema>
 export type PlaceOrderFormInput = z.input<typeof placeOrderSchema>
 export type ReportIssueFormValues = z.infer<typeof reportIssueSchema>

@@ -153,10 +153,6 @@ export class TripsRepository extends BaseRepository<Trip> {
     }
   }
 
-  saveIssue(data: Partial<Issue>, manager: EntityManager): Promise<Issue> {
-    return manager.save(manager.create(Issue, data));
-  }
-
   saveRouteChange(
     data: Partial<RouteChange>,
     manager: EntityManager,

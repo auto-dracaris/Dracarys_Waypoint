@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, ILike, Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { UserRole } from '../../../common/enums/user-role.enum';
 import { UserStatus } from '../../../common/enums/user-status.enum';
 import { BaseRepository } from '../../../common/repositories/base.repository';
@@ -34,6 +34,18 @@ export class UsersRepository extends BaseRepository<User> {
     return this.repository.findOne({
       where: { id },
       relations: { depot: true, outlet: true, avatarImage: true },
+    });
+  }
+
+  /** The active store managers of some outlets, who are texted about deliveries. */
+  findStoreManagersOfOutlets(outletIds: number[]): Promise<User[]> {
+    if (!outletIds.length) {
+      return Promise.resolve([]);
+    }
+    return this.repository.findBy({
+      role: UserRole.STORE_MANAGER,
+      status: UserStatus.ACTIVE,
+      outletId: In(outletIds),
     });
   }
 
