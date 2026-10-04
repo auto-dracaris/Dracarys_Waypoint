@@ -104,7 +104,8 @@ class _ProofOfDeliveryScreenState extends ConsumerState<ProofOfDeliveryScreen> {
   /// The code is optional (a store that cannot give one is covered by the
   /// proof), but when typed it must be the six digits the outlet was texted.
   String? get _codeError {
-    if (_codeWrong) return 'That code does not match the one sent to the outlet';
+    if (_codeWrong)
+      return 'That code does not match the one sent to the outlet';
     final code = _code.text.trim();
     return _submitted && code.isNotEmpty && !RegExp(r'^\d{6}$').hasMatch(code)
         ? 'The delivery code is 6 digits'
@@ -114,13 +115,25 @@ class _ProofOfDeliveryScreenState extends ConsumerState<ProofOfDeliveryScreen> {
   Future<void> _complete(TripStop d) async {
     setState(() => _submitted = true);
     if (_name.text.trim().isEmpty || !_hasProof || _codeError != null) return;
+    final short = unreportedShortOrders(
+      [for (final o in d.stop.orders) (id: o.id, cases: o.cases)],
+      ref.read(deliveredQuantitiesProvider),
+      ref.read(reportedOrdersProvider),
+    );
+    if (short.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Report an issue for the short delivery first'),
+        ),
+      );
+      return;
+    }
     if (d.stop.status != StopStatus.arrived) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Mark this stop as arrived first')),
       );
       return;
     }
-
 
     // With no signal the server cannot check the outlet's code, but the phone
     // was given its hash when the trip started: check it here, so a wrong code
@@ -168,6 +181,7 @@ class _ProofOfDeliveryScreenState extends ConsumerState<ProofOfDeliveryScreen> {
         deliveryCode: _code.text.trim(),
       );
       ref.read(deliveredQuantitiesProvider.notifier).clear();
+      ref.read(reportedOrdersProvider.notifier).clear();
 
       final trip = await ref.read(tripProvider(widget.tripId).future);
       final next = trip.activeStop;

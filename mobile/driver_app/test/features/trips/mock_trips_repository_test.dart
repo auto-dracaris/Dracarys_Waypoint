@@ -6,15 +6,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 final _now = DateTime(2026, 9, 29, 7, 8);
 
-MockTripsRepository repo() => MockTripsRepository(
-      latency: Duration.zero,
-      today: DateTime(2026, 9, 29),
-      now: () => _now,
-    );
+MockTripsRepository repo({bool onTheRoad = true}) => MockTripsRepository(
+  latency: Duration.zero,
+  onTheRoad: onTheRoad,
+  today: DateTime(2026, 9, 29),
+  now: () => _now,
+);
 
 void main() {
   test('seeds the Figma story', () async {
-    final r = repo();
+    final r = repo(onTheRoad: false);
     final vehicle = await r.getVehicle();
     expect(vehicle.plate, 'VEH021');
     expect(vehicle.type, 'Refrigerated van');
@@ -77,12 +78,14 @@ void main() {
     expect(again.activeStop!.arrivedAt, _now);
   });
 
-  test('completeStop finishes an arrived stop and advances progress',
-      () async {
+  test('completeStop finishes an arrived stop and advances progress', () async {
     final r = repo();
     await r.markArrived('trip-1');
-    final updated = await r.completeStop('trip-1', 'trip-1-stop-3',
-        deliveredCases: {'ORD-4521': 12, 'ORD-4522': 7});
+    final updated = await r.completeStop(
+      'trip-1',
+      'trip-1-stop-3',
+      deliveredCases: {'ORD-4521': 12, 'ORD-4522': 7},
+    );
 
     expect(updated.completedStops, 3);
     expect(updated.activeStop!.sequence, 4);
@@ -143,7 +146,7 @@ void main() {
   });
 
   test('simulateLoadingComplete moves a loading trip to ready', () async {
-    final r = repo();
+    final r = repo(onTheRoad: false);
     final ready = await r.simulateLoadingComplete('trip-1');
     expect(ready.status, TripStatus.ready);
     expect((await r.getTrip('trip-1')).status, TripStatus.ready);

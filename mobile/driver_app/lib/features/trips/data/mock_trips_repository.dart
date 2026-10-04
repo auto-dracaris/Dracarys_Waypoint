@@ -1,6 +1,7 @@
 import '../domain/order.dart';
 import '../domain/shortfall_report.dart';
 import '../domain/stop.dart';
+import '../domain/stop_gate.dart';
 import '../domain/trip.dart';
 import '../domain/vehicle.dart';
 import 'trips_repository.dart';
@@ -10,10 +11,14 @@ class MockTripsRepository implements TripsRepository {
     this.latency = const Duration(milliseconds: 400),
     DateTime? today,
     DateTime Function()? now,
+
+    /// Start with trip 1 already on the road (loaded and started), for tests and
+    /// demos that begin at a stop. Otherwise it is still being loaded.
+    bool onTheRoad = false,
   }) : _now = now ?? DateTime.now {
     final base = today ?? DateTime.now();
     _today = DateTime(base.year, base.month, base.day);
-    _trips = _seed(_today, _now());
+    _trips = _seed(_today, _now(), onTheRoad: onTheRoad);
   }
 
   final Duration latency;
@@ -62,23 +67,32 @@ class MockTripsRepository implements TripsRepository {
     await _wait();
     final i = _indexOf(tripId);
     final trip = _trips[i];
-    if (trip.status == TripStatus.completed) return trip;
+    if (trip.status == TripStatus.inProgress ||
+        trip.status == TripStatus.completed) {
+      return trip;
+    }
+    // The server only starts a trip that has been loaded.
+    if (trip.status != TripStatus.ready) {
+      throw StateError(
+        'The vehicle is not loaded yet. Wait for the loading team to finish.',
+      );
+    }
     return _store(i, trip.copyWith(status: TripStatus.inProgress));
   }
 
   @override
-  Future<Trip> markArrived(String tripId) async {
+  Future<Trip> markArrived(String tripId, {String? stopId}) async {
     await _wait();
     final i = _indexOf(tripId);
     final trip = _trips[i];
-    final active = trip.activeStop;
-    if (active == null || active.status != StopStatus.pending) return trip;
+    final target = stopToArriveAt(trip, stopId: stopId);
+    if (target == null) return trip;
 
     return _store(
       i,
       _replaceStop(
         trip,
-        active.copyWith(status: StopStatus.arrived, arrivedAt: _now()),
+        target.copyWith(status: StopStatus.arrived, arrivedAt: _now()),
       ),
     );
   }
@@ -93,8 +107,8 @@ class MockTripsRepository implements TripsRepository {
     await _wait();
     final i = _indexOf(tripId);
     final trip = _trips[i];
-    final stop = trip.stops.where((s) => s.id == stopId).firstOrNull;
-    if (stop == null || stop.status != StopStatus.arrived) return trip;
+    final stop = stopToComplete(trip, stopId);
+    if (stop == null) return trip;
 
     final delivered = stop.copyWith(
       status: StopStatus.completed,
@@ -130,7 +144,11 @@ class MockTripsRepository implements TripsRepository {
     return i;
   }
 
-  static List<Trip> _seed(DateTime day, DateTime now) {
+  static List<Trip> _seed(
+    DateTime day,
+    DateTime now, {
+    bool onTheRoad = false,
+  }) {
     DateTime at(int h, int m) => DateTime(day.year, day.month, day.day, h, m);
 
     Order order(
@@ -187,7 +205,7 @@ class MockTripsRepository implements TripsRepository {
         name: 'Trip 1',
         subtitle: 'Fresh deliveries · Gampaha',
         departure: at(5, 30),
-        status: TripStatus.loading,
+        status: onTheRoad ? TripStatus.inProgress : TripStatus.loading,
         planVersion: 3,
         updatedAt: now.subtract(const Duration(minutes: 2)),
         shortfall: const ShortfallReport(

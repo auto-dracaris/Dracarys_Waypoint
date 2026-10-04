@@ -126,7 +126,7 @@ void main() {
   testWidgets('starting a trip with no signal says it needs a connection', (
     tester,
   ) async {
-    final repo = CodedTripsRepository();
+    final repo = CodedTripsRepository(onTheRoad: false);
     await tester.runAsync(() => repo.simulateLoadingComplete('trip-1'));
     await pumpTripRoutes(tester, location: overview1, trips: repo);
     ProviderScope.containerOf(tester.element(find.text('Ready to depart')))

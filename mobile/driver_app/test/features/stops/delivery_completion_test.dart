@@ -21,7 +21,9 @@ Future<MockTripsRepository> arrivedRepo(WidgetTester tester) async {
 
 Future<void> sign(WidgetTester tester) async {
   await tester.drag(
-      find.byKey(const Key('signature-surface')), const Offset(80, 30));
+    find.byKey(const Key('signature-surface')),
+    const Offset(80, 30),
+  );
   await tester.pump();
 }
 
@@ -38,8 +40,9 @@ Future<void> tapComplete(WidgetTester tester) async {
 
 void main() {
   group('Proof of delivery', () {
-    testWidgets('shows the summary, timestamps and the sign-off form',
-        (tester) async {
+    testWidgets('shows the summary, timestamps and the sign-off form', (
+      tester,
+    ) async {
       final repo = await arrivedRepo(tester);
       await pumpTripRoutes(tester, location: proof3, trips: repo);
 
@@ -64,12 +67,14 @@ void main() {
       expect(find.text('Complete stop'), findsOneWidget);
     });
 
-    testWidgets('the summary follows the quantities entered on arrival',
-        (tester) async {
+    testWidgets('the summary follows the quantities entered on arrival', (
+      tester,
+    ) async {
       final repo = await arrivedRepo(tester);
       await pumpTripRoutes(tester, location: proof3, trips: repo);
-      final container =
-          ProviderScope.containerOf(tester.element(find.text('Total')));
+      final container = ProviderScope.containerOf(
+        tester.element(find.text('Total')),
+      );
       container.read(deliveredQuantitiesProvider.notifier).set('ORD-4522', 5);
       await tester.pump();
 
@@ -77,8 +82,9 @@ void main() {
       expect(find.text('17 cases total'), findsOneWidget);
     });
 
-    testWidgets('completing without a name or proof is blocked with messages',
-        (tester) async {
+    testWidgets('completing without a name or proof is blocked with messages', (
+      tester,
+    ) async {
       final repo = await arrivedRepo(tester);
       await pumpTripRoutes(tester, location: proof3, trips: repo);
 
@@ -99,12 +105,17 @@ void main() {
       expect(trip.completedStops, 2); // nothing was completed
     });
 
-    testWidgets('a signature and a name complete the stop and open the next',
-        (tester) async {
+    testWidgets('a signature and a name complete the stop and open the next', (
+      tester,
+    ) async {
       final repo = await arrivedRepo(tester);
       final records = MockRecordsRepository(latency: Duration.zero);
-      await pumpTripRoutes(tester,
-          location: proof3, trips: repo, records: records);
+      await pumpTripRoutes(
+        tester,
+        location: proof3,
+        trips: repo,
+        records: records,
+      );
 
       await fillName(tester, 'Kumara Perera');
       await sign(tester);
@@ -115,22 +126,31 @@ void main() {
 
       final trip = (await tester.runAsync(() => repo.getTrip('trip-1')))!;
       expect(trip.completedStops, 3);
-      final saved =
-          (await tester.runAsync(() => records.list('trip-1')))!;
+      final saved = (await tester.runAsync(() => records.list('trip-1')))!;
       expect(saved.map((r) => r.kind), [RecordKind.proof]);
     });
 
-    testWidgets('delivered quantities are recorded and then cleared',
-        (tester) async {
+    testWidgets('delivered quantities are recorded and then cleared', (
+      tester,
+    ) async {
       final repo = await arrivedRepo(tester);
       await pumpTripRoutes(tester, location: proof3, trips: repo);
-      final container =
-          ProviderScope.containerOf(tester.element(find.text('Total')));
+      final container = ProviderScope.containerOf(
+        tester.element(find.text('Total')),
+      );
       container.read(deliveredQuantitiesProvider.notifier).set('ORD-4522', 6);
       await tester.pump();
 
+      // Short of plan: held until an issue has been reported for the order.
       await fillName(tester, 'Kumara');
       await sign(tester);
+      await tapComplete(tester);
+      expect(
+        find.text('Report an issue for the short delivery first'),
+        findsOneWidget,
+      );
+      container.read(reportedOrdersProvider.notifier).add('ORD-4522');
+      await tester.pump();
       await tapComplete(tester);
 
       final trip = (await tester.runAsync(() => repo.getTrip('trip-1')))!;
@@ -160,8 +180,9 @@ void main() {
       expect(trip.completedStops, 3);
     });
 
-    testWidgets('completing the last stop finishes the trip and goes home',
-        (tester) async {
+    testWidgets('completing the last stop finishes the trip and goes home', (
+      tester,
+    ) async {
       final repo = testTripsRepository();
       await tester.runAsync(() async {
         await repo.markArrived('trip-1');
@@ -180,25 +201,23 @@ void main() {
       expect(trip.status, TripStatus.completed);
     });
 
-    testWidgets('a stop that has not been marked arrived cannot be completed',
-        (tester) async {
+    testWidgets('a stop that has not been marked arrived cannot be opened', (
+      tester,
+    ) async {
       final repo = testTripsRepository();
       await pumpTripRoutes(tester, location: proof3, trips: repo);
 
-      await fillName(tester, 'Kumara');
-      await sign(tester);
-      await tapComplete(tester);
-
-      expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.text('Complete stop'), findsOneWidget); // still here
+      expect(find.text('Mark arrived first'), findsOneWidget);
+      expect(find.text('Complete stop'), findsNothing);
       final trip = (await tester.runAsync(() => repo.getTrip('trip-1')))!;
       expect(trip.completedStops, 2);
     });
   });
 
   group('Report an issue', () {
-    testWidgets('shows the order context and the quantity breakdown',
-        (tester) async {
+    testWidgets('shows the order context and the quantity breakdown', (
+      tester,
+    ) async {
       final repo = await arrivedRepo(tester);
       await pumpTripRoutes(tester, location: issue3, trips: repo);
 
@@ -220,46 +239,62 @@ void main() {
       expect(find.text('Short Note'), findsOneWidget);
       expect(find.text('Attach photo evidence (recommended)'), findsOneWidget);
       expect(find.text('Dispatcher review required'), findsOneWidget);
-      expect(find.text('Saved on this device; report will send when connected.'),
-          findsOneWidget);
+      expect(
+        find.text('Saved on this device; report will send when connected.'),
+        findsOneWidget,
+      );
       expect(find.text('Save and report issue'), findsOneWidget);
     });
 
-    testWidgets('the affected quantity drives the breakdown and the notice',
-        (tester) async {
+    testWidgets('the affected quantity drives the breakdown and the notice', (
+      tester,
+    ) async {
       final repo = await arrivedRepo(tester);
       await pumpTripRoutes(tester, location: issue3, trips: repo);
 
-      expect(find.text('Deliverable (11 cases) — ready to hand over once approved'),
-          findsOneWidget);
+      expect(
+        find.text('Deliverable (11 cases) — ready to hand over once approved'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byKey(const Key('stepper-plus')));
       await tester.pump();
-      expect(find.text('Deliverable (10 cases) — ready to hand over once approved'),
-          findsOneWidget);
-      expect(find.text('Affected (2 cases) — held on vehicle pending decision'),
-          findsOneWidget);
+      expect(
+        find.text('Deliverable (10 cases) — ready to hand over once approved'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Affected (2 cases) — held on vehicle pending decision'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('the affected quantity stays between 1 and the planned cases',
-        (tester) async {
+    testWidgets('the affected quantity stays between 1 and the planned cases', (
+      tester,
+    ) async {
       final repo = await arrivedRepo(tester);
       await pumpTripRoutes(tester, location: issue3, trips: repo);
 
       // Already at the minimum.
       await tester.tap(find.byKey(const Key('stepper-minus')));
       await tester.pump();
-      expect(find.text('Affected (1 case) — held on vehicle pending decision'),
-          findsOneWidget);
+      expect(
+        find.text('Affected (1 case) — held on vehicle pending decision'),
+        findsOneWidget,
+      );
 
       for (var i = 0; i < 15; i++) {
         await tester.tap(find.byKey(const Key('stepper-plus')));
         await tester.pump();
       }
-      expect(find.text('Affected (12 cases) — held on vehicle pending decision'),
-          findsOneWidget);
-      expect(find.text('Deliverable (0 cases) — ready to hand over once approved'),
-          findsOneWidget);
+      expect(
+        find.text('Affected (12 cases) — held on vehicle pending decision'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Deliverable (0 cases) — ready to hand over once approved'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the issue type can be changed', (tester) async {
@@ -290,12 +325,17 @@ void main() {
       expect(find.byKey(const Key('photo-remove')), findsNothing);
     });
 
-    testWidgets('saving records the issue and returns to the arrived screen',
-        (tester) async {
+    testWidgets('saving records the issue and returns to the arrived screen', (
+      tester,
+    ) async {
       final repo = await arrivedRepo(tester);
       final records = MockRecordsRepository(latency: Duration.zero);
-      await pumpTripRoutes(tester,
-          location: issue3, trips: repo, records: records);
+      await pumpTripRoutes(
+        tester,
+        location: issue3,
+        trips: repo,
+        records: records,
+      );
 
       await tester.ensureVisible(find.text('Save and report issue'));
       await tester.tap(find.text('Save and report issue'));
@@ -309,8 +349,11 @@ void main() {
 
     testWidgets('an unknown order shows an error view', (tester) async {
       final repo = await arrivedRepo(tester);
-      await pumpTripRoutes(tester,
-          location: '$stop3/issue/ORD-0000', trips: repo);
+      await pumpTripRoutes(
+        tester,
+        location: '$stop3/issue/ORD-0000',
+        trips: repo,
+      );
       expect(find.text('Something went wrong'), findsOneWidget);
     });
   });
@@ -329,8 +372,9 @@ void main() {
       expect(find.text('Delivery summary'), findsOneWidget);
     });
 
-    testWidgets('Report an issue with several orders asks which one',
-        (tester) async {
+    testWidgets('Report an issue with several orders asks which one', (
+      tester,
+    ) async {
       await pumpArrived(tester);
       await tester.ensureVisible(find.text('Report an issue'));
       await tester.tap(find.text('Report an issue'));
@@ -344,8 +388,9 @@ void main() {
       expect(find.text('Damaged goods — ambient'), findsOneWidget);
     });
 
-    testWidgets('Report an issue with one order goes straight to the form',
-        (tester) async {
+    testWidgets('Report an issue with one order goes straight to the form', (
+      tester,
+    ) async {
       final repo = testTripsRepository();
       await tester.runAsync(() async {
         await repo.markArrived('trip-1');

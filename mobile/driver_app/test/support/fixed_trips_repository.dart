@@ -28,7 +28,8 @@ class FixedTripsRepository implements TripsRepository {
   Future<Trip> startTrip(String tripId, {String? otp}) async => getTrip(tripId);
 
   @override
-  Future<Trip> markArrived(String tripId) async => getTrip(tripId);
+  Future<Trip> markArrived(String tripId, {String? stopId}) async =>
+      getTrip(tripId);
 
   @override
   Future<Trip> completeStop(

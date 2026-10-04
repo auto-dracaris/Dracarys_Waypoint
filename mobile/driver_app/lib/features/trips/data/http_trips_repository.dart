@@ -8,6 +8,7 @@ import '../../sync/data/action_submitter.dart';
 import '../../sync/domain/pending_action.dart';
 import '../../sync/domain/pending_overlay.dart';
 import '../domain/stop.dart';
+import '../domain/stop_gate.dart';
 import '../domain/trip.dart';
 import '../domain/vehicle.dart';
 import 'trip_mapper.dart';
@@ -146,10 +147,12 @@ class HttpTripsRepository implements TripsRepository {
   }
 
   @override
-  Future<Trip> markArrived(String tripId) async {
+  Future<Trip> markArrived(String tripId, {String? stopId}) async {
     final trip = await getTrip(tripId);
-    final stop = trip.activeStop;
-    if (stop == null || stop.status != StopStatus.pending) return trip;
+    // Refused here, before anything is sent or saved for later: the server would
+    // turn it down, and a queued action that can never succeed helps nobody.
+    final stop = stopToArriveAt(trip, stopId: stopId);
+    if (stop == null) return trip;
     await _submitter.submit(
       kind: ActionKind.arrive,
       tripId: tripId,
@@ -172,8 +175,8 @@ class HttpTripsRepository implements TripsRepository {
     String? deliveryCode,
   }) async {
     final trip = await getTrip(tripId);
-    final stop = trip.stops.where((s) => s.id == stopId).firstOrNull;
-    if (stop == null || stop.status != StopStatus.arrived) return trip;
+    final stop = stopToComplete(trip, stopId);
+    if (stop == null) return trip;
     await _submitter.submit(
       kind: ActionKind.complete,
       tripId: tripId,

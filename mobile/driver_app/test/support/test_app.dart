@@ -31,11 +31,13 @@ const overview1 = '/trips/trip/trip-1';
 const offline1 = '/trips/trip/trip-1/offline';
 const routeUpdate1 = '/updates/route-update/trip-1';
 
-MockTripsRepository testTripsRepository() => MockTripsRepository(
-  latency: Duration.zero,
-  today: DateTime(2026, 9, 29),
-  now: () => testNow,
-);
+MockTripsRepository testTripsRepository({bool onTheRoad = true}) =>
+    MockTripsRepository(
+      latency: Duration.zero,
+      onTheRoad: onTheRoad,
+      today: DateTime(2026, 9, 29),
+      now: () => testNow,
+    );
 
 /// Pumps the trip-flow routes (the same table the app uses) at [location],
 /// with instant mock repositories and map tiles switched off.
@@ -52,6 +54,18 @@ Future<void> pumpTripRoutes(
   tester.view.physicalSize = const Size(402 * 3, 1700 * 3);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
+
+  // Stop screens hold until a dispatcher's route change has been reviewed, so
+  // the default one starts reviewed; the screens that show it keep it open.
+  final defaultChanges = MockRouteChangesRepository(
+    latency: Duration.zero,
+    now: () => testNow,
+  );
+  if (routeChanges == null &&
+      !location.startsWith('/updates') &&
+      location != offline1) {
+    await tester.runAsync(() => defaultChanges.acknowledge('trip-1'));
+  }
 
   final router = GoRouter(
     initialLocation: location,
@@ -76,17 +90,16 @@ Future<void> pumpTripRoutes(
           MockAuthRepository(latency: Duration.zero),
         ),
         tripsRepositoryProvider.overrideWithValue(
-          trips ?? testTripsRepository(),
+          trips ??
+              testTripsRepository(
+                onTheRoad: location != overview1 && location != '/trips',
+              ),
         ),
         recordsRepositoryProvider.overrideWithValue(
           records ?? MockRecordsRepository(latency: Duration.zero),
         ),
         routeChangesRepositoryProvider.overrideWithValue(
-          routeChanges ??
-              MockRouteChangesRepository(
-                latency: Duration.zero,
-                now: () => testNow,
-              ),
+          routeChanges ?? defaultChanges,
         ),
         stopReportsRepositoryProvider.overrideWithValue(
           MockStopReportsRepository(latency: Duration.zero),

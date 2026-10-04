@@ -11,9 +11,10 @@ import '../../support/test_app.dart';
 /// A trip repository that behaves like the real API: it wants the loader's
 /// start code and the outlet's delivery code, and checks them.
 class CodedTripsRepository extends MockTripsRepository {
-  CodedTripsRepository()
+  CodedTripsRepository({bool onTheRoad = true})
     : super(
         latency: Duration.zero,
+        onTheRoad: onTheRoad,
         today: DateTime(2026, 9, 29),
         now: () => testNow,
       );
@@ -30,10 +31,12 @@ class CodedTripsRepository extends MockTripsRepository {
   @override
   Future<Trip> getTrip(String id) async {
     final trip = await super.getTrip(id);
-    return trip.copyWith(stops: [
-      for (final s in trip.stops)
-        s.status == StopStatus.completed ? s : s.copyWith(deliveryCode: hash),
-    ]);
+    return trip.copyWith(
+      stops: [
+        for (final s in trip.stops)
+          s.status == StopStatus.completed ? s : s.copyWith(deliveryCode: hash),
+      ],
+    );
   }
 
   @override
@@ -73,7 +76,7 @@ Future<void> tapVisible(WidgetTester tester, Finder f) async {
 void main() {
   group('start code', () {
     Future<CodedTripsRepository> readyRepo(WidgetTester tester) async {
-      final repo = CodedTripsRepository();
+      final repo = CodedTripsRepository(onTheRoad: false);
       await tester.runAsync(() => repo.simulateLoadingComplete('trip-1'));
       await pumpTripRoutes(tester, location: overview1, trips: repo);
       return repo;
@@ -143,7 +146,7 @@ void main() {
     testWidgets('the loading hook is mock-only: long-press does nothing', (
       tester,
     ) async {
-      final repo = CodedTripsRepository();
+      final repo = CodedTripsRepository(onTheRoad: false);
       await pumpTripRoutes(tester, location: overview1, trips: repo);
 
       await tester.longPress(find.byKey(const Key('loading-banner')));
