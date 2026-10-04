@@ -68,6 +68,9 @@ export class Issue extends UuidBaseEntity {
   @Column({ name: 'affected_units', type: 'int', nullable: true })
   affectedUnits: number | null;
 
+  @Column({ name: 'approved_expected_units', type: 'int', nullable: true })
+  approvedExpectedUnits: number | null;
+
   // The reporter's photo of the problem.
   @Column({ name: 'photo_image_id', type: 'uuid', nullable: true })
   photoImageId: string | null;

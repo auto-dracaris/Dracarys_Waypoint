@@ -15,7 +15,7 @@ import { TempRequirement } from '../../common/enums/temp-requirement.enum';
 import { TripStatus } from '../../common/enums/trip-status.enum';
 import { TripStopStatus } from '../../common/enums/trip-stop-status.enum';
 import { UserRole } from '../../common/enums/user-role.enum';
-import { minuteOfDay, toMinutes, today } from '../../common/utils/date.util';
+import { minuteOfDay, toMinutes } from '../../common/utils/date.util';
 import {
   orderIdFromReference,
   orderReference,
@@ -129,7 +129,7 @@ export class TripsService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  /** A driver's own trips for the day, or for a loader their depot's. */
+  /** A driver's own trips, or a loader's depot trips, optionally for one day. */
   async findAll(
     query: TripListQueryDto,
     user: AuthenticatedUser,
@@ -145,7 +145,7 @@ export class TripsService {
           };
     const [trips, total, counts] = await this.tripsRepository.findForDay(
       scope,
-      query.date ?? today(),
+      query.date,
       query,
     );
 
@@ -463,7 +463,7 @@ export class TripsService {
           await this.codes.markUsed(deliveryCode, manager);
         }
         for (const [row, units] of delivered) {
-          const total = row.order!.orderUnits;
+          const total = row.expectedUnits ?? row.order!.orderUnits;
           await this.tripsRepository.updateStops(
             [row.id],
             {
@@ -851,7 +851,7 @@ export class TripsService {
     return new Map(
       stop.rows.map((row) => {
         const units = byOrder.get(row.orderId);
-        const total = row.order!.orderUnits;
+        const total = row.expectedUnits ?? row.order!.orderUnits;
         if (
           typeof units !== 'number' ||
           !Number.isInteger(units) ||
@@ -927,7 +927,8 @@ export class TripsService {
       brand: trip.brand,
       depot: trip.depot?.name,
       totalUnits: (trip.stops ?? []).reduce(
-        (total, row) => total + (row.order?.orderUnits ?? 0),
+        (total, row) =>
+          total + (row.expectedUnits ?? row.order?.orderUnits ?? 0),
         0,
       ),
       subtitle: `${trip.brand} deliveries · ${trip.district!.name}`,
@@ -1013,7 +1014,8 @@ export class TripsService {
             return {
               id: orderReference(order.id),
               storeName: outletName(outlet),
-              cases: order.orderUnits,
+              cases: row.expectedUnits ?? order.orderUnits,
+              requestedCases: order.orderUnits,
               temperature: order.tempRequirement,
               status: RECORDED.has(row.status)
                 ? 'delivered'
