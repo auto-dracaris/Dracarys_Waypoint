@@ -10,7 +10,9 @@ RUN pip install --no-cache-dir uv==0.11.0
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-cache
 COPY app ./app
-RUN useradd --uid 10001 --create-home aiuser
+RUN useradd --uid 10001 --create-home aiuser \
+    && mkdir -p /app/data/documents \
+    && chown -R aiuser:aiuser /app/data
 USER aiuser
 
 EXPOSE 8000

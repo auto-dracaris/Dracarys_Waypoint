@@ -1,0 +1,25 @@
+{
+  "checks": [
+    {
+      "role": "driver",
+      "passed": true,
+      "http_status": 200,
+      "answer_status": "answered",
+      "source_count": 1
+    },
+    {
+      "role": "dispatcher",
+      "passed": true,
+      "http_status": 200,
+      "answer_status": "answered",
+      "source_count": 1
+    },
+    {
+      "role": "store_manager",
+      "passed": true,
+      "http_status": 200,
+      "answer_status": "no_knowledge",
+      "source_count": 0
+    }
+  ]
+}

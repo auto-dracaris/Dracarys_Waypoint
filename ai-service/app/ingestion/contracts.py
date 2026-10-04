@@ -1,4 +1,4 @@
-"""Proposed admin integration payloads. No ingestion HTTP routes are exposed yet."""
+"""Shared source validation and optional future backend event contracts."""
 
 from typing import Annotated, Literal
 from uuid import UUID
@@ -14,7 +14,7 @@ class ContractModel(BaseModel):
 
 class SourceMetadata(ContractModel):
     title: str = Field(min_length=1, max_length=200)
-    # File content is stored by the admin backend; this is a reference, never a local path.
+    # Server-generated relative storage reference; never accept arbitrary local paths.
     storage_key: str = Field(min_length=1, max_length=512, pattern=r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
     media_type: Literal["application/pdf", "text/plain"]
     byte_count: int = Field(gt=0, le=20 * 1024 * 1024, strict=True)

@@ -1,0 +1,46 @@
+meta {
+  name: Chat: My current orders
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/v1/chat
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{chat_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "Show my current orders",
+    "workflow": "business_qa"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("conversation_id", res.getBody().conversation_id);
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.conversation_id: isDefined
+  res.body.answer: isDefined
+  res.body.sources: isDefined
+}
+
+docs {
+  Requires a verified store-manager access token in the secret chat_token variable.
+  Business tools require authentication even when local document authentication is disabled.
+  For details, set order_id to an actual order owned by this manager.
+  For follow-up, send Order details first to establish the last order in this conversation.
+}

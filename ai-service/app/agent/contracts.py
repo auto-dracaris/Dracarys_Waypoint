@@ -22,7 +22,8 @@ class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     conversation_id: UUID | None = None
     order_id: int | None = Field(default=None, gt=0)
-    workflow: Literal["knowledge_qa", "deferral_qa"] = "knowledge_qa"
+    trip_id: UUID | None = None
+    workflow: Literal["knowledge_qa", "deferral_qa", "business_qa"] = "knowledge_qa"
 
 
 class Source(BaseModel):
@@ -31,6 +32,7 @@ class Source(BaseModel):
     text: str = Field(max_length=4000)
     page: int | None = None
     source_id: str | None = None
+    version: int | None = None
 
 
 class Deferral(BaseModel):
@@ -46,10 +48,13 @@ class ChatResponse(BaseModel):
     conversation_id: UUID
     answer: str
     sources: list[Source] = Field(default_factory=list)
-    status: Literal["answered", "needs_order", "reason_missing", "no_knowledge", "sources_only"]
+    status: Literal[
+        "answered", "needs_order", "needs_input", "reason_missing", "no_knowledge", "sources_only"
+    ]
 
 
 class Conversation(BaseModel):
     last_order_id: int | None = None
+    last_trip_id: str | None = None
     # Only bounded conversation data is stored; credentials never enter graph state.
     turns: list[dict[str, str]] = Field(default_factory=list)

@@ -1,4 +1,5 @@
 from app.agent.profiles.base import AgentProfile
+from app.tools.common import COMMON_TOOLS
 
 PROFILE = AgentProfile(
     role="loader",
@@ -10,5 +11,6 @@ PROFILE = AgentProfile(
         "that the documents do not establish."
     ),
     knowledge_topics=("loading_policy", "handling_policy", "terms", "basic_information"),
-    workflows=("knowledge_qa",),
+    workflows=("knowledge_qa", "business_qa"),
+    tools=(*COMMON_TOOLS, "get_my_trips", "get_trip_details"),
 )

@@ -3,7 +3,7 @@ from typing import Literal
 
 from app.agent.contracts import UserRole
 
-Workflow = Literal["deferral_qa", "knowledge_qa"]
+Workflow = Literal["deferral_qa", "knowledge_qa", "business_qa"]
 
 
 @dataclass(frozen=True)

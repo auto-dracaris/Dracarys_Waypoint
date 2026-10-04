@@ -1,0 +1,232 @@
+{
+  "backend": "http://localhost:5000/api",
+  "checks": [
+    {
+      "check": "AI service health",
+      "status": "passed",
+      "detail": "200"
+    },
+    {
+      "check": "dispatcher:login and verified identity",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "check": "store_manager:login and verified identity",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "check": "driver:login and verified identity",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "check": "loader:login and verified identity",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "check": "dispatcher:get_dispatcher_orders",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "check": "dispatcher:get_order_summary",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "check": "store_manager:get_my_orders",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "check": "store_manager:get_order_placement_options",
+      "status": "failed",
+      "detail": "HTTP 502: Invalid business tool response"
+    },
+    {
+      "check": "driver:get_my_trips",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "check": "loader:get_my_trips",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "check": "store_manager:get_order_details",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "check": "dispatcher:get_order_details",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "check": "dispatcher:draft_deferral_message",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "check": "driver:trip details",
+      "status": "skipped",
+      "detail": "No permitted trips for backend today"
+    },
+    {
+      "check": "driver:pending route change",
+      "status": "skipped",
+      "detail": "No permitted trip UUID available"
+    },
+    {
+      "check": "loader:trip details",
+      "status": "skipped",
+      "detail": "No permitted trips for backend today"
+    },
+    {
+      "check": "manager cannot read another outlet order",
+      "status": "skipped",
+      "detail": "No foreign outlet order on sampled page"
+    },
+    {
+      "check": "driver:forbidden endpoint",
+      "status": "passed",
+      "detail": "HTTP 403"
+    },
+    {
+      "check": "loader:forbidden endpoint",
+      "status": "passed",
+      "detail": "HTTP 403"
+    },
+    {
+      "check": "store_manager:forbidden endpoint",
+      "status": "passed",
+      "detail": "HTTP 403"
+    },
+    {
+      "check": "loader:forbidden endpoint",
+      "status": "passed",
+      "detail": "HTTP 403"
+    },
+    {
+      "check": "AI chat rejects missing token",
+      "status": "passed",
+      "detail": "HTTP 401"
+    },
+    {
+      "check": "AI chat rejects invalid token",
+      "status": "passed",
+      "detail": "HTTP 401"
+    },
+    {
+      "check": "dispatcher:live Gemini chat",
+      "status": "passed",
+      "detail": "HTTP 200; status answered"
+    },
+    {
+      "check": "store_manager:live Gemini chat",
+      "status": "passed",
+      "detail": "HTTP 200; status answered"
+    },
+    {
+      "check": "manager:live detail chat",
+      "status": "passed",
+      "detail": "HTTP 200"
+    },
+    {
+      "check": "manager:live order follow-up",
+      "status": "failed",
+      "detail": "HTTP 503"
+    },
+    {
+      "check": "AI conversation owner isolation",
+      "status": "passed",
+      "detail": "HTTP 404"
+    },
+    {
+      "check": "driver:live Gemini chat",
+      "status": "passed",
+      "detail": "HTTP 200; status answered"
+    },
+    {
+      "check": "loader:live Gemini chat",
+      "status": "passed",
+      "detail": "HTTP 200; status answered"
+    },
+    {
+      "check": "dispatcher:test login session cleanup",
+      "status": "passed",
+      "detail": "HTTP 200"
+    },
+    {
+      "check": "store_manager:test login session cleanup",
+      "status": "passed",
+      "detail": "HTTP 200"
+    },
+    {
+      "check": "driver:test login session cleanup",
+      "status": "passed",
+      "detail": "HTTP 200"
+    },
+    {
+      "check": "loader:test login session cleanup",
+      "status": "passed",
+      "detail": "HTTP 200"
+    },
+    {
+      "check": "store_manager:get_order_placement_options retest",
+      "status": "passed",
+      "detail": "Nullable outlet name handled; real delivery dates returned"
+    },
+    {
+      "check": "driver:trip discovery across existing order dates",
+      "status": "skipped",
+      "detail": "0 trips across 1 sampled delivery dates"
+    },
+    {
+      "check": "loader:trip discovery across existing order dates",
+      "status": "skipped",
+      "detail": "0 trips across 1 sampled delivery dates"
+    },
+    {
+      "check": "manager:Show my available ordering dates.",
+      "status": "passed",
+      "detail": "HTTP 200"
+    },
+    {
+      "check": "manager:Show details of this order.",
+      "status": "passed",
+      "detail": "HTTP 200"
+    },
+    {
+      "check": "manager:Show the latest recorded deferral for that order.",
+      "status": "passed",
+      "detail": "HTTP 200"
+    },
+    {
+      "check": "store_manager:missing record denied",
+      "status": "passed",
+      "detail": "HTTP 404"
+    },
+    {
+      "check": "driver:missing record denied",
+      "status": "passed",
+      "detail": "HTTP 404"
+    },
+    {
+      "check": "Live recorded deferral availability",
+      "status": "skipped",
+      "detail": "0 orders with a recorded deferral on sampled page"
+    }
+  ],
+  "findings": {
+    "nullable_outlet_name": "Fixed in AI service; live tool and chat retests passed.",
+    "order_followup": "Initial HTTP 503; live retry and provider selection passed. Initial cause unconfirmed.",
+    "domain_records_changed": false,
+    "test_auth_sessions_revoked": true,
+    "verification_limits": "Only one order/outlet and no assigned trips in sampled delivery dates. No expired signed-token test."
+  }
+}

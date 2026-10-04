@@ -1,4 +1,5 @@
 from app.agent.profiles.base import AgentProfile
+from app.tools.common import COMMON_TOOLS
 
 PROFILE = AgentProfile(
     role="dispatcher",
@@ -10,5 +11,13 @@ PROFILE = AgentProfile(
         "belong to the authenticated admin API, never chat."
     ),
     knowledge_topics=("deferral_policy", "communication_policy", "terms", "basic_information"),
-    workflows=("knowledge_qa", "deferral_qa"),
+    workflows=("knowledge_qa", "deferral_qa", "business_qa"),
+    tools=(
+        *COMMON_TOOLS,
+        "get_dispatcher_orders",
+        "get_order_summary",
+        "get_order_details",
+        "draft_deferral_message",
+        "get_trip_details",
+    ),
 )

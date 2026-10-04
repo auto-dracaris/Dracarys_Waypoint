@@ -56,11 +56,10 @@ async def initialize(url: str):
 
 
 if __name__ == "__main__":
-    import asyncio
-
     from app.core.config import Settings
+    from app.core.runtime import run_async
 
     settings = Settings()
     if not settings.database_url:
         raise SystemExit("Set AI_DATABASE_URL before initializing conversation storage")
-    asyncio.run(initialize(settings.database_url.get_secret_value()))
+    run_async(initialize(settings.database_url.get_secret_value()))

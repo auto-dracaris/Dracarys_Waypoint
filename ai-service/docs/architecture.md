@@ -2,17 +2,31 @@
 
 ## Current initial build
 
-Business APIs and tools are deferred until actual contracts arrive. The default is
-knowledge_qa for all four profiles. An explicit local mode disables authentication
-and role/depot authorization while preserving profile instructions; production
-rejects that bypass. Secured mode remains available for later integration/testing.
+Read-only business tools for all four roles now use existing order/trip APIs through
+the explicit business_qa workflow, including review-only dispatcher deferral drafts.
+Write operations remain deferred. See
+[business tools](business-tools.md). The default is
+knowledge_qa for all four profiles. An explicit local document mode disables
+authentication and role/depot authorization while preserving profile instructions;
+production rejects that bypass. Business tools always verify a real NestJS token,
+even in local document mode, and preserve existing backend permissions.
 Deferral_qa is an explicit legacy workflow, disabled in document development mode.
+
+Each verified profile also exposes a shared pack: search_knowledge,
+get_current_datetime and get_my_profile. Knowledge-tool retrieval always enforces
+role/depot scope and catalog approval/version checks, including in local document
+mode. Phase 1 returns separately cited excerpts and deterministic tool facts;
+multi-round planning and generated combined explanations remain Phase 2 work.
 
 Documents: local PDF/text -> extract -> page-aware chunks -> Gemini dense embeddings
 plus server-side BM25 -> Qdrant hybrid collection. Questions: role profile ->
 dense/BM25 search -> RRF -> three sources -> supported answer. Manual local seeding
-is implemented; admin APIs, durable jobs and source lifecycle storage are deferred.
-See [current setup and limits](document-development.md).
+remains available without a catalog. FastAPI management endpoints store private
+originals and register versions and jobs transactionally in AI PostgreSQL. A separate
+worker extracts and indexes drafts; dispatcher approval publishes the ready version.
+Retrieval checks the authoritative catalog after hybrid search, so replacement and
+deletion revoke old content immediately even before physical index cleanup.
+See [current setup and limits](document-management.md).
 
 The sections below describe the secured deferral foundation, not the default
 local document workflow. Driver/loader now enable knowledge_qa; the earlier
@@ -25,7 +39,11 @@ After authentication, `agent/router.py` selects an immutable role profile from
 role-specific model instructions, topic guidance and explicit workflow capabilities.
 Topics guide future knowledge features; they are not security grants or additional
 retrieval filters. Retrieved documents must still pass role/depot checks in code.
-All profile tool lists are empty. The existing deferral adapter remains read-only.
+The store-manager profile allows get_my_orders, get_order_details and
+get_order_placement_options. Other profile tool lists remain empty. Business chat
+always verifies a real access token, even in local document development mode.
+Gemini selects at most three tools; code validates all calls and endpoint paths,
+then renders the backend facts directly. The existing deferral adapter stays read-only.
 
 Profiles share clients, memory and workflow implementations. The first task archetype
 is deferral_qa, available to managers and dispatchers only. Driver and loader
@@ -41,11 +59,11 @@ Modules:
 - `api`: HTTP contracts and routes, without provider or business logic.
 - `core`: configuration and logging.
 - `agent`: graph state, nodes, prompts, tool selection, and step limits.
-- `tools`: reserved for later business operations; authorization belongs in NestJS.
+- `tools`: validated read-only order tools; NestJS retains record/action authorization.
 - `retrieval`: role/outlet/document-version filters and citation generation.
-- `ingestion`: reserved for approved document ingestion.
+- `ingestion`: extraction, chunking, durable worker and optional local seeding.
 - `clients`: NestJS authentication/facts and Gemini policy explanation.
-- `storage`: owned PostgreSQL conversations and transactional updates.
+- `storage`: AI-owned conversations, document catalog, jobs and private originals.
 
 The endpoint supports deferral Q&A only. Send order_id explicitly on the first
 factual turn. Follow-ups reuse that ID and fetch fresh records. Recorded reasons

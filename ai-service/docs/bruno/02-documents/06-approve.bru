@@ -1,0 +1,26 @@
+meta {
+  name: Document: Approve ready version
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/api/v1/documents/{{document_id}}/approve
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "version": {{document_version}}
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+

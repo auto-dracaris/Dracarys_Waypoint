@@ -1,0 +1,167 @@
+# Role-specific read-only business tools
+
+Implemented entirely in `ai-service`: NestJS, UI and allocation code are unchanged.
+Store-manager, dispatcher, driver and loader tools are implemented. All write
+operations remain future work. The existing document workflow stays unchanged.
+
+## Chat request
+
+Use the same FastAPI endpoint, `POST /api/v1/chat`, with `workflow: business_qa`:
+
+```json
+{
+  "message": "Show my current orders",
+  "workflow": "business_qa"
+}
+```
+
+Send `Authorization: Bearer <role-specific-access-token>`. The token must be a real
+NestJS access token, not its refresh token. Business requests authenticate against
+NestJS `/auth/me` **even when AI_AUTH_ENABLED=false**. Local document chat still
+supports its requested token-free bypass. No fake development principal can use
+these business tools. The verified role determines the tool allowlist; a client
+cannot select its own role through the message or request body.
+
+## Tools and contracts
+
+Base URL configured by `AI_NESTJS_BASE_URL`: `http://localhost:5000/api`.
+
+| Tool | Roles | Endpoint | Inputs |
+| --- | --- | --- | --- |
+| search_knowledge | All four roles | Existing hybrid retrieval | query, 1–2000 characters |
+| get_current_datetime | All four roles | Server clock, Asia/Colombo | none |
+| get_my_profile | All four roles | Already verified caller identity | none |
+| get_my_orders | Store manager | GET /orders/my | page, limit, status/search |
+| get_order_details | Store manager, dispatcher | GET /orders/{id} | positive integer order_id |
+| get_order_placement_options | Store manager | GET /orders/placement-options | none |
+| get_dispatcher_orders | Dispatcher | GET /orders | page, limit, date/depot/stage/search |
+| get_order_summary | Dispatcher | GET /orders/summary | date/depot |
+| draft_deferral_message | Dispatcher | GET /orders/{id} | order_id; local draft only |
+| get_my_trips | Driver, loader | GET /trips | page, limit, date |
+| get_trip_details | Driver, loader, dispatcher | GET /trips/{uuid} | trip_id, stop_page, stop_limit |
+| get_route_change | Driver | GET /trips/{uuid}/route-change | trip_id |
+
+Order statuses follow the current NestJS enum. Search is at most 50 characters.
+Pagination defaults to page 1, limit 10. Listing reports the returned page and
+total matching count, without implying a page covers every order. Detail returns
+status, requested date, load quantities, temperature and latest recorded deferral.
+Placement options show available delivery dates, cutoff timestamps (with time zone)
+and temperatures. They do not predict an optimal day or guarantee delivery.
+
+The server validates response shapes and outlet ownership in addition to NestJS
+permissions for managers. Dispatcher order visibility, driver trip ownership and
+loader depot membership follow existing NestJS checks. Trip payloads do not expose
+numeric driver/depot IDs, so the AI service relies on those backend checks and
+validates returned trip UUIDs. It excludes raw user entities, credentials, contact
+phone numbers and unrelated API fields.
+NestJS 401/403/404 remain denial/missing-record responses, not assistant guesses.
+Malformed responses fail with 502. An order ID must come from request.order_id,
+an explicit `order 42`, `ORD0000042` or `#42` reference, or the conversation's last
+successfully fetched order. Trip UUIDs must come from request.trip_id, an explicit
+UUID in the message, or the last successfully read trip in that conversation.
+Guessed model IDs are rejected before any calls in that turn execute.
+
+Dispatcher lists use **stage**, not the manager's status filter. A deferred stage
+can include historical deferrals for orders now delivered. Summary total excludes
+cancelled orders; stage counts can overlap. Weight/volume aggregates cover awaiting
+and allocated orders. Date filters use YYYY-MM-DD; depots are Peliyagoda or Kandy.
+
+Trip listings default to the backend's today when no date is supplied. Stop details
+show five stops per page by default (stop_limit 1–5). Lists support limit 1–25 and
+default to 10. Planned ambient/chilled case totals are not loading confirmation or
+proof of delivery. Trip listings and route snapshots explicitly report omitted rows;
+source text is bounded. Pending route changes are read without acknowledgement;
+no pending record does not imply an absence of route-change history.
+
+Deferral drafts use the latest backend reason/note and recorded next date, clearly
+label historical records, and make no delivery guarantee. No reason means no
+reason-based draft. They are deterministic templates for dispatcher review and
+perform only a GET; no model rewrite, policy inference or notification is involved.
+
+## Agent flow
+
+Verified role profile -> Gemini function selection -> validate all calls
+-> execute up to three GET tools sequentially -> return sourced, deterministic facts.
+The model receives only the question, known order/trip IDs and tool schemas. Credentials
+and raw backend responses do not enter the planner. SDK automatic execution is
+disabled. Application code owns tool names, endpoint paths, validation and access.
+No caller/model can supply a URL, token, role or arbitrary outlet to a tool.
+
+The Phase 1 shared pack is available in business_qa for all verified roles, including
+managers without an assigned outlet. Outlet business operations still require an
+assignment. get_my_profile returns only verified role and depot/outlet IDs; no extra
+profile API read is needed after authentication. get_current_datetime returns the
+UTC+05:30 Colombo clock, today and tomorrow, not operating dates or cutoff predictions.
+
+search_knowledge uses the existing hybrid retriever and authoritative catalog with
+role/depot enforcement **even when AI_AUTH_ENABLED=false**. It returns at most three
+document excerpts per search, preserving citation IDs and source/version metadata.
+Knowledge-only responses use sources_only, or no_knowledge when no permitted
+evidence is found. Other tool results remain available if a search returns nothing.
+No retrieved document text is used to trigger further tool calls in this phase.
+Generated combined explanations and additional planning rounds are Phase 2 work.
+
+One planning round is deliberate: it has no autonomous pagination loop. Searching
+an unknown reference returns matching records; ask a follow-up about the returned
+order ID to fetch details. `needs_input` asks the user to clarify when no function
+is selected. No free-text model answer is used as a substitute for API evidence.
+
+Follow-ups accept conversation_id and refetch fresh API facts. Only the last detail
+order/trip IDs and bounded user/assistant turns persist. Bearer tokens stay in invocation
+closures, outside graph state, logs and conversation storage. Existing deadlines,
+graph step limits and conversation ownership checks also apply to business_qa.
+
+## Local configuration and Bruno
+
+Keep credentials in the existing ignored `.env`; do not copy the template over it:
+
+```dotenv
+AI_NESTJS_BASE_URL=http://localhost:5000/api
+AI_GEMINI_MODEL=YOUR_CONFIGURED_MODEL
+AI_GEMINI_API_KEY=YOUR_EXISTING_KEY
+```
+
+Start NestJS and its dependencies using its existing instructions, then restart
+FastAPI to load this change. Record/profile/time tools do not need the ingestion
+worker. Knowledge search needs an existing searchable corpus; run the worker to
+process newly submitted documents. In Bruno, choose local, set secret chat_token to
+a role-specific access token, and use its matching tools folder. Update order_id
+to a real permitted order and trip_id to a real permitted trip UUID. Switching
+users requires a new conversation. No database migration or new environment
+configuration is needed for these tools; restart FastAPI after updating the code.
+
+The default knowledge_qa workflow still retrieves approved documents. business_qa
+returns live business facts and can include separately labeled knowledge excerpts;
+it does not yet synthesize a combined explanation. The older deferral_qa adapter
+remains unchanged and separately gated. The Shared tools Bruno folder tests the pack.
+No order creation/cancellation, deferral mutation, message sending, inventory or
+trending-product recommendation is enabled by this implementation.
+
+## Verification boundaries
+
+Tests cover argument limits, query encoding, access-token forwarding, role/outlet
+checks, unknown tools, guessed IDs, upstream denials, bounded calls, fresh follow-up
+fetches and credential-safe conversation data. Mock APIs are not evidence of live
+NestJS integration. A live Gemini function-selection probe uses a synthetic question
+and no business records. Live backend tests need a role-specific access token.
+
+Live demo testing verified all four logins and role identities, order listings,
+summary/details, placement options, missing-record denials, forbidden-role denials,
+chat for each role, and conversation ownership. A nullable backend outlet name
+initially broke placement validation; the AI adapter now handles it and both live
+tool and chat retests passed. One order follow-up initially returned 503; its retry
+passed, but the initial failure's cause was not established.
+
+The sampled database contained one order for one outlet, no assigned trips on the
+sampled delivery dates, and no recorded deferral. Positive trip detail/route-change
+reads, actual reason-based drafts and cross-record ownership denials therefore
+remain unverified live. Invalid tokens were tested; expired signed tokens were not.
+No business records were changed. Test login sessions were revoked after use.
+See the credential-free [live results](live-business-test-results.json); historical
+failures and subsequent retests are retained rather than silently overwritten.
+
+Phase 1 shared-tool live probes verified profile and Colombo time answers, and a
+scoped knowledge query that correctly returned no_knowledge. No matching permitted
+documents were returned in that probe, so successful live citation retrieval remains
+to be tested with an approved matching document. Scope and citation handling are
+covered by automated tests. See [shared-tool results](live-common-tools-test-results.json).

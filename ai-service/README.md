@@ -1,8 +1,13 @@
 # WayPoint AI service
 
-**Current initial scope: standalone documents and hybrid retrieval.** Business
-tools, NestJS integration and admin ingestion APIs are deferred until real contracts
-are available. Follow the [document development guide](docs/document-development.md).
+**Current scope: document RAG and read-only business tools for all four roles.**
+Follow the [document management guide](docs/document-management.md) for setup,
+upload APIs and worker operation. Dispatcher UI and NestJS changes are deferred.
+See [business tools](docs/business-tools.md) for authenticated `business_qa` chat,
+tool limits and existing backend contracts.
+All verified roles share knowledge search, Colombo date/time and caller-profile
+tools. The Shared tools Bruno folder tests this pack; search returns cited excerpts
+or no_knowledge. Combined generated explanations remain the next phase.
 The .env template disables local application authentication/authorization; production
 rejects this bypass. All four profiles support knowledge Q&A. Older secured deferral
 setup below remains available for later business integration.
@@ -11,15 +16,19 @@ Separate Python/FastAPI service for the WayPoint agentic RAG assistant.
 Implemented: a read-only deferral Q&A graph, authenticated NestJS adapter,
 scoped PostgreSQL memory, Qdrant retrieval adapter, optional Gemini policy
 explanation, deadlines and step limits. Tests use synthetic fixtures.
-Live integrations are unverified; the NestJS deferral route and policy corpus are
-still missing. No credentials are needed for health or local tests.
+Live demo authentication, order tools and chat for all four roles have been verified.
+Trip details and actual deferral drafts still need representative records; model
+answer quality is not established by smoke testing. No credentials are
+needed for health or unit tests; database integration tests are opt-in.
 
 Role profiles are now defined for store manager, dispatcher, driver and loader.
 Authenticated role selects the profile; managers/dispatchers use the existing
-deferral workflow; all four profiles also support document Q&A. No business tools
-are registered. The [admin knowledge contract](docs/admin-knowledge-contract.md)
-and validated payload models define document/source integration; admin routes and
-admin ingestion processing is not implemented yet. Manual development seeding is available.
+deferral workflow; all four profiles also support document Q&A and authenticated
+business tools. Dispatcher message drafts are review-only; trip tools do not change
+routes or loading records. The [admin knowledge contract](docs/admin-knowledge-contract.md)
+and validated payload models retain an earlier event integration proposal.
+FastAPI now owns the document catalog and management routes; PostgreSQL owns durable
+jobs and Qdrant stores searchable chunks. Manual seeding is a separate local-only mode.
 
 ## Run locally (PowerShell)
 
@@ -30,7 +39,7 @@ Run from the service directory:
 cd D:\Git\Dracarys_Waypoint\ai-service
 Copy-Item .env.example .env
 uv sync --locked
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --loop app.core.runtime:event_loop --reload
 ```
 
 Copy `.env` only on first setup; preserve it on subsequent runs. Secrets remain
@@ -42,6 +51,8 @@ After synchronization, you can also start using `.\.venv\Scripts\python.exe -m u
 app.main:app --host 127.0.0.1 --port 8000 --reload`.
 
 Open http://127.0.0.1:8000/docs for development API documentation.
+For manual API testing, open [the Bruno collection](docs/bruno/README.md) and select
+its `local` environment. It includes synthetic upload files and the document/chat flow.
 Verify startup from a second PowerShell terminal:
 
 ```powershell

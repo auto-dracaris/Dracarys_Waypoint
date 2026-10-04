@@ -1,4 +1,5 @@
 from app.agent.profiles.base import AgentProfile
+from app.tools.common import COMMON_TOOLS
 
 PROFILE = AgentProfile(
     role="driver",
@@ -10,5 +11,6 @@ PROFILE = AgentProfile(
         "to store or dispatcher-only information."
     ),
     knowledge_topics=("delivery_policy", "incident_policy", "terms", "basic_information"),
-    workflows=("knowledge_qa",),
+    workflows=("knowledge_qa", "business_qa"),
+    tools=(*COMMON_TOOLS, "get_my_trips", "get_trip_details", "get_route_change"),
 )

@@ -1,0 +1,10 @@
+{
+  "version": "1",
+  "name": "WayPoint AI Service",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
+

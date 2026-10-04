@@ -1,5 +1,10 @@
 # Initial build: documents first, business APIs later
 
+For the implemented management API, versions, approval and durable worker, follow
+[document management](document-management.md). The manual seeding instructions here
+are only for development **without AI_DATABASE_URL**. Once the database catalog is
+enabled, chat searches catalog-managed documents, not manually seeded points.
+
 Business endpoint shapes, available data and tool operations are not known yet.
 Do not bind tools to assumed NestJS endpoints. The deferral/admin contracts are
 proposals to revisit when real backend contracts arrive. The initial working path
@@ -52,7 +57,7 @@ Run from ai-service:
 ```powershell
 uv sync --locked
 uv run python -m app.ingestion.seed add 'D:\Documents\policy.pdf' --title 'Policy title'
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --loop app.core.runtime:event_loop --reload
 ```
 
 Use /docs or send a token-free question:

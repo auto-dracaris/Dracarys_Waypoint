@@ -5,13 +5,26 @@ from fastapi import HTTPException
 
 from app.agent.contracts import Principal
 from app.agent.router import PROFILES, select_profile
+from app.tools.common import COMMON_TOOLS
 
 
 @pytest.mark.parametrize("role", ["store_manager", "dispatcher", "driver", "loader"])
-def test_verified_roles_select_distinct_profiles_without_tools(role):
+def test_verified_roles_select_distinct_profiles_with_scoped_tools(role):
     profile = select_profile(Principal(id=1, role=role, depotId=1))
     assert profile.role == role
-    assert profile.tools == ()
+    expected = {
+        "store_manager": ("get_my_orders", "get_order_details", "get_order_placement_options"),
+        "dispatcher": (
+            "get_dispatcher_orders",
+            "get_order_summary",
+            "get_order_details",
+            "draft_deferral_message",
+            "get_trip_details",
+        ),
+        "driver": ("get_my_trips", "get_trip_details", "get_route_change"),
+        "loader": ("get_my_trips", "get_trip_details"),
+    }
+    assert profile.tools == (*COMMON_TOOLS, *expected[role])
     assert "terms" in profile.knowledge_topics
     assert len({item.instructions for item in PROFILES.values()}) == 4
 

@@ -9,12 +9,13 @@ class BusinessClient:
     def __init__(self, settings: Settings):
         self.settings = settings
 
-    async def get(self, path: str, token: str):
+    async def get(self, path: str, token: str, params: dict | None = None):
         async with httpx.AsyncClient(timeout=self.settings.request_timeout_seconds) as client:
             try:
                 response = await client.get(
                     f"{str(self.settings.nestjs_base_url).rstrip('/')}/{path.lstrip('/')}",
                     headers={"Authorization": f"Bearer {token}"},
+                    params=params,
                 )
             except httpx.HTTPError as exc:
                 raise HTTPException(503, "Business API unavailable") from exc

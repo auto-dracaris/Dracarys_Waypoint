@@ -1,0 +1,38 @@
+meta {
+  name: Document: Retry failed ingestion
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{base_url}}/api/v1/documents/{{document_id}}/retry
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "version": {{document_version}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 202) {
+    const data = res.getBody();
+    bru.setVar("document_id", data.document_id);
+    bru.setVar("document_version", data.version);
+    bru.setVar("job_id", data.job_id);
+  }
+}
+
+assert {
+  res.status: eq 202
+  res.body.document_id: isDefined
+  res.body.version: isDefined
+  res.body.job_id: isDefined
+}
+

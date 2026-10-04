@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Literal
 
 from pydantic import AnyHttpUrl, Field, SecretStr, model_validator
@@ -31,6 +32,10 @@ class Settings(BaseSettings):
     chunk_size: int = Field(default=1200, ge=100, le=4000)
     chunk_overlap: int = Field(default=150, ge=0)
     database_url: SecretStr | None = None
+    document_storage_path: Path = Path("data/documents")
+    ingestion_timeout_seconds: int = Field(default=300, ge=30, le=1800)
+    worker_poll_seconds: float = Field(default=2, gt=0, le=60)
+    worker_max_attempts: int = Field(default=3, ge=1, le=10)
     # Relative endpoint template, configured only after NestJS implements this contract.
     deferral_endpoint: str | None = None
 

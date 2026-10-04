@@ -2,11 +2,15 @@ import logging
 from time import perf_counter
 from uuid import uuid4
 
+import psycopg
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.chat import router as chat_router
+from app.api.documents import router as documents_router
 from app.api.health import router as health_router
+from app.api.upload_limit import UploadBodyLimit
 from app.core.config import Settings
 from app.core.logging import configure_logging
 from app.storage.development import DevelopmentConversations
@@ -32,10 +36,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=False,
-        allow_methods=["GET", "POST"],
-        allow_headers=["Authorization", "Content-Type"],
+        allow_methods=["GET", "POST", "DELETE"],
+        allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
         expose_headers=["X-Request-ID"],
     )
+    application.add_middleware(UploadBodyLimit)
+
+    @application.exception_handler(psycopg.Error)
+    async def storage_unavailable(request, exception):
+        logging.getLogger("waypoint_ai.storage").warning("knowledge_storage_unavailable")
+        return JSONResponse(status_code=503, content={"detail": "Knowledge storage unavailable"})
 
     @application.middleware("http")
     async def record_request(request: Request, call_next):
@@ -63,6 +73,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     application.include_router(health_router)
     application.include_router(chat_router)
+    application.include_router(documents_router)
     return application
 
 

@@ -1,8 +1,10 @@
-# Admin knowledge integration: proposed v1 contract
+# Archived proposal: backend-owned source events
 
-**Deferred pending actual backend API contracts.** Endpoint names and ownership
-below are proposals. The initial build uses
-[manual document development](document-development.md).
+**Superseded for this implementation.** The current implementation is documented in
+[document management](document-management.md). FastAPI owns originals, catalog,
+versions, approval and durable ingestion; no NestJS or Dispatcher UI changes were made.
+The event routes and dedicated service credential below are an archived alternative,
+not requirements of the current implementation. Shared source validation remains in use.
 
 This defines the next integration boundary. It does **not** implement admin routes,
 file storage, extraction, ingestion jobs or Qdrant writes. Validated Python payloads
