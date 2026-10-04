@@ -41,7 +41,7 @@ export function useHubController() {
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
   useEffect(() => {
-    document.title = `WayPoint — ${isProfile ? 'My Profile' : isKnowledge ? 'Knowledge base' : isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isIssues ? 'Issues' : isOrders ? 'Confirmed Orders' : isPlanning ? 'Final Plan Review' : isPublished ? 'Plan Published' : isOperations ? 'Loading Exception Review' : 'Delivery Overview'}`
+    document.title = `WayPoint | ${isProfile ? 'My Profile' : isKnowledge ? 'Knowledge base' : isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isIssues ? 'Issues' : isOrders ? 'Confirmed Orders' : isPlanning ? 'Final Plan Review' : isPublished ? 'Plan Published' : isOperations ? 'Loading Exception Review' : 'Delivery Overview'}`
   }, [isProfile, isKnowledge, isVehicles, isOutlets, isTeam, isIssues, isOrders, isPlanning, isPublished, isOperations])
   useEffect(() => {
     saveSidebarCollapsed(sidebarCollapsed)

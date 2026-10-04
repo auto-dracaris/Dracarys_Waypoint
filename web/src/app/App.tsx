@@ -36,7 +36,7 @@ export default function App() {
   useLayoutEffect(() => {
     // The document also contains portaled dialogs, selects, and tooltips.
     document.documentElement.dataset.area = area
-    if (area === 'store-manager') document.title = `WayPoint — ${isAuthPage ? 'Sign In' : 'Store Manager'}`
+    if (area === 'store-manager') document.title = `WayPoint | ${isAuthPage ? 'Sign In' : 'Store Manager'}`
   }, [area, isAuthPage])
   return (
     <><Suspense fallback={<AppLoading />}>
