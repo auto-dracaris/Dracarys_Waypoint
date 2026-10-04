@@ -1,3 +1,24 @@
+# OSRM routing: osrm-van, osrm-truck and their `gateway` on host port 8081.
+include:
+  - osrm_setup/docker-compose.yml
+
+# Shared by the three containers built from ai-service/.
+x-ai-service: &ai-service
+  build: ./ai-service
+  restart: unless-stopped
+  env_file:
+    - path: ai-service/.env
+      required: false
+  environment:
+    AI_ENVIRONMENT: production
+    AI_AUTH_ENABLED: 'true'
+    AI_NESTJS_BASE_URL: http://api:5000/api
+    AI_QDRANT_URL: http://qdrant:6333
+    AI_QDRANT_API_KEY: ${QDRANT_API_KEY:-waypoint_qdrant_key}
+    AI_DATABASE_URL: postgresql://waypoint_ai:${AI_POSTGRES_PASSWORD:-waypoint_ai_password}@ai-postgres:5432/waypoint_ai
+  volumes:
+    - ai_documents:/app/data/documents
+
 services:
   postgres:
     image: postgres:16
@@ -38,6 +59,103 @@ services:
       timeout: 5s
       retries: 10
 
+  api:
+    build: ./api
+    restart: unless-stopped
+    env_file:
+      - path: api/.env
+        required: false
+    # Only what differs inside the compose network; the rest comes from api/.env.
+    environment:
+      PORT: 5000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-waypoint_user}
+      DB_PASSWORD: ${DB_PASSWORD:-waypoint_password}
+      DB_NAME: ${DB_NAME:-dracarys_waypoint}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-waypoint_user}:${RABBITMQ_PASSWORD:-waypoint_password}@rabbitmq:5672
+      OSRM_URL: http://gateway
+      FIREBASE_SERVICE_ACCOUNT: ${FIREBASE_KEY_PATH:+/app/secrets/firebase.json}
+    volumes:
+      # The dataset CSVs the seed migrations read (not in git).
+      - ./api/data:/app/data:ro
+      - ${FIREBASE_KEY_PATH:-/dev/null}:/app/secrets/firebase.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  ai-postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: waypoint_ai
+      POSTGRES_USER: waypoint_ai
+      POSTGRES_PASSWORD: ${AI_POSTGRES_PASSWORD:-waypoint_ai_password}
+    ports:
+      - '127.0.0.1:5434:5432'
+    volumes:
+      - ai_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U waypoint_ai -d waypoint_ai']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:v1.19.1
+    restart: unless-stopped
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:-waypoint_qdrant_key}
+    ports:
+      - '127.0.0.1:6333:6333'
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  # Creates the AI service's own tables, then exits. Safe to run every time.
+  ai-init:
+    <<: *ai-service
+    restart: 'no'
+    command: sh -c "python -m app.storage.conversations && python -m app.storage.knowledge"
+    healthcheck:
+      disable: true
+    depends_on:
+      ai-postgres:
+        condition: service_healthy
+
+  ai-service:
+    <<: *ai-service
+    depends_on:
+      ai-init:
+        condition: service_completed_successfully
+      qdrant:
+        condition: service_started
+
+  # Turns uploaded documents into searchable chunks.
+  ai-worker:
+    <<: *ai-service
+    command: python -m app.ingestion.worker
+    healthcheck:
+      disable: true
+    depends_on:
+      ai-init:
+        condition: service_completed_successfully
+      qdrant:
+        condition: service_started
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    depends_on:
+      - api
+      - ai-service
+
 volumes:
   postgres_data:
   rabbitmq_data:
+  ai_postgres_data:
+  qdrant_data:
+  ai_documents:

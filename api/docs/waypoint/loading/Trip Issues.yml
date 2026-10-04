@@ -8,7 +8,7 @@ http:
   url: "{{baseUrl}}/issues?tripId={{tripId}}"
   auth:
     type: bearer
-    token: "{{loaderAccessToken}}"
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjUsInJvbGUiOiJkcml2ZXIiLCJzaWQiOjMxLCJpYXQiOjE3OTExMDg5NzcsImV4cCI6MTc5MTE5NTM3N30.lne0Z1JnZdrhPVKTtcSMAwcAdQ-IHv-Tw8ue9qoSBZI
 
 runtime:
   variables:
