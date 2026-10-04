@@ -135,20 +135,33 @@ export function ActiveRoutes({ onNavigate }: { onNavigate: (title: string) => vo
 
   const mapVehicles: VehicleMapItem[] = useMemo(
     () =>
-      matching.map((route) => ({
-        id: route.id,
-        type: route.vehicleType.toLowerCase().includes('van') ? 'van' : 'truck',
-        category: route.category,
-        status: route.status,
-        position: route.map.vehiclePosition,
-        depotName: route.depotName,
-        nextStop: route.nextStop,
-        outletId: route.outletId,
-        destinationOutletId: route.destinationOutletId,
-        destinationDistrict: route.destinationDistrict,
-        routeCoordinates: route.map.routeCoordinates,
-        routeStops: route.routeStops,
-      })),
+      matching.map((route) => {
+        let progress = 0
+        if (route.category === 'Unallocated') {
+          progress = 0
+        } else if (route.routeStops && route.routeStops.length > 0) {
+          const completed = route.routeStops.filter((s) => s.isCompleted).length
+          progress = Math.round((completed / route.routeStops.length) * 100)
+        } else if (route.stops > 0) {
+          progress = Math.round((route.recorded / route.stops) * 100)
+        }
+
+        return {
+          id: route.id,
+          type: route.vehicleType.toLowerCase().includes('van') ? 'van' : 'truck',
+          category: route.category,
+          status: route.status,
+          position: route.map.vehiclePosition,
+          depotName: route.depotName,
+          nextStop: route.nextStop,
+          outletId: route.outletId,
+          destinationOutletId: route.destinationOutletId,
+          destinationDistrict: route.destinationDistrict,
+          routeCoordinates: route.map.routeCoordinates,
+          routeStops: route.routeStops,
+          progress,
+        }
+      }),
     [matching],
   )
 

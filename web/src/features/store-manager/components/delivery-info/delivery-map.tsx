@@ -21,8 +21,8 @@ const DefaultIcon = L.icon({
 const FALLBACK_CENTER: [number, number] = [6.9271, 79.8612]
 
 // Helper to convert the React component into a Leaflet divIcon
-const createVehicleIcon = (vehicleId: string, isActive: boolean) => {
-  const markerHtml = renderToString(<VehicleMarker vehicleId={vehicleId} isActive={isActive} />)
+const createVehicleIcon = (vehicleId: string, isActive: boolean, progress?: number) => {
+  const markerHtml = renderToString(<VehicleMarker vehicleId={vehicleId} isActive={isActive} progress={progress} />)
 
   return L.divIcon({
     html: markerHtml,

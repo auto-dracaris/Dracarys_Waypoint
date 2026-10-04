@@ -23,6 +23,9 @@ export interface VehicleMapItem {
   driverName?: string
   routeCoordinates?: MapPosition[]
   routeStops?: RouteStopItem[]
+  progress?: number
+  recorded?: number
+  stops?: number
 }
 
 export interface DepotMapItem {
@@ -173,20 +176,23 @@ function createDepotIcon(name: string, showLabel = true) {
   })
 }
 
-// 2. Single Vehicle Icon (Yellow pin for selected, White pin for unselected)
+// 2. Single Vehicle Icon (Yellow pin for selected, Radial progress pin for unselected)
 function createVehicleIcon({
   vehicleId,
   type,
   isSelected,
   showLabel = true,
+  progress = 0,
 }: {
   vehicleId: string
   type: 'truck' | 'van'
   isSelected: boolean
   showLabel?: boolean
+  progress?: number
 }) {
   const IconComponent = type === 'van' ? Van : Truck
-  const svg = renderToStaticMarkup(<IconComponent size={14} strokeWidth={2} />)
+  const svg = renderToStaticMarkup(<IconComponent size={20} strokeWidth={2.2} />)
+  const clampedProgress = Math.max(0, Math.min(100, Math.round(progress)))
 
   if (isSelected) {
     return L.divIcon({
@@ -201,15 +207,27 @@ function createVehicleIcon({
         </div>
       `,
       iconSize: [0, 0],
-      iconAnchor: [16, 34],
+      iconAnchor: [18, 40],
     })
   }
 
   return L.divIcon({
     className: 'wp-map-marker-container',
     html: `
-      <div class="wp-vehicle-marker wp-vehicle-marker--unselected" title="${vehicleId}">
-        <div class="wp-vehicle-pin">
+      <div class="wp-vehicle-marker wp-vehicle-marker--unselected" title="${vehicleId} (${clampedProgress}% completed)">
+        <div class="wp-vehicle-pin wp-vehicle-pin--progress">
+          <svg class="wp-vehicle-progress-ring" viewBox="0 0 36 36">
+            <rect class="wp-progress-track" x="2" y="2" width="32" height="32" rx="7" ry="7" />
+            ${
+              clampedProgress > 0
+                ? `<rect class="wp-progress-bar" x="2" y="2" width="32" height="32" rx="7" ry="7"
+                    pathLength="100"
+                    stroke-dasharray="100"
+                    stroke-dashoffset="${100 - clampedProgress}"
+                  />`
+                : ''
+            }
+          </svg>
           <span class="wp-vehicle-icon">${svg}</span>
           <span class="wp-vehicle-pointer"></span>
         </div>
@@ -217,7 +235,7 @@ function createVehicleIcon({
       </div>
     `,
     iconSize: [0, 0],
-    iconAnchor: [16, 34],
+    iconAnchor: [18, 40],
   })
 }
 
@@ -842,6 +860,13 @@ function VehicleMapLayers({
           const isSelected = v.id === selectedVehicleId
           // If vehicle is too close to a warehouse, position side by side horizontally
           const vehiclePos = getSideBySidePosition(v.position, depots, map, currentZoom, false)
+          const vehicleProgress =
+            v.progress ??
+            (v.stops && v.stops > 0
+              ? Math.round(((v.recorded ?? 0) / v.stops) * 100)
+              : v.routeStops && v.routeStops.length > 0
+                ? Math.round((v.routeStops.filter((s) => s.isCompleted).length / v.routeStops.length) * 100)
+                : 0)
 
           return (
             <Marker
@@ -853,6 +878,7 @@ function VehicleMapLayers({
                 type: v.type,
                 isSelected,
                 showLabel: showVehicleLabel,
+                progress: vehicleProgress,
               })}
               eventHandlers={{
                 click: () => onSelectVehicle?.(v.id),
@@ -865,7 +891,7 @@ function VehicleMapLayers({
                   className="wp-vehicle-tooltip"
                 >
                   <span>
-                    {v.id} · {v.status || 'Available'}
+                    {v.id} · {vehicleProgress}% completed · {v.status || 'Available'}
                   </span>
                 </Tooltip>
               )}
