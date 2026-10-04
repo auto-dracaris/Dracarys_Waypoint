@@ -43,6 +43,20 @@ void main() {
     expect(w.at(4).remainingMeters, closeTo(4.0, 0.1));
   });
 
+  test('the default drive is a medium 30 km/h, not a rush', () async {
+    expect(const SimulatedLocationSource().speedKmh, 30);
+
+    // 500 ms per clock reading: the third position is one second in, which at
+    // 30 km/h is 8.33 m along.
+    final src = SimulatedLocationSource(
+      tick: const Duration(milliseconds: 1),
+      elapsed: _steadyClock(const Duration(milliseconds: 500)),
+    );
+    final out = await src.follow(const [a, b]).take(4).toList();
+    expect(out[0].remainingMeters - out[2].remainingMeters, closeTo(8.33, 0.1));
+    expect(out[1].speedKmh, 30);
+  });
+
   test('duplicate points do not produce NaN', () {
     final w = PolylineWalker(const [a, a, b, b]);
     expect(w.at(w.totalMeters / 2).heading.isNaN, isFalse);

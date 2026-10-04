@@ -7,15 +7,17 @@ void main() {
   const van = LatLng(7.0, 80.0);
   const dist = Distance(roundResult: false);
 
-  test('tilted follow is closer and looks ahead of the van along its heading',
-      () {
-    final t = followTarget(van, 90, MapMode.tilted);
-    expect(t.zoom, 21.5);
-    expect(t.pitch, 70);
-    expect(t.bearing, 90);
-    expect(dist(van, t.point), closeTo(1.5, 0.1));
-    expect((dist.bearing(van, t.point) + 360) % 360, closeTo(90, 0.5));
-  });
+  test(
+    'tilted follow is closer and looks ahead of the van along its heading',
+    () {
+      final t = followTarget(van, 90, MapMode.tilted);
+      expect(t.zoom, 19.5);
+      expect(t.pitch, 65);
+      expect(t.bearing, 90);
+      expect(dist(van, t.point), closeTo(6, 0.1));
+      expect((dist.bearing(van, t.point) + 360) % 360, closeTo(90, 0.5));
+    },
+  );
 
   test('flat follow stays centred on the van', () {
     final t = followTarget(van, 90, MapMode.flat);

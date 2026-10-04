@@ -83,7 +83,7 @@ class PolylineWalker {
 /// [maxTurnDegreesPerSecond].
 class SimulatedLocationSource implements LocationSource {
   const SimulatedLocationSource({
-    this.speedKmh = 45,
+    this.speedKmh = 30,
     this.tick = const Duration(milliseconds: 33),
     this.elapsed,
     this.maxTurnDegreesPerSecond = 120,
@@ -99,7 +99,9 @@ class SimulatedLocationSource implements LocationSource {
     final walker = PolylineWalker(route);
     final stopwatch = Stopwatch()..start();
     final clock = elapsed ?? () => stopwatch.elapsed;
-    final smoother = HeadingSmoother(maxDegreesPerSecond: maxTurnDegreesPerSecond);
+    final smoother = HeadingSmoother(
+      maxDegreesPerSecond: maxTurnDegreesPerSecond,
+    );
     var lastTime = clock();
 
     VehiclePosition at(double m, Duration now) {
@@ -123,7 +125,9 @@ class SimulatedLocationSource implements LocationSource {
       await Future<void>.delayed(tick);
       final t = clock();
       m = math.min(
-          walker.totalMeters, metersPerSecond * (t - start).inMicroseconds / 1e6);
+        walker.totalMeters,
+        metersPerSecond * (t - start).inMicroseconds / 1e6,
+      );
       yield at(m, t);
     }
   }

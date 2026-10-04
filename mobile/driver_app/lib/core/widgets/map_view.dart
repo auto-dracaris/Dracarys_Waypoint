@@ -277,7 +277,29 @@ class _MapViewState extends ConsumerState<MapView> {
   /// the same spot. The van goes through an async style update while the camera
   /// moves at once, so moving both together would leave the van lagging behind
   /// the view by however long that update takes (metres, at driving speed).
-  Future<void> _followFrame(CameraTarget t, Vehicle3D? van) async {
+  Future<void> _followFrame(CameraTarget target, Vehicle3D? sample) async {
+    // Carry the sample on to now. Van and camera take the same displacement,
+    // so they stay locked together while the frame rate is uneven.
+    var t = target;
+    var van = sample;
+    if (sample != null) {
+      final metres = sample.travelledMeters(monotonicMicros());
+      if (metres > 0) {
+        van = Vehicle3D(
+          point: sample.advancedBy(metres),
+          heading: sample.heading,
+          speedMps: sample.speedMps,
+          sampledAtMicros: sample.sampledAtMicros,
+        );
+        t = CameraTarget(
+          point: const Distance(roundResult: false)
+              .offset(target.point, metres, sample.heading),
+          bearing: target.bearing,
+          zoom: target.zoom,
+          pitch: target.pitch,
+        );
+      }
+    }
     await _updateVehicle(van);
     if (!mounted) return;
     _follow(t, _lastFollowed);

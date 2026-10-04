@@ -79,4 +79,46 @@ void main() {
         .cast<Map<String, dynamic>>();
     expect(f[0]['properties']['h'], closeTo(5 + 1, 0.001)); // 0.5L cargo + 0.1L base
   });
+
+  group('Vehicle3D carried on to the moment a frame is drawn', () {
+    const dist = Distance(roundResult: false);
+
+    test('travels speed x age metres along its heading', () {
+      final van = Vehicle3D(
+          point: at, heading: 90, speedMps: 10, sampledAtMicros: 1000000);
+      final metres = van.travelledMeters(1100000); // 100 ms later
+      expect(metres, closeTo(1.0, 1e-9));
+
+      final moved = van.advancedBy(metres);
+      expect(dist(at, moved), closeTo(1.0, 0.01));
+      expect((dist.bearing(at, moved) + 360) % 360, closeTo(90, 0.5));
+    });
+
+    test('a parked van does not drift', () {
+      final van = Vehicle3D(point: at, heading: 0, sampledAtMicros: 0);
+      expect(van.travelledMeters(500000), 0);
+      expect(van.advancedBy(0), at);
+    });
+
+    test('a stale sample is capped rather than extrapolated far', () {
+      final van = Vehicle3D(
+          point: at, heading: 0, speedMps: 10, sampledAtMicros: 0);
+      expect(van.travelledMeters(5000000), closeTo(1.5, 1e-9)); // 150 ms cap
+    });
+
+    test('a sample from the future does not move backwards', () {
+      final van = Vehicle3D(
+          point: at, heading: 0, speedMps: 10, sampledAtMicros: 900000);
+      expect(van.travelledMeters(100000), 0);
+    });
+
+    test('identity ignores when the sample was taken', () {
+      final a = Vehicle3D(
+          point: at, heading: 10, speedMps: 5, sampledAtMicros: 1);
+      final b = Vehicle3D(
+          point: at, heading: 10, speedMps: 5, sampledAtMicros: 999);
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+    });
+  });
 }
