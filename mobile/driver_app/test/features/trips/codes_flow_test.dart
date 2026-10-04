@@ -3,6 +3,7 @@ import 'package:driver_app/features/trips/domain/delivery_code_hash.dart';
 import 'package:driver_app/features/trips/domain/stop.dart';
 import 'package:driver_app/features/trips/data/mock_trips_repository.dart';
 import 'package:driver_app/features/trips/domain/trip.dart';
+import 'package:driver_app/core/crypto/delivery_code.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -158,29 +159,38 @@ void main() {
   });
 
   group('delivery code', () {
+    final verifier = deliveryCodeVerifierProvider.overrideWithValue(
+      (code, _) async => code == CodedTripsRepository.deliveryCode,
+    );
+
     Future<CodedTripsRepository> arrived(WidgetTester tester) async {
       final repo = CodedTripsRepository();
       await tester.runAsync(() => repo.markArrived('trip-1'));
-      await pumpTripRoutes(tester, location: '$stop3/proof', trips: repo);
+      await pumpTripRoutes(
+        tester,
+        location: '$stop3/proof',
+        trips: repo,
+        overrides: [verifier],
+      );
       return repo;
     }
 
-    Future<void> signAndName(WidgetTester tester) async {
+    Future<void> name(WidgetTester tester) async {
       await tester.enterText(find.byKey(const Key('staff-name')), 'Kumara');
-      await tester.drag(
-        find.byKey(const Key('signature-surface')),
-        const Offset(80, 30),
-      );
       await tester.pump();
+    }
+
+    Future<void> verify(WidgetTester tester, String code) async {
+      await tester.enterText(find.byKey(const Key('otp-input')), code);
+      await tester.pump();
+      await tapVisible(tester, find.byKey(const Key('otp-verify')));
     }
 
     testWidgets('the code is sent with the completion', (tester) async {
       final repo = await arrived(tester);
-      await signAndName(tester);
-      await tester.enterText(
-        find.byKey(const Key('delivery-code')),
-        CodedTripsRepository.deliveryCode,
-      );
+      await name(tester);
+      await verify(tester, CodedTripsRepository.deliveryCode);
+      expect(find.byKey(const Key('otp-verified')), findsOneWidget);
       await tapVisible(tester, find.text('Complete stop'));
 
       expect(repo.lastDeliveryCode, CodedTripsRepository.deliveryCode);
@@ -188,35 +198,49 @@ void main() {
       expect(trip.completedStops, 3);
     });
 
-    testWidgets('the code may be left out when the proof stands in', (
-      tester,
-    ) async {
+    testWidgets('a photo completes the stop without a code', (tester) async {
       final repo = await arrived(tester);
-      await signAndName(tester);
+      await name(tester);
+      await tapVisible(tester, find.text('Photo'));
+      await tapVisible(tester, find.text('Add photo'));
       await tapVisible(tester, find.text('Complete stop'));
 
-      expect(repo.lastDeliveryCode, '');
+      expect(repo.lastDeliveryCode, isNull);
       final trip = (await tester.runAsync(() => repo.getTrip('trip-1')))!;
       expect(trip.completedStops, 3);
     });
 
-    testWidgets('a malformed code blocks completing', (tester) async {
+    testWidgets('a malformed code is refused and blocks completing', (
+      tester,
+    ) async {
       final repo = await arrived(tester);
-      await signAndName(tester);
-      await tester.enterText(find.byKey(const Key('delivery-code')), '12ab');
+      await name(tester);
+      await verify(tester, '12');
+      expect(find.text('The code is 6 digits'), findsOneWidget);
       await tapVisible(tester, find.text('Complete stop'));
 
-      expect(find.text('The delivery code is 6 digits'), findsOneWidget);
       final trip = (await tester.runAsync(() => repo.getTrip('trip-1')))!;
       expect(trip.completedStops, 2);
       expect(repo.lastDeliveryCode, isNull);
     });
 
-    testWidgets('the mock does not ask for a code', (tester) async {
-      final repo = testTripsRepository();
-      await tester.runAsync(() => repo.markArrived('trip-1'));
-      await pumpTripRoutes(tester, location: '$stop3/proof', trips: repo);
-      expect(find.byKey(const Key('delivery-code')), findsNothing);
+    testWidgets('a code that was not verified does not complete the stop', (
+      tester,
+    ) async {
+      final repo = await arrived(tester);
+      await name(tester);
+      await tester.enterText(
+        find.byKey(const Key('otp-input')),
+        CodedTripsRepository.deliveryCode,
+      );
+      await tapVisible(tester, find.text('Complete stop'));
+
+      expect(
+        find.text('Enter and verify the code from the store'),
+        findsOneWidget,
+      );
+      final trip = (await tester.runAsync(() => repo.getTrip('trip-1')))!;
+      expect(trip.completedStops, 2);
     });
   });
 }

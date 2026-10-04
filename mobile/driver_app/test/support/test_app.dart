@@ -2,7 +2,6 @@ import 'package:driver_app/core/clock.dart';
 import 'package:driver_app/core/router/trip_routes.dart';
 import 'package:driver_app/core/theme/app_theme.dart';
 import 'package:driver_app/core/photos/photo_picker.dart';
-import 'package:driver_app/core/photos/signature_png.dart';
 import 'package:driver_app/core/widgets/map_view.dart';
 import 'package:driver_app/features/stops/data/mock_stop_reports_repository.dart';
 import 'package:driver_app/features/stops/data/stop_reports_providers.dart';
@@ -105,7 +104,6 @@ Future<void> pumpTripRoutes(
           MockStopReportsRepository(latency: Duration.zero),
         ),
         photoPickerProvider.overrideWithValue(FakePhotoPicker()),
-        signatureEncoderProvider.overrideWithValue((_) async => tinyPng),
         mapTilesEnabledProvider.overrideWithValue(false),
         clockProvider.overrideWithValue(() => testNow),
         ...overrides,

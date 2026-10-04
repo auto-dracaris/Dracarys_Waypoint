@@ -1,3 +1,4 @@
+import 'package:driver_app/core/crypto/delivery_code.dart';
 import 'package:driver_app/features/records/data/mock_records_repository.dart';
 import 'package:driver_app/features/records/domain/saved_record.dart';
 import 'package:driver_app/features/stops/presentation/delivered_quantities.dart';
@@ -19,12 +20,14 @@ Future<MockTripsRepository> arrivedRepo(WidgetTester tester) async {
   return repo;
 }
 
-Future<void> sign(WidgetTester tester) async {
-  await tester.drag(
-    find.byKey(const Key('signature-surface')),
-    const Offset(80, 30),
-  );
+/// Types the store's code and verifies it. The demo data has nothing to check
+/// the code against, so it takes the one fixed demo code.
+Future<void> sign(WidgetTester tester, {String code = demoDeliveryCode}) async {
+  await tester.enterText(find.byKey(const Key('otp-input')), code);
   await tester.pump();
+  await tester.ensureVisible(find.byKey(const Key('otp-verify')));
+  await tester.tap(find.byKey(const Key('otp-verify')));
+  await tester.pumpAndSettle();
 }
 
 Future<void> fillName(WidgetTester tester, String name) async {
@@ -61,7 +64,7 @@ void main() {
       expect(find.text('Received by'), findsOneWidget);
       expect(find.text('Staff member name'), findsOneWidget);
       expect(find.text('Proof of delivery'), findsOneWidget);
-      expect(find.text('Signature'), findsOneWidget);
+      expect(find.text('OTP'), findsOneWidget);
       expect(find.text('Photo'), findsOneWidget);
       expect(find.text('Notes (optional)'), findsOneWidget);
       expect(find.text('Complete stop'), findsOneWidget);
@@ -90,7 +93,10 @@ void main() {
 
       await tapComplete(tester);
       expect(find.text("Enter the staff member's name"), findsOneWidget);
-      expect(find.text('Capture a signature or photo'), findsOneWidget);
+      expect(
+        find.text('Enter and verify the code from the store'),
+        findsOneWidget,
+      );
 
       await fillName(tester, '   '); // whitespace is not a name
       await tapComplete(tester);
@@ -99,36 +105,40 @@ void main() {
       await fillName(tester, 'Kumara Perera');
       await tapComplete(tester);
       expect(find.text("Enter the staff member's name"), findsNothing);
-      expect(find.text('Capture a signature or photo'), findsOneWidget);
+      expect(
+        find.text('Enter and verify the code from the store'),
+        findsOneWidget,
+      );
 
       final trip = (await tester.runAsync(() => repo.getTrip('trip-1')))!;
       expect(trip.completedStops, 2); // nothing was completed
     });
 
-    testWidgets('a signature and a name complete the stop and open the next', (
-      tester,
-    ) async {
-      final repo = await arrivedRepo(tester);
-      final records = MockRecordsRepository(latency: Duration.zero);
-      await pumpTripRoutes(
-        tester,
-        location: proof3,
-        trips: repo,
-        records: records,
-      );
+    testWidgets(
+      'a verified code and a name complete the stop and open the next',
+      (tester) async {
+        final repo = await arrivedRepo(tester);
+        final records = MockRecordsRepository(latency: Duration.zero);
+        await pumpTripRoutes(
+          tester,
+          location: proof3,
+          trips: repo,
+          records: records,
+        );
 
-      await fillName(tester, 'Kumara Perera');
-      await sign(tester);
-      await tapComplete(tester);
+        await fillName(tester, 'Kumara Perera');
+        await sign(tester);
+        await tapComplete(tester);
 
-      expect(find.text('NEXT STOP · 4 OF 4'), findsOneWidget);
-      expect(find.text('Lanka Sathosa — Ragama'), findsOneWidget);
+        expect(find.text('NEXT STOP · 4 OF 4'), findsOneWidget);
+        expect(find.text('Lanka Sathosa — Ragama'), findsOneWidget);
 
-      final trip = (await tester.runAsync(() => repo.getTrip('trip-1')))!;
-      expect(trip.completedStops, 3);
-      final saved = (await tester.runAsync(() => records.list('trip-1')))!;
-      expect(saved.map((r) => r.kind), [RecordKind.proof]);
-    });
+        final trip = (await tester.runAsync(() => repo.getTrip('trip-1')))!;
+        expect(trip.completedStops, 3);
+        final saved = (await tester.runAsync(() => records.list('trip-1')))!;
+        expect(saved.map((r) => r.kind), [RecordKind.proof]);
+      },
+    );
 
     testWidgets('delivered quantities are recorded and then cleared', (
       tester,
@@ -158,18 +168,18 @@ void main() {
       expect(container.read(deliveredQuantitiesProvider), isEmpty);
     });
 
-    testWidgets('a photo can replace the signature', (tester) async {
+    testWidgets('a photo can replace the code', (tester) async {
       final repo = await arrivedRepo(tester);
       await pumpTripRoutes(tester, location: proof3, trips: repo);
 
       await fillName(tester, 'Kumara');
       await tester.tap(find.text('Photo'));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('signature-surface')), findsNothing);
+      expect(find.byKey(const Key('otp-input')), findsNothing);
 
       // Photo mode with no photo is still blocked.
       await tapComplete(tester);
-      expect(find.text('Capture a signature or photo'), findsOneWidget);
+      expect(find.text('Capture a photo'), findsOneWidget);
 
       await tester.tap(find.text('Add photo'));
       await tester.pumpAndSettle();

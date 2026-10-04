@@ -48,18 +48,15 @@ void main() {
     return repo;
   }
 
-  Future<void> signAndName(WidgetTester tester) async {
+  Future<void> name(WidgetTester tester) async {
     await tester.enterText(find.byKey(const Key('staff-name')), 'Kumara');
-    await tester.drag(
-      find.byKey(const Key('signature-surface')),
-      const Offset(80, 30),
-    );
     await tester.pump();
   }
 
-  Future<void> typeCode(WidgetTester tester, String code) async {
-    await tester.enterText(find.byKey(const Key('delivery-code')), code);
+  Future<void> verify(WidgetTester tester, String code) async {
+    await tester.enterText(find.byKey(const Key('otp-input')), code);
     await tester.pump();
+    await tapVisible(tester, find.byKey(const Key('otp-verify')));
   }
 
   const mismatch = 'That code does not match the one sent to the outlet';
@@ -68,8 +65,8 @@ void main() {
     tester,
   ) async {
     final repo = await atTheDock(tester, online: false);
-    await signAndName(tester);
-    await typeCode(tester, CodedTripsRepository.deliveryCode);
+    await name(tester);
+    await verify(tester, CodedTripsRepository.deliveryCode);
     await tapVisible(tester, find.text('Complete stop'));
 
     expect(checked, [CodedTripsRepository.deliveryCode]);
@@ -83,27 +80,34 @@ void main() {
     tester,
   ) async {
     final repo = await atTheDock(tester, online: false);
-    await signAndName(tester);
-    await typeCode(tester, '999999');
-    await tapVisible(tester, find.text('Complete stop'));
+    await name(tester);
+    await verify(tester, '999999');
 
     expect(find.text(mismatch), findsOneWidget);
+    await tapVisible(tester, find.text('Complete stop'));
     expect(repo.lastDeliveryCode, isNull);
     final trip = (await tester.runAsync(() => repo.getTrip('trip-1')))!;
     expect(trip.completedStops, 2);
 
     // Typing again clears the message, and a right code then goes through.
-    await typeCode(tester, CodedTripsRepository.deliveryCode);
+    await tester.enterText(
+      find.byKey(const Key('otp-input')),
+      CodedTripsRepository.deliveryCode,
+    );
+    await tester.pump();
     expect(find.text(mismatch), findsNothing);
+    await tapVisible(tester, find.byKey(const Key('otp-verify')));
     await tapVisible(tester, find.text('Complete stop'));
     expect(repo.lastDeliveryCode, CodedTripsRepository.deliveryCode);
   });
 
-  testWidgets('with no code typed nothing is checked and the proof stands in', (
+  testWidgets('with a photo nothing is checked and the photo stands in', (
     tester,
   ) async {
     final repo = await atTheDock(tester, online: false);
-    await signAndName(tester);
+    await name(tester);
+    await tapVisible(tester, find.text('Photo'));
+    await tapVisible(tester, find.text('Add photo'));
     await tapVisible(tester, find.text('Complete stop'));
 
     expect(checked, isEmpty);
@@ -111,16 +115,16 @@ void main() {
     expect(trip.completedStops, 3);
   });
 
-  testWidgets('online, the phone leaves the judging to the server', (
+  testWidgets('online, a wrong code is caught on the phone too', (
     tester,
   ) async {
     final repo = await atTheDock(tester, online: true);
-    await signAndName(tester);
-    await typeCode(tester, '999999');
-    await tapVisible(tester, find.text('Complete stop'));
+    await name(tester);
+    await verify(tester, '999999');
 
-    expect(checked, isEmpty);
-    expect(repo.lastDeliveryCode, '999999');
+    expect(checked, ['999999']);
+    expect(find.text(mismatch), findsOneWidget);
+    expect(repo.lastDeliveryCode, isNull);
   });
 
   testWidgets('starting a trip with no signal says it needs a connection', (

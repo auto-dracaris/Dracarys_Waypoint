@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/demo_mode.dart';
+import '../../../core/api/api_config.dart' show demoArea;
 import '../../../core/api/api_providers.dart';
 import '../../../core/clock.dart';
 import '../../../core/storage/offline_cache.dart';
@@ -15,7 +16,7 @@ import 'trips_repository.dart';
 
 /// The hosted API, or the in-memory demo data with `--dart-define=USE_MOCKS=true`.
 final tripsRepositoryProvider = Provider<TripsRepository>((ref) {
-  if (ref.watch(demoModeProvider)) return MockTripsRepository();
+  if (ref.watch(demoModeProvider)) return MockTripsRepository(area: demoArea);
   return HttpTripsRepository(
     ref.watch(apiClientProvider),
     cache: ref.watch(offlineCacheProvider),

@@ -8,7 +8,6 @@ import '../../../core/connectivity/online_provider.dart';
 import '../../../core/crypto/delivery_code.dart';
 import '../../../core/format.dart';
 import '../../../core/photos/photo_picker.dart';
-import '../../../core/photos/signature_png.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
@@ -16,7 +15,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../core/widgets/labeled_field.dart';
 import '../../../core/widgets/photo_tiles.dart';
-import '../../../core/widgets/signature_pad.dart';
+import '../../../core/widgets/otp_boxes.dart';
 import '../../../core/widgets/toggle_tabs.dart';
 import '../../../core/uuid.dart';
 import '../../../core/widgets/trip_header_bar.dart';
@@ -31,7 +30,7 @@ import 'delivered_quantities.dart';
 String _cases(int n) => '$n ${n == 1 ? 'case' : 'cases'}';
 
 /// Proof of delivery (Figma "driver-proof-of-delivery"): summary of what was
-/// handed over, who received it, and a signature or photo.
+/// handed over, who received it, and the outlet's OTP or a photo.
 class ProofOfDeliveryScreen extends ConsumerStatefulWidget {
   const ProofOfDeliveryScreen({
     super.key,
@@ -48,12 +47,11 @@ class ProofOfDeliveryScreen extends ConsumerStatefulWidget {
 }
 
 class _ProofOfDeliveryScreenState extends ConsumerState<ProofOfDeliveryScreen> {
-  static const _signature = 0;
+  static const _otp = 0;
 
   final _name = TextEditingController();
   final _notes = TextEditingController();
-  int _mode = _signature;
-  Strokes _strokes = const [];
+  int _mode = _otp;
   PickedPhoto? _photo;
   final _code = TextEditingController();
 
@@ -67,8 +65,10 @@ class _ProofOfDeliveryScreenState extends ConsumerState<ProofOfDeliveryScreen> {
   bool _submitted = false;
   bool _busy = false;
 
-  /// The code typed was checked on this phone and does not match.
-  bool _codeWrong = false;
+  /// The code typed matched (or, with nothing to check it against, has the
+  /// right shape; the server judges it when the stop completes).
+  bool _otpVerified = false;
+  String? _otpError;
 
   StopRef get _ref => (tripId: widget.tripId, stopId: widget.stopId);
 
@@ -80,15 +80,17 @@ class _ProofOfDeliveryScreenState extends ConsumerState<ProofOfDeliveryScreen> {
     super.dispose();
   }
 
-  bool get _hasProof =>
-      _mode == _signature ? SignaturePad.isSigned(_strokes) : _photo != null;
+  bool get _hasProof => _mode == _otp ? _otpVerified : _photo != null;
 
   String? get _nameError => _submitted && _name.text.trim().isEmpty
       ? "Enter the staff member's name"
       : null;
 
-  String? get _proofError =>
-      _submitted && !_hasProof ? 'Capture a signature or photo' : null;
+  String? get _proofError => _submitted && !_hasProof
+      ? (_mode == _otp
+            ? 'Enter and verify the code from the store'
+            : 'Capture a photo')
+      : null;
 
   Future<void> _takePhoto() async {
     try {
@@ -101,20 +103,52 @@ class _ProofOfDeliveryScreenState extends ConsumerState<ProofOfDeliveryScreen> {
     }
   }
 
-  /// The code is optional (a store that cannot give one is covered by the
-  /// proof), but when typed it must be the six digits the outlet was texted.
-  String? get _codeError {
-    if (_codeWrong)
-      return 'That code does not match the one sent to the outlet';
+  /// Checks the typed code. The phone holds the outlet code's hash from the
+  /// moment the trip started, so it can say right away (online or not) whether
+  /// the code is the one the store was texted. With no hash to check against,
+  /// the six digits are accepted and the server has the final say.
+  Future<void> _verify(TripStop d) async {
     final code = _code.text.trim();
-    return _submitted && code.isNotEmpty && !RegExp(r'^\d{6}$').hasMatch(code)
-        ? 'The delivery code is 6 digits'
-        : null;
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+      setState(() {
+        _otpVerified = false;
+        _otpError = 'The code is 6 digits';
+      });
+      return;
+    }
+    final hash = d.stop.deliveryCode;
+    if (!ref.read(tripsRepositoryProvider).usesCodes) {
+      // Demo data: one fixed code stands in for the outlet's SMS.
+      if (code != demoDeliveryCode) {
+        setState(() {
+          _otpVerified = false;
+          _otpError = 'That code does not match the one sent to the outlet';
+        });
+        return;
+      }
+    } else if (hash != null) {
+      setState(() => _busy = true);
+      final ok = await ref.read(deliveryCodeVerifierProvider)(code, hash);
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (!ok) {
+        setState(() {
+          _otpVerified = false;
+          _otpError = 'That code does not match the one sent to the outlet';
+        });
+        return;
+      }
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      _otpVerified = true;
+      _otpError = null;
+    });
   }
 
   Future<void> _complete(TripStop d) async {
     setState(() => _submitted = true);
-    if (_name.text.trim().isEmpty || !_hasProof || _codeError != null) return;
+    if (_name.text.trim().isEmpty || !_hasProof) return;
     final short = unreportedShortOrders(
       [for (final o in d.stop.orders) (id: o.id, cases: o.cases)],
       ref.read(deliveredQuantitiesProvider),
@@ -135,50 +169,30 @@ class _ProofOfDeliveryScreenState extends ConsumerState<ProofOfDeliveryScreen> {
       return;
     }
 
-    // With no signal the server cannot check the outlet's code, but the phone
-    // was given its hash when the trip started: check it here, so a wrong code
-    // is caught while the driver is still standing at the dock.
-    final code = _code.text.trim();
-    final hash = d.stop.deliveryCode;
-    if (code.isNotEmpty &&
-        hash != null &&
-        !ref.read(onlineProvider) &&
-        ref.read(tripsRepositoryProvider).usesCodes) {
-      setState(() => _busy = true);
-      final ok = await ref.read(deliveryCodeVerifierProvider)(code, hash);
-      if (!mounted) return;
-      if (!ok) {
-        setState(() {
-          _busy = false;
-          _codeWrong = true;
-        });
-        return;
-      }
-    }
     setState(() => _busy = true);
     try {
       final actions = ref.read(tripActionsProvider);
       final entered = ref.read(deliveredQuantitiesProvider);
-      final bySignature = _mode == _signature;
-      // Proof first: it is what lets a stop complete without the outlet's code.
-      await actions.submitProof(
-        widget.tripId,
-        widget.stopId,
-        ids: _ids,
-        receivedBy: _name.text.trim(),
-        notes: _notes.text,
-        signaturePng: bySignature
-            ? await ref.read(signatureEncoderProvider)(_strokes)
-            : null,
-        photo: bySignature ? null : _photo,
-      );
+      final byCode = _mode == _otp;
+      // A photo is the proof that lets a stop complete without the outlet's
+      // code; with the code, the code is the proof.
+      if (!byCode) {
+        await actions.submitProof(
+          widget.tripId,
+          widget.stopId,
+          ids: _ids,
+          receivedBy: _name.text.trim(),
+          notes: _notes.text,
+          photo: _photo,
+        );
+      }
       await actions.completeStop(
         widget.tripId,
         widget.stopId,
         deliveredCases: {
           for (final o in d.stop.orders) o.id: entered[o.id] ?? o.cases,
         },
-        deliveryCode: _code.text.trim(),
+        deliveryCode: byCode ? _code.text.trim() : null,
       );
       ref.read(deliveredQuantitiesProvider.notifier).clear();
       ref.read(reportedOrdersProvider.notifier).clear();
@@ -240,7 +254,7 @@ class _ProofOfDeliveryScreenState extends ConsumerState<ProofOfDeliveryScreen> {
                     const SizedBox(height: 16),
                     _Timestamps(arrivedAt: d.stop.arrivedAt),
                     const SizedBox(height: 16),
-                    _receivedByCard(),
+                    _receivedByCard(d),
                     const SizedBox(height: 16),
                     LabeledField(
                       label: 'Notes (optional)',
@@ -248,27 +262,6 @@ class _ProofOfDeliveryScreenState extends ConsumerState<ProofOfDeliveryScreen> {
                       controller: _notes,
                     ),
                     const SizedBox(height: 16),
-                    if (ref.watch(tripsRepositoryProvider).usesCodes) ...[
-                      LabeledField(
-                        label: 'Delivery code (optional)',
-                        hint: '6 digits from the store manager',
-                        fieldKey: const Key('delivery-code'),
-                        controller: _code,
-                        keyboardType: TextInputType.number,
-                        errorText: _codeError,
-                        onChanged: (_) => setState(() => _codeWrong = false),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'The outlet was texted this code. If the store cannot '
-                        'give it, leave it empty: the signature or photo above '
-                        'completes the stop and the dispatcher is told.',
-                        style: AppText.textXsRegular.copyWith(
-                          color: AppColors.inkMuted,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
                     Text(
                       'This record will be shared with the dispatcher and store manager. '
                       'If offline: saved on this device — waiting to sync.',
@@ -297,7 +290,79 @@ class _ProofOfDeliveryScreenState extends ConsumerState<ProofOfDeliveryScreen> {
     );
   }
 
-  Widget _receivedByCard() {
+  Widget _otpPanel(TripStop d) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Enter OTP', style: AppText.textSmBold),
+          const SizedBox(height: 4),
+          Text(
+            'Ask the store for the code they were texted.',
+            style: AppText.textXsRegular.copyWith(color: AppColors.inkMuted),
+          ),
+          const SizedBox(height: 12),
+          OtpBoxes(
+            controller: _code,
+            error: _otpError != null,
+            onChanged: (_) => setState(() {
+              _otpVerified = false;
+              _otpError = null;
+            }),
+          ),
+          if (_otpError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                _otpError!,
+                style: AppText.textXsRegular.copyWith(color: AppColors.red700),
+              ),
+            ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: _otpVerified
+                ? Row(
+                    key: const Key('otp-verified'),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        size: 18,
+                        color: AppColors.lime700,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Verified',
+                        style: AppText.textSmSemibold.copyWith(
+                          color: AppColors.lime700,
+                        ),
+                      ),
+                    ],
+                  )
+                : SizedBox(
+                    width: 120,
+                    child: AppButton(
+                      key: const Key('otp-verify'),
+                      label: 'Verify',
+                      dense: true,
+                      isLoading: _busy,
+                      onPressed: () => _verify(d),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _receivedByCard(TripStop d) {
     final proofError = _proofError;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -327,16 +392,13 @@ class _ProofOfDeliveryScreenState extends ConsumerState<ProofOfDeliveryScreen> {
           ),
           const SizedBox(height: 10),
           ToggleTabs(
-            labels: const ['Signature', 'Photo'],
+            labels: const ['OTP', 'Photo'],
             selectedIndex: _mode,
             onChanged: (i) => setState(() => _mode = i),
           ),
           const SizedBox(height: 10),
-          if (_mode == _signature)
-            SignaturePad(
-              strokes: _strokes,
-              onChanged: (s) => setState(() => _strokes = s),
-            )
+          if (_mode == _otp)
+            _otpPanel(d)
           else
             Align(
               alignment: Alignment.centerLeft,

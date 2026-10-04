@@ -7,7 +7,6 @@ import '../../sync/data/action_queue.dart';
 import '../../sync/data/action_submitter.dart';
 import '../../sync/domain/pending_action.dart';
 import '../../sync/domain/pending_overlay.dart';
-import '../domain/stop.dart';
 import '../domain/stop_gate.dart';
 import '../domain/trip.dart';
 import '../domain/vehicle.dart';
