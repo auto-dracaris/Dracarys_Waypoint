@@ -1,0 +1,42 @@
+@reference "../../index.css";
+
+.store-demand-forecast {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-lg);
+  min-width: 0;
+  padding: var(--wp-space-xl);
+  border: 1px solid var(--wp-warm-neutral-200);
+  border-radius: var(--wp-radius-xl);
+  background: var(--wp-neutral-50);
+}
+.store-demand-caption { color: var(--wp-text-tertiary); }
+.store-demand-legend {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--wp-space-3xl);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.store-demand-legend li { display: flex; align-items: center; gap: var(--wp-space-md); min-height: var(--wp-space-3xl); color: var(--wp-text-tertiary); }
+.store-demand-legend li > span { display: block; width: var(--wp-space-2xl); border-top: 3px solid var(--store-demand-color); flex-shrink: 0; }
+.store-demand-legend li > .store-demand-swatch--dashed { border-top-style: dashed; }
+.store-demand-fresh { --store-demand-color: var(--wp-lime-800); }
+.store-demand-chilled { --store-demand-color: var(--wp-blue-600); }
+.store-demand-style { --store-demand-color: var(--wp-yellow-700); }
+/* Figma's Tech data-series colour has no purple equivalent in the original token pack. */
+.store-demand-tech { --store-demand-color: #6b40a3; }
+.store-demand-chart-scroll { min-width: 0; overflow-x: auto; }
+.store-demand-chart-scroll:focus-visible { outline: 2px solid var(--wp-yellow-500); outline-offset: var(--wp-space-xxs); }
+.store-demand-chart-canvas { min-width: var(--wp-spacing-160); }
+.store-demand-chart { display: block; width: 100%; height: calc(var(--wp-spacing-64) + var(--wp-space-3xl)); overflow: visible; }
+.store-demand-chart text { @apply type-text-xs-regular; fill: var(--wp-text-tertiary); }
+.store-demand-axis line { stroke: var(--wp-neutral-200); stroke-width: 1; }
+.store-demand-line { fill: none; stroke: var(--store-demand-color); stroke-width: 3; stroke-linejoin: round; }
+.store-demand-line--dashed { stroke-dasharray: 6 4; }
+.store-demand-point { fill: var(--store-demand-color); }
+@media (max-width: 767px) {
+  .store-demand-forecast h2 { @apply type-display-xs-medium; }
+  .store-demand-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--wp-space-md) var(--wp-space-xl); }
+}

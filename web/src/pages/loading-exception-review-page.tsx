@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { IconButton } from '@/components/ui/icon-button'
 import { useState } from 'react'
@@ -16,7 +17,6 @@ import '@/styles/loading-exception.css'
 export function LoadingExceptionReviewPage({
   exception,
   onConfirm,
-  onNavigate,
   onOpenNavigation,
   navigationOpen,
 }: {
@@ -56,21 +56,7 @@ export function LoadingExceptionReviewPage({
         </div>
         <StatusBadge tone={approved ? 'success' : 'error'}>{approved ? 'Departure approved' : 'Departure on hold'}</StatusBadge>
       </header>
-      <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">
-        <span>
-          <button onClick={() => onNavigate('Home')}>Home</button>
-          <span aria-hidden="true">/</span>
-        </span>
-        <span>
-          Operations<span aria-hidden="true">/</span>
-        </span>
-        <span>
-          Operational Plan<span aria-hidden="true">/</span>
-        </span>
-        <strong aria-current="page" className="text-wp-text-primary type-text-sm-semibold">
-          Loading Exception
-        </strong>
-      </nav>
+      <HubBreadcrumbs />
       <section className={`loading-alert ${approved ? 'loading-alert--approved' : ''}`} aria-labelledby="loading-alert-title">
         <span className="loading-alert-icon">{approved ? <CheckCircleOutlineRounded fontSize="inherit" /> : <WarningAmberRounded fontSize="inherit" />}</span>
         <div>
