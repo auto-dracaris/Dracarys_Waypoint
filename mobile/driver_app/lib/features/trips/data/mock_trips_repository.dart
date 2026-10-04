@@ -1,6 +1,7 @@
 import '../domain/order.dart';
 import '../domain/shortfall_report.dart';
 import '../domain/stop.dart';
+import '../domain/stop_gate.dart';
 import '../domain/trip.dart';
 import '../domain/vehicle.dart';
 import 'trips_repository.dart';
@@ -10,10 +11,19 @@ class MockTripsRepository implements TripsRepository {
     this.latency = const Duration(milliseconds: 400),
     DateTime? today,
     DateTime Function()? now,
+
+    /// Start with trip 1 already on the road (loaded and started), for tests and
+    /// demos that begin at a stop. Otherwise it is still being loaded.
+    bool onTheRoad = false,
+
+    /// `colombo` tells the short central-Colombo loop instead of Gampaha.
+    String area = '',
   }) : _now = now ?? DateTime.now {
     final base = today ?? DateTime.now();
     _today = DateTime(base.year, base.month, base.day);
-    _trips = _seed(_today, _now());
+    _trips = area == 'colombo'
+        ? _seedColombo(_today, _now(), onTheRoad: onTheRoad)
+        : _seed(_today, _now(), onTheRoad: onTheRoad);
   }
 
   final Duration latency;
@@ -62,23 +72,32 @@ class MockTripsRepository implements TripsRepository {
     await _wait();
     final i = _indexOf(tripId);
     final trip = _trips[i];
-    if (trip.status == TripStatus.completed) return trip;
+    if (trip.status == TripStatus.inProgress ||
+        trip.status == TripStatus.completed) {
+      return trip;
+    }
+    // The server only starts a trip that has been loaded.
+    if (trip.status != TripStatus.ready) {
+      throw StateError(
+        'The vehicle is not loaded yet. Wait for the loading team to finish.',
+      );
+    }
     return _store(i, trip.copyWith(status: TripStatus.inProgress));
   }
 
   @override
-  Future<Trip> markArrived(String tripId) async {
+  Future<Trip> markArrived(String tripId, {String? stopId}) async {
     await _wait();
     final i = _indexOf(tripId);
     final trip = _trips[i];
-    final active = trip.activeStop;
-    if (active == null || active.status != StopStatus.pending) return trip;
+    final target = stopToArriveAt(trip, stopId: stopId);
+    if (target == null) return trip;
 
     return _store(
       i,
       _replaceStop(
         trip,
-        active.copyWith(status: StopStatus.arrived, arrivedAt: _now()),
+        target.copyWith(status: StopStatus.arrived, arrivedAt: _now()),
       ),
     );
   }
@@ -93,8 +112,8 @@ class MockTripsRepository implements TripsRepository {
     await _wait();
     final i = _indexOf(tripId);
     final trip = _trips[i];
-    final stop = trip.stops.where((s) => s.id == stopId).firstOrNull;
-    if (stop == null || stop.status != StopStatus.arrived) return trip;
+    final stop = stopToComplete(trip, stopId);
+    if (stop == null) return trip;
 
     final delivered = stop.copyWith(
       status: StopStatus.completed,
@@ -130,7 +149,165 @@ class MockTripsRepository implements TripsRepository {
     return i;
   }
 
-  static List<Trip> _seed(DateTime day, DateTime now) {
+  /// A short loop through central Colombo: depot at the Fort, then Pettah,
+  /// Slave Island, Galle Face and back to the Fort, each leg about a kilometre
+  /// so the whole drive fits on screen, among tall buildings for the 3D view.
+  static List<Trip> _seedColombo(
+    DateTime day,
+    DateTime now, {
+    bool onTheRoad = false,
+  }) {
+    Order order(String id, String store, int cases, Temperature t,
+            {String? handling}) =>
+        Order(
+          id: id,
+          storeName: store,
+          cases: cases,
+          temperature: t,
+          handling: handling,
+        );
+    Stop stop(
+      int seq,
+      String name,
+      String window,
+      DateTime eta,
+      double lat,
+      double lng,
+      List<Order> orders, {
+      String dock = 'Rear loading dock',
+      double distanceKm = 1,
+    }) => Stop(
+      id: 'trip-1-stop-$seq',
+      sequence: seq,
+      name: name,
+      deliveryWindow: window,
+      plannedArrival: eta,
+      dock: dock,
+      lat: lat,
+      lng: lng,
+      orders: orders,
+      contactPhone: '+94 11 234 5678',
+      etaMinutes: 6,
+      distanceKm: distanceKm,
+    );
+    const chilled = Temperature.chilled;
+    const ambient = Temperature.ambient;
+    final base = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+
+    return [
+      Trip(
+        id: 'trip-1',
+        name: 'Trip 1',
+        subtitle: 'City deliveries · Colombo Fort',
+        departure: base,
+        // Already loaded: the demo starts at "Ready to depart".
+        status: onTheRoad ? TripStatus.inProgress : TripStatus.ready,
+        planVersion: 1,
+        updatedAt: now.subtract(const Duration(minutes: 2)),
+        stops: [
+          stop(
+            1,
+            'Cargills Food City — Pettah',
+            '09:00-11:00',
+            base.add(const Duration(minutes: 8)),
+            6.9385,
+            79.8505,
+            [
+              order('ORD-5001', 'Cargills Food City — Pettah', 10, chilled),
+              order('ORD-5002', 'Cargills Food City — Pettah', 6, ambient),
+            ],
+            dock: 'Front receiving bay',
+            distanceKm: 0.9,
+          ),
+          stop(
+            2,
+            'Keells Super — Slave Island',
+            '09:15-11:30',
+            base.add(const Duration(minutes: 18)),
+            6.9285,
+            79.8525,
+            [
+              order('ORD-5011', 'Keells Super — Slave Island', 12, chilled,
+                  handling: 'Keep cold chain intact.'),
+              order('ORD-5012', 'Keells Super — Slave Island', 8, ambient),
+            ],
+            dock: 'Side entrance',
+            distanceKm: 1.2,
+          ),
+          stop(
+            3,
+            'Arpico Super Centre — Galle Face',
+            '09:30-12:00',
+            base.add(const Duration(minutes: 28)),
+            6.9272,
+            79.8433,
+            [order('ORD-5021', 'Arpico Super Centre — Galle Face', 9, ambient)],
+            distanceKm: 0.9,
+          ),
+          stop(
+            4,
+            'Food Hall — World Trade Centre',
+            '09:45-12:30',
+            base.add(const Duration(minutes: 36)),
+            6.9340,
+            79.8420,
+            [order('ORD-5031', 'Food Hall — World Trade Centre', 6, chilled)],
+            dock: 'Basement loading bay',
+            distanceKm: 0.8,
+          ),
+        ],
+      ),
+      // A later trip the loading team is still working on.
+      Trip(
+        id: 'trip-2',
+        name: 'Trip 2',
+        subtitle: 'City deliveries · Cinnamon Gardens',
+        departure: base.add(const Duration(hours: 2)),
+        status: TripStatus.loading,
+        stops: [
+          Stop(
+            id: 'trip-2-stop-1',
+            sequence: 1,
+            name: 'Cargills Food City — Cinnamon Gardens',
+            deliveryWindow: '11:30-13:30',
+            plannedArrival: base.add(const Duration(hours: 2, minutes: 12)),
+            dock: 'Front receiving bay',
+            lat: 6.9147,
+            lng: 79.8612,
+            orders: [
+              order('ORD-5101', 'Cargills Food City — Cinnamon Gardens', 8,
+                  ambient),
+            ],
+            contactPhone: '+94 11 234 5678',
+            etaMinutes: 10,
+            distanceKm: 1.4,
+          ),
+          Stop(
+            id: 'trip-2-stop-2',
+            sequence: 2,
+            name: 'Keells Super — Bambalapitiya',
+            deliveryWindow: '12:00-14:00',
+            plannedArrival: base.add(const Duration(hours: 2, minutes: 30)),
+            dock: 'Side entrance',
+            lat: 6.8895,
+            lng: 79.8565,
+            orders: [
+              order('ORD-5102', 'Keells Super — Bambalapitiya', 6, chilled),
+            ],
+            contactPhone: '+94 11 234 5678',
+            etaMinutes: 12,
+            distanceKm: 2.7,
+          ),
+        ],
+      ),
+    ];
+  }
+
+  static List<Trip> _seed(
+    DateTime day,
+    DateTime now, {
+    bool onTheRoad = false,
+  }) {
     DateTime at(int h, int m) => DateTime(day.year, day.month, day.day, h, m);
 
     Order order(
@@ -187,7 +364,7 @@ class MockTripsRepository implements TripsRepository {
         name: 'Trip 1',
         subtitle: 'Fresh deliveries · Gampaha',
         departure: at(5, 30),
-        status: TripStatus.loading,
+        status: onTheRoad ? TripStatus.inProgress : TripStatus.loading,
         planVersion: 3,
         updatedAt: now.subtract(const Duration(minutes: 2)),
         shortfall: const ShortfallReport(

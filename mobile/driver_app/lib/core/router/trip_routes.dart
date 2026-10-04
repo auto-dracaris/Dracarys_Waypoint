@@ -7,6 +7,7 @@ import '../../features/stops/presentation/arrived_screen.dart';
 import '../../features/stops/presentation/proof_of_delivery_screen.dart';
 import '../../features/stops/presentation/report_issue_screen.dart';
 import '../../features/stops/presentation/stop_info_screen.dart';
+import '../../features/stops/presentation/widgets/stop_guard.dart';
 import '../../features/trips/presentation/trip_overview_screen.dart';
 
 /// Child routes of `/trips` (My trips tab): the driver's trip flow. Kept apart
@@ -31,31 +32,51 @@ final tripRoutes = <RouteBase>[
         routes: [
           GoRoute(
             path: 'navigate',
-            builder: (context, state) => NavigationPreviewScreen(
+            builder: (context, state) => StopGuard(
+              step: StopStep.beforeArrival,
               tripId: state.pathParameters['tripId']!,
               stopId: state.pathParameters['stopId']!,
+              child: NavigationPreviewScreen(
+                tripId: state.pathParameters['tripId']!,
+                stopId: state.pathParameters['stopId']!,
+              ),
             ),
           ),
           GoRoute(
             path: 'arrived',
-            builder: (context, state) => ArrivedScreen(
+            builder: (context, state) => StopGuard(
+              step: StopStep.afterArrival,
               tripId: state.pathParameters['tripId']!,
               stopId: state.pathParameters['stopId']!,
+              child: ArrivedScreen(
+                tripId: state.pathParameters['tripId']!,
+                stopId: state.pathParameters['stopId']!,
+              ),
             ),
           ),
           GoRoute(
             path: 'proof',
-            builder: (context, state) => ProofOfDeliveryScreen(
+            builder: (context, state) => StopGuard(
+              step: StopStep.afterArrival,
               tripId: state.pathParameters['tripId']!,
               stopId: state.pathParameters['stopId']!,
+              child: ProofOfDeliveryScreen(
+                tripId: state.pathParameters['tripId']!,
+                stopId: state.pathParameters['stopId']!,
+              ),
             ),
           ),
           GoRoute(
             path: 'issue/:orderId',
-            builder: (context, state) => ReportIssueScreen(
+            builder: (context, state) => StopGuard(
+              step: StopStep.afterArrival,
               tripId: state.pathParameters['tripId']!,
               stopId: state.pathParameters['stopId']!,
-              orderId: state.pathParameters['orderId']!,
+              child: ReportIssueScreen(
+                tripId: state.pathParameters['tripId']!,
+                stopId: state.pathParameters['stopId']!,
+                orderId: state.pathParameters['orderId']!,
+              ),
             ),
           ),
         ],

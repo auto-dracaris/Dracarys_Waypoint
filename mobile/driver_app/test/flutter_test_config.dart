@@ -19,5 +19,13 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
       ..addFont(Future.value(ByteData.sublistView(bytes)));
     await loader.load();
   }
+  // Looping animations (the Trip Copilot dots) would keep `pumpAndSettle` from
+  // ever finishing, so tests run as if the system's "remove animations" setting
+  // were on. The mark honours it; tests of the animation itself opt back in.
+  setUp(() {
+    final binding = TestWidgetsFlutterBinding.instance;
+    binding.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+  });
   await testMain();
 }

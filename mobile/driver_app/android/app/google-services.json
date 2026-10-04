@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "562474195456",
+    "project_id": "waypoint-f0a64",
+    "storage_bucket": "waypoint-f0a64.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:562474195456:android:4cddc229da04271e9d16e5",
+        "android_client_info": {
+          "package_name": "com.dracarys.driver_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqSeWaLMqViOPLl3un5_G9_AwTL-FCpjk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -75,15 +75,21 @@ class TripActions {
         _refresh(tripId);
       });
 
-  Future<void> markArrived(String tripId) => _guard(tripId, () async {
-    final repo = _ref.read(tripsRepositoryProvider);
-    final before = (await repo.getTrip(tripId)).activeStop;
-    await repo.markArrived(tripId);
-    if (before != null && before.status == StopStatus.pending) {
-      await _record(tripId, RecordKind.arrival, 'Arrival at ${before.name}');
-    }
-    _refresh(tripId);
-  });
+  Future<void> markArrived(String tripId, {String? stopId}) => _guard(
+    tripId,
+    () async {
+      final repo = _ref.read(tripsRepositoryProvider);
+      final trip = await repo.getTrip(tripId);
+      final before = stopId == null
+          ? trip.activeStop
+          : trip.stops.where((s) => s.id == stopId).firstOrNull;
+      await repo.markArrived(tripId, stopId: stopId);
+      if (before != null && before.status == StopStatus.pending) {
+        await _record(tripId, RecordKind.arrival, 'Arrival at ${before.name}');
+      }
+      _refresh(tripId);
+    },
+  );
 
   /// Who took the goods, with the signature or photo that proves it.
   Future<void> submitProof(

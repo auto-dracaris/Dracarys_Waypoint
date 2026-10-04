@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/api_config.dart' show hideDemoUi;
 import '../demo_mode.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text.dart';
@@ -14,7 +15,7 @@ class DemoModeSwitch extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (kReleaseMode) return const SizedBox.shrink();
+    if (kReleaseMode || hideDemoUi) return const SizedBox.shrink();
     final demo = ref.watch(demoModeProvider);
     return Padding(
       padding: const EdgeInsets.only(top: 16),

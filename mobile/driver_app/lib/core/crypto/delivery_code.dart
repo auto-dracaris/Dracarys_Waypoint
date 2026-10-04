@@ -48,6 +48,10 @@ bool codeMatches(String code, DeliveryCodeHash expected) {
   return diff == 0;
 }
 
+/// The one outlet code the built-in demo data accepts (there is no server to
+/// text a real one).
+const demoDeliveryCode = '482913';
+
 typedef DeliveryCodeVerifier = Future<bool> Function(
   String code,
   DeliveryCodeHash expected,

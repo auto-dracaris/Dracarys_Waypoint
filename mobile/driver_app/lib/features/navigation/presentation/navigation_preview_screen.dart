@@ -110,7 +110,9 @@ class _NavigationPreviewScreenState
   Future<void> _arrived() async {
     setState(() => _busy = true);
     try {
-      await ref.read(tripActionsProvider).markArrived(widget.tripId);
+      await ref
+          .read(tripActionsProvider)
+          .markArrived(widget.tripId, stopId: widget.stopId);
       if (mounted) {
         context.go(AppRoutes.arrived(widget.tripId, widget.stopId));
       }

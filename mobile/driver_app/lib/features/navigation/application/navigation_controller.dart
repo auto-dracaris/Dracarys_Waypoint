@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/api/api_config.dart' show demoSpeedKmh;
+
 import '../data/location_source.dart';
 import '../data/simulated_location_source.dart';
 
@@ -27,7 +29,9 @@ class NavState {
 
 /// Swap for a real GPS/backend source when one exists.
 final locationSourceProvider =
-    Provider<LocationSource>((_) => const SimulatedLocationSource());
+    Provider<LocationSource>(
+      (_) => const SimulatedLocationSource(speedKmh: demoSpeedKmh),
+    );
 
 class NavigationController extends Notifier<NavState> {
   StreamSubscription<VehiclePosition>? _sub;

@@ -1,0 +1,6 @@
+{
+  "USE_MOCKS": true,
+  "DEMO_AREA": "colombo",
+  "HIDE_DEMO_UI": true,
+  "DEMO_SPEED_KMH": 30
+}
