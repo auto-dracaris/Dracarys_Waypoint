@@ -159,38 +159,62 @@ void main() {
     });
   });
 
-  testWidgets('the assistant button sits beside the bell and opens the chat',
-      (tester) async {
-    tester.view.physicalSize = const Size(402 * 3, 1000 * 3);
-    tester.view.devicePixelRatio = 3;
-    addTearDown(tester.view.reset);
-    final router = GoRouter(routes: [
-      GoRoute(path: '/', builder: (_, _) => const MyTripsScreen()),
-      GoRoute(
-          path: '/chat',
-          builder: (_, _) => const Scaffold(body: Text('Chat page'))),
-      GoRoute(
-          path: '/updates',
-          builder: (_, _) => const Scaffold(body: Text('Updates page'))),
-    ]);
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        tripsRepositoryProvider
-            .overrideWithValue(MockTripsRepository(latency: Duration.zero)),
-        authRepositoryProvider
-            .overrideWithValue(MockAuthRepository(latency: Duration.zero)),
-      ],
-      child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
-    ));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'the Trip Copilot button floats bottom-right and opens the chat',
+    (tester) async {
+      tester.view.physicalSize = const Size(402 * 3, 1000 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const MyTripsScreen()),
+          GoRoute(
+            path: '/chat',
+            builder: (_, _) => const Scaffold(body: Text('Chat page')),
+          ),
+          GoRoute(
+            path: '/updates',
+            builder: (_, _) => const Scaffold(body: Text('Updates page')),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            tripsRepositoryProvider.overrideWithValue(
+              MockTripsRepository(latency: Duration.zero),
+            ),
+            authRepositoryProvider.overrideWithValue(
+              MockAuthRepository(latency: Duration.zero),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.light,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    final chat = tester.getCenter(find.byKey(const Key('chat-button')));
-    final bell = tester.getCenter(find.byKey(const Key('bell-button')));
-    expect(chat.dx, lessThan(bell.dx));
-    expect((chat.dy - bell.dy).abs(), lessThan(4));
+      final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+      final button = tester.getRect(find.byKey(const Key('chat-button')));
+      expect(find.text('Trip Copilot'), findsOneWidget);
+      // Bottom-right, level with the trip cards' right edge, not in the header.
+      expect(
+        button.right,
+        closeTo(screen.width - 8, 2),
+      ); // the cards' side margin
+      expect(button.bottom, closeTo(screen.height - 12, 2));
+      expect(button.left, greaterThan(screen.width / 3));
+      expect(find.byKey(const Key('bell-button')), findsOneWidget);
+      expect(
+        tester.getRect(find.byKey(const Key('bell-button'))).bottom,
+        lessThan(button.top),
+      );
 
-    await tester.tap(find.byKey(const Key('chat-button')));
-    await tester.pumpAndSettle();
-    expect(find.text('Chat page'), findsOneWidget);
-  });
+      await tester.tap(find.byKey(const Key('chat-button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Chat page'), findsOneWidget);
+    },
+  );
 }

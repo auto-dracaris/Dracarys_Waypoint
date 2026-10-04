@@ -1,10 +1,13 @@
 # Driver App — Backend API
 
-What the Waypoint driver app calls to run end to end with no mocks. Today the
-app talks to in-memory mock repositories
-(`lib/features/*/data/mock_*_repository.dart`); each section says which
-repository interface the endpoints replace, so wiring the API is "write an
-`ApiXRepository` that implements the same interface and swap the provider".
+What the Waypoint driver app calls to run end to end with no mocks.
+
+> **Status:** the app now uses these endpoints through the `Http*Repository`
+> classes (`lib/features/*/data/http_*_repository.dart`). The `Mock*`
+> repositories are used only by the **Demo data** switch and by tests. See
+> `README.md` for how the app uses them, including the offline queue. This file
+> stays as the contract reference; each section says which repository
+> interface the endpoints belong to.
 
 This describes the `api/` project as it is built (NestJS + TypeORM +
 PostgreSQL). The runnable examples are the Bruno requests in
@@ -434,7 +437,7 @@ still fills, so keep refreshing it when the app opens and on pull-to-refresh.
 
 | Method & path | Body | Notes |
 |---|---|---|
-| `POST /vehicles/:id/locations` | `{ "points": [{ "clientId", "lat", "lng", "heading?", "speedKmh?", "recordedAt" }] }` | 1–500 fixes per call, about every 5 s while a trip is `in_progress`. `:id` is `driver.vehicle.id`. Only that vehicle's driver may send. Answers `202` with `{ received }`: the fixes are queued and stored moments later. Replaces `SimulatedLocationSource` |
+| `POST /vehicles/:id/locations` | `{ "points": [{ "clientId", "lat", "lng", "heading?", "speedKmh?", "recordedAt" }] }` | 1–500 fixes per call, recorded about every 1 s and sent about once a minute (both are minimums; traffic or no signal only make them longer) while a trip is `in_progress`. `:id` is `driver.vehicle.id`. Only that vehicle's driver may send. Answers `202` with `{ received }`: the fixes are queued and stored moments later. Replaces `SimulatedLocationSource` |
 | `POST /routing/route` | `{ "waypoints": [{ "lat", "lng" }, …], "profile?": "van" \| "truck" }` | 2–25 points → `{ profile, geometry: [[lng,lat],…], distanceMeters, durationSeconds, legs: [{ distanceMeters, durationSeconds }] }`. `profile` defaults to the driver's own vehicle type |
 
 `heading` is whole degrees (0–360). Points captured offline can be sent later
