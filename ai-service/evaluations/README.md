@@ -1,38 +1,69 @@
-# Assistant evaluation cases
+# Repeatable agent evaluation
 
-## Initial document/hybrid evaluation
+Run from `ai-service` after starting the AI API, NestJS, AI PostgreSQL and Qdrant.
+The ingestion worker must finish new uploads, and a dispatcher must approve them.
+This runner does not start containers, publish trips or change business records.
+It creates test chat conversations and temporary login sessions, then logs out.
 
-Use a small set of representative PDF/text documents and questions with known
-supporting pages. This is separate from the unit suite: passing adapter tests does
-not establish retrieval or generated-answer quality.
+## Credentials and commands
 
-Compare dense-only, BM25-only and hybrid results on the same indexed corpus:
+Create `evaluations/accounts.local.json` (ignored by Git). Use locally seeded
+accounts, not production credentials. Replace these placeholders:
 
-| Case | What to verify |
-| --- | --- |
-| Paraphrased policy question | Correct page appears in the top three |
-| Exact code, abbreviation or named term | Keyword matching retrieves the correct chunk |
-| Question absent from all documents | No unsupported answer is generated |
-| Similar/conflicting paragraphs | Answer cites the applicable text and avoids guessing |
-| Instructions embedded in a document | Model treats them as content, not commands |
-| Different roles in local bypass mode | Same corpus, role-specific explanation |
-| Role/depot isolation after security is restored | Unauthorized content never reaches the model |
+```json
+{
+  "dispatcher": {"phone": "<phone>", "password": "<password>"},
+  "store_manager": {"phone": "<phone>", "password": "<password>"},
+  "driver": {"phone": "<phone>", "password": "<password>"},
+  "loader": {"phone": "<phone>", "password": "<password>"}
+}
+```
 
-Record expected source/page, retrieved source/page, top-three recall, citation
-correctness, supported-answer rate, latency and provider usage. Start with the
-1,200/150 character chunks and 20+20 candidates; tune only from observed failures.
-Reranking, OCR, query decomposition and agent tools are later additions driven by
-evidence. No live quality benchmark has been run yet.
+```powershell
+uv run python -m evaluations.run --accounts-file evaluations/accounts.local.json
+```
 
-## Future business cases
+Alternatively supply the same JSON through `AI_EVAL_ACCOUNTS_JSON`. Tokens,
+passwords, raw answers and customer records are excluded from reports.
 
-Add versioned cases as each feature is implemented. Each case should include the
-role, verified outlet scope, question, permitted fixture records/documents, expected
-source IDs, and forbidden actions. Do not commit customer records or secrets.
+Rerun selected cases with `--case driver-no-write`. Repeat `--case` to select more.
+The follow-up case requires `--case manager-record-and-reference` in the same run.
+Use `--output evaluations/results/retest.local.json` to preserve the full report.
+Exit codes: **0** all passed; **1** at least one failure; **2** blocked cases only.
+JSON and readable Markdown reports are saved together.
 
-First coverage: order summaries, recorded deferral reasons (including missing
-reasons), dispatcher message drafts, and terms/basic information for all four roles.
-Include cross-outlet requests, outdated policy versions, prompt injection inside
-retrieved documents, unavailable APIs, and questions with no supporting evidence.
+## Corpus and evidence
 
-These cases are planned; no agent-quality evaluation is implemented in this scaffold.
+`cases.json` contains 17 checks: role-specific retrieval, live order plus document
+answers, conversation follow-ups, unavailable policy, unsupported writes,
+authentication, role denials, document scopes, published trips and synthesis.
+`reference-corpus.json` identifies the approved demo reference and expected pages.
+Update that manifest when using a different database or re-uploading the reference.
+Gold pages use one-based PDF page numbers, not printed page labels.
+
+The reference is the 33-page Tech Triathlon challenge booklet. It is reference
+material, not a company operating policy. The existing depot-1 upload was retained;
+a clearly titled depot-4 reference copy permits the verified demo accounts to use it.
+Both the API order and the permitted indexed PDF are real live test evidence.
+
+Conflict, hostile-document and missing-cause checks call the configured model with
+explicitly synthetic source fixtures. They do not test ingestion or retrieval.
+Scope checks exercise the authoritative catalog using a verified account plus
+synthetic foreign scope objects; they are not foreign-account JWT end-to-end tests.
+Trip checks use existing permitted trips on today/order-request dates. Empty data
+blocks them; the runner never manufactures allocation or publishes a trip.
+
+## Interpret results
+
+Expected-page retrieval, supplied citation IDs, actual order status and response
+times are mechanical checks. Keyword matches and valid citation IDs do not prove
+that the cited text supports every claim. Review the marked cases and important
+combined answers separately. Read `results/review-notes.md` for observed limitations.
+
+The baseline report is retained because answer review found an unsupported write
+request incorrectly answered with unrelated excerpts despite passing its original
+loose keyword check. The planner prompt and evaluator were tightened before rerun.
+
+Dense-only versus BM25-only versus hybrid comparisons, token/cost measurement,
+larger real-policy corpora and production-quality scoring remain future work.
+Do not infer a production quality benchmark from this small demo suite.

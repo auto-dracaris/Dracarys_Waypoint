@@ -1,0 +1,40 @@
+{
+  "checks": [
+    {
+      "check": "Live latest-order followup plus scoped policy search",
+      "http_status": 200,
+      "answer_status": "answered",
+      "source_count": 2,
+      "has_order_list": true,
+      "has_order_detail": true,
+      "policy_source_count": 0
+    },
+    {
+      "check": "Live conversation followup",
+      "http_status": 200,
+      "answer_status": "answered"
+    },
+    {
+      "check": "Live Gemini combined-answer schema using synthetic evidence",
+      "passed": false,
+      "error_type": "ClientError"
+    },
+    {
+      "check": "Live Gemini combined-answer schema after compatibility fix",
+      "passed": true,
+      "has_fact_citation": true,
+      "has_policy_citation": true
+    },
+    {
+      "check": "Live Phase 2 chat after synthesis compatibility fix",
+      "http_status": 200,
+      "answer_status": "answered",
+      "has_order_list": true,
+      "has_order_detail": true,
+      "cites_live_evidence": true,
+      "explicit_missing_policy": true,
+      "invented_capacity_reason": false
+    }
+  ],
+  "notes": "Synthetic evidence is not live company policy. No business records modified."
+}

@@ -151,7 +151,12 @@ async def execute(call, args, principal, token, business):
                 f"\nDisplayed {shown} of {len(page.items)} trips on this page; "
                 "other pages are excluded."
             )
-            return Source(id=f"api:trips:page:{args.page}", title="Live permitted trips", text=text)
+            return Source(
+                id=f"api:trips:page:{args.page}",
+                title="Live permitted trips",
+                text=text,
+                trip_ids=[item.id for item in page.items[:shown]],
+            )
         path = f"trips/{args.trip_id}"
         if call.name == "get_trip_details":
             trip = TripDetails.model_validate(await business.get(path, token))
@@ -178,7 +183,9 @@ async def execute(call, args, principal, token, business):
             text += (
                 " Case totals are planned quantities, not loading confirmation or delivery proof."
             )
-            return Source(id=f"api:trips:{trip.id}", title="Live trip details", text=text)
+            return Source(
+                id=f"api:trips:{trip.id}", title="Live trip details", text=text, trip_ids=[trip.id]
+            )
         data = await business.get(path + "/route-change", token)
         if data is None:
             text = (

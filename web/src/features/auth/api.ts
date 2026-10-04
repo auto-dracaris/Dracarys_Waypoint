@@ -12,6 +12,7 @@ export interface User {
   status: 'pending' | 'active' | 'blocked' | 'deleted'
   depotId: number
   outletId: number | null
+  depot?: { id: number; name: string }
 }
 
 // Roles without an entry have no web portal (drivers and loaders use the mobile app).
@@ -58,3 +59,8 @@ export const forgotPassword = (phone: string) => apiRequest<{ otp?: string }>(au
 export const resetPassword = (body: { phone: string; otp: string; newPassword: string }) => apiRequest<null>(auth.resetPassword, { method: 'POST', body })
 
 export const logout = (token: string) => apiRequest<null>(auth.logout, { method: 'POST', token })
+
+export const getMe = (token: string) => apiRequest<User>(auth.me, { token })
+export interface ProfileChanges { firstName: string; lastName: string; phone: string }
+export const updateMe = (token: string, body: ProfileChanges) => apiRequest<User>(auth.me, { method: 'PUT', token, body })
+export const changePassword = (token: string, body: { currentPassword: string; newPassword: string }) => apiRequest<null>(auth.changePassword, { method: 'PUT', token, body })

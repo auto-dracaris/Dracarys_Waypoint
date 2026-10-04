@@ -14,6 +14,7 @@ from app.agent.workflow import run_workflow
 from app.clients.business import BusinessClient
 from app.clients.model import ModelClient
 from app.clients.tool_planner import ToolPlanner
+from app.guardrails.input import input_rejection
 from app.retrieval.policies import PolicyRetriever
 from app.storage.conversations import PostgresConversations
 
@@ -40,7 +41,7 @@ async def chat(
         store = PostgresConversations(settings.database_url.get_secret_value())
     conversation_id = body.conversation_id or uuid4()
     try:
-        async with asyncio.timeout(settings.request_timeout_seconds):
+        async with asyncio.timeout(settings.request_timeout_seconds) as execution_budget:
             if requires_identity:
                 principal = await business.authenticate(credentials.credentials)
             else:
@@ -62,6 +63,15 @@ async def chat(
             async with store.session(
                 conversation_id, principal.scope, body.conversation_id is None
             ) as memory:
+                rejection = input_rejection(
+                    body.message, credentials.credentials if credentials else None
+                )
+                if rejection:
+                    logging.getLogger("waypoint_ai.guardrails").warning("chat_input_rejected")
+                    # Do not persist rejected input or send it to any model/tool.
+                    return ChatResponse(
+                        conversation_id=conversation_id, answer=rejection, status="needs_input"
+                    )
                 if body.workflow == "knowledge_qa":
                     result = await run_knowledge(
                         body, memory, principal, retrieval, model, profile, settings.max_agent_steps
@@ -78,6 +88,8 @@ async def chat(
                         profile,
                         settings.max_agent_steps,
                         retrieval=retrieval,
+                        model=model,
+                        deadline=execution_budget.when(),
                     )
                 else:
                     result = await run_workflow(

@@ -69,7 +69,8 @@ ARGUMENTS = {
     **common.ARGUMENTS,
 }
 DESCRIPTIONS = {
-    "get_my_orders": "Read the caller's own outlet orders. Results are paginated; do not "
+    "get_my_orders": "Read the caller's own outlet orders, newest placement first. Results "
+    "are paginated; do not "
     "claim a page represents every order. Filter by status or order reference if needed.",
     "get_order_details": "Read a specific order's current status, quantities and latest "
     "recorded deferral. Requires an explicit known numeric order ID; never invent one.",
@@ -213,14 +214,14 @@ async def execute(call, args, principal, token, business, retrieval=None):
                 await business.get("orders/summary", token, params=params)
             )
             text = (
-                f"Order summary. Run date: {args.date or 'all dates'}; "
-                f"depot: {args.depot or 'all permitted depots'}."
+                f"Order summary\nRun date: {args.date or 'all dates'}; "
+                f"depot: {args.depot or 'all permitted depots'}.\n"
             )
             for name in ("total", "awaiting", "allocated", "deferred", "delivered", "cancelled"):
-                text += f"\n{name}: {getattr(summary, name)}."
+                text += f"\n- {name.capitalize()}: {getattr(summary, name)}"
             text += (
-                f"\nAwaiting/allocated load: {summary.weightKg} kg; {summary.volumeM3} m³; "
-                f"chilled {summary.chilledVolumeM3} m³. Total excludes cancelled orders. "
+                f"\n\nAwaiting/allocated load: {summary.weightKg} kg; {summary.volumeM3} m³; "
+                f"chilled {summary.chilledVolumeM3} m³.\n\nTotal excludes cancelled orders. "
                 "Stage counts can overlap because deferrals include history; do not sum them."
             )
             return Source(id="api:orders:summary", title="Live dispatcher order summary", text=text)
@@ -252,6 +253,8 @@ async def execute(call, args, principal, token, business, retrieval=None):
             )
             if manager and args.status:
                 text += f" Status filter: {args.status}."
+            if manager:
+                text += " Sorted by placement time, newest first."
             if args.search:
                 text += f" Search filter: {args.search}."
             if not manager:
@@ -274,6 +277,7 @@ async def execute(call, args, principal, token, business, retrieval=None):
                 id=f"api:orders:{'my' if manager else 'dispatcher'}:{args.page}",
                 title="Live outlet orders" if manager else "Live dispatcher orders",
                 text=text,
+                order_ids=[item.id for item in page.items],
             )
         if call.name in ("get_order_details", "draft_deferral_message"):
             order = OrderView.model_validate(await business.get(f"orders/{args.order_id}", token))
@@ -307,7 +311,10 @@ async def execute(call, args, principal, token, business, retrieval=None):
                         "Please verify this historical record before sharing."
                     )
                 return Source(
-                    id=f"api:orders:{order.id}:draft", title="Deferral message draft", text=text
+                    id=f"api:orders:{order.id}:draft",
+                    title="Deferral message draft",
+                    text=text,
+                    order_ids=[order.id],
                 )
             text = (
                 f"Order {order.id}: {order.status}. Requested date: {order.requestedDate}. "
@@ -327,7 +334,12 @@ async def execute(call, args, principal, token, business, retrieval=None):
                 text += " This is a recorded date, not a delivery guarantee."
             else:
                 text += " No recorded deferral reason is available."
-            return Source(id=f"api:orders:{order.id}", title="Live order details", text=text)
+            return Source(
+                id=f"api:orders:{order.id}",
+                title="Live order details",
+                text=text,
+                order_ids=[order.id],
+            )
         options = PlacementView.model_validate(
             await business.get("orders/placement-options", token)
         )

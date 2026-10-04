@@ -34,6 +34,11 @@ DESCRIPTIONS = {
 ROLES = {name: {"store_manager", "dispatcher", "driver", "loader"} for name in COMMON_TOOLS}
 
 
+def current_colombo_datetime():
+    # Fixed offset avoids depending on an OS IANA timezone database.
+    return datetime.now(timezone(timedelta(hours=5, minutes=30), name="Asia/Colombo"))
+
+
 async def execute(call, args, principal, retrieval=None):
     if principal.role not in ROLES.get(call.name, set()):
         raise HTTPException(403, "Tool unavailable for your role")
@@ -51,7 +56,7 @@ async def execute(call, args, principal, retrieval=None):
         )
         return Source(id="identity:me", title="Verified caller profile", text=text)
     # Sri Lanka has a fixed UTC+05:30 offset; avoid requiring an OS IANA timezone database.
-    current = datetime.now(timezone(timedelta(hours=5, minutes=30), name="Asia/Colombo"))
+    current = current_colombo_datetime()
     return Source(
         id="runtime:datetime",
         title="Current time in Asia/Colombo",

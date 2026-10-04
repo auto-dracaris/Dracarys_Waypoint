@@ -9,6 +9,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "check:ui": "node scripts/check-ui-foundations.mjs",
+    "check:profiles": "node scripts/check-profiles.mjs",
+    "check:assistant": "node scripts/check-assistant.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -33,6 +33,9 @@ class Source(BaseModel):
     page: int | None = None
     source_id: str | None = None
     version: int | None = None
+    # Invocation-only IDs supplied by validated API adapters, never exposed or persisted.
+    order_ids: list[int] = Field(default_factory=list, max_length=25, exclude=True)
+    trip_ids: list[UUID] = Field(default_factory=list, max_length=25, exclude=True)
 
 
 class Deferral(BaseModel):

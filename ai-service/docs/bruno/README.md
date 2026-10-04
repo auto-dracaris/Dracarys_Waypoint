@@ -58,8 +58,9 @@ Use the original captured version for Download original version.
 
 ## Authentication
 
-With AI_AUTH_ENABLED=false, document tests can leave tokens empty. Business tools
-always require a real NestJS access token, including in local development.
+With AI_AUTH_ENABLED=false, document-only chat can leave its token empty. Document
+management always requires a verified dispatcher token. Business tools always
+require a real NestJS access token, including in local development.
 For authenticated mode, set these **secret** environment variables in Bruno:
 - admin_token: dispatcher NestJS access token for document management.
 - chat_token: the role-specific NestJS access token for chat.
@@ -100,9 +101,19 @@ changes are never acknowledged by these requests. No UI or NestJS changes are ne
 
 The **Shared tools** folder contains profile, Colombo date/time and permitted
 knowledge search requests for any verified role. These use business_qa and always
-require chat_token. Knowledge results are cited excerpts (sources_only), or
-no_knowledge when no permitted documents match. Local document bypass does not
-widen the knowledge tool's role/depot access. Phase 2 will add answer synthesis.
+require chat_token. Knowledge results can be synthesized with checked citations,
+fall back to excerpts (sources_only), or return no_knowledge when nothing permitted
+matches. Local document bypass does not widen the knowledge tool's role/depot access.
+
+## Combined answers
+
+Use the Combined answers folder with a manager token to find the latest order,
+read its recorded deferral and search approved policy in one request. The known
+order request also supports dispatchers. Set order_id for that request; a successful
+detail read establishes the conversation for follow-up. Actual policy guidance needs
+an approved, current, matching role/depot document. Missing records/reasons/policies
+are not invented. Requests allow three planning rounds, six calls, and the configured
+execution deadline. No order, trip, notification or loading record is changed.
 
 ## Optional CLI smoke check
 

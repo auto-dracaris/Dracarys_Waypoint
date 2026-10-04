@@ -40,6 +40,12 @@ def make_app(tmp_path, **kwargs):
     )
     app = create_app(settings)
     app.state.knowledge = Catalog()
+
+    async def authenticate(token):
+        assert token == "verified-token"
+        return Principal(id=42, role="dispatcher", depotId=1)
+
+    app.state.business = SimpleNamespace(authenticate=authenticate)
     return app
 
 
@@ -54,7 +60,7 @@ def upload(
 ):
     return client.post(
         path,
-        headers={"Idempotency-Key": str(key or uuid4())},
+        headers={"Idempotency-Key": str(key or uuid4()), "Authorization": "Bearer verified-token"},
         files={"file": (filename, content)},
         data={
             "metadata": json.dumps(
@@ -80,7 +86,7 @@ def test_upload_preserves_original_and_discards_replayed_temporary_file(tmp_path
     files = list(tmp_path.iterdir())
     assert len(files) == 1
     metadata, recipe, filename, _, actor, identifier = app.state.knowledge.calls[0]
-    assert filename == "policy.txt" and actor is None and identifier is None
+    assert filename == "policy.txt" and actor == 42 and identifier is None
     assert metadata["byte_count"] == files[0].stat().st_size
     assert recipe["embedding_dimensions"] == 768
     assert "gemini_api_key" not in recipe
@@ -135,8 +141,9 @@ def test_failed_catalog_transaction_removes_file_and_hides_database_error(tmp_pa
     "role, expected",
     [("driver", 403), ("loader", 403), ("store_manager", 403), ("dispatcher", 202)],
 )
-def test_document_management_uses_verified_dispatcher_role(tmp_path, role, expected):
-    app = make_app(tmp_path, auth_enabled=True)
+@pytest.mark.parametrize("auth_enabled", [False, True])
+def test_document_management_uses_verified_dispatcher_role(tmp_path, role, expected, auth_enabled):
+    app = make_app(tmp_path, auth_enabled=auth_enabled)
 
     async def authenticate(token):
         assert token == "verified-token"
@@ -149,8 +156,9 @@ def test_document_management_uses_verified_dispatcher_role(tmp_path, role, expec
         assert app.state.knowledge.calls[0][4] == 42
 
 
-def test_no_token_is_rejected_before_catalog_access(tmp_path):
-    app = make_app(tmp_path, auth_enabled=True)
+@pytest.mark.parametrize("auth_enabled", [False, True])
+def test_no_token_is_rejected_before_catalog_access(tmp_path, auth_enabled):
+    app = make_app(tmp_path, auth_enabled=auth_enabled)
     with TestClient(app) as client:
         assert client.get("/api/v1/documents").status_code == 401
 
@@ -187,10 +195,16 @@ def test_original_download_and_version_selection(tmp_path):
 
     app.state.knowledge.detail = detail
     with TestClient(app) as client:
-        response = client.get(f"/api/v1/documents/{identifier}/file")
+        headers = {"Authorization": "Bearer verified-token"}
+        response = client.get(f"/api/v1/documents/{identifier}/file", headers=headers)
         assert response.content == b"Version two"
         assert response.headers["x-content-type-options"] == "nosniff"
-        assert client.get(f"/api/v1/documents/{identifier}/file?version=1").status_code == 404
+        assert (
+            client.get(
+                f"/api/v1/documents/{identifier}/file?version=1", headers=headers
+            ).status_code
+            == 404
+        )
 
 
 def test_private_storage_rejects_traversal(tmp_path):
@@ -202,7 +216,12 @@ def test_catalog_configuration_is_required(tmp_path):
     app = make_app(tmp_path, auth_enabled=False)
     del app.state.knowledge
     with TestClient(app) as client:
-        assert client.get("/api/v1/documents").status_code == 503
+        assert (
+            client.get(
+                "/api/v1/documents", headers={"Authorization": "Bearer verified-token"}
+            ).status_code
+            == 503
+        )
 
 
 def test_idempotency_conflict_removes_retry_file(tmp_path):

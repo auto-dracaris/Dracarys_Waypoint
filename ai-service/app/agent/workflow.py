@@ -5,6 +5,7 @@ from langgraph.graph import END, START, StateGraph
 
 from app.agent.contracts import ChatRequest, Conversation, Deferral, Principal, Source
 from app.agent.profiles.base import AgentProfile
+from app.guardrails.output import guarded_reply
 
 
 class State(TypedDict, total=False):
@@ -94,6 +95,7 @@ async def run_workflow(
     graph.add_edge("retrieve", "answer")
     graph.add_edge("answer", END)
     result = await graph.compile().ainvoke({}, {"recursion_limit": max_steps})
+    result = guarded_reply(result, token)
     if result["order_id"]:
         memory.last_order_id = result["order_id"]
     memory.turns = [*memory.turns, {"user": request.message, "assistant": result["answer"]}][-6:]

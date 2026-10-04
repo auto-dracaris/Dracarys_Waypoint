@@ -1,13 +1,17 @@
 # WayPoint AI service
 
 **Current scope: document RAG and read-only business tools for all four roles.**
+
+Phase 1 [guardrails](docs/guardrails.md) cover credential checks, model-context
+redaction, output citations and safe replies across all chat workflows.
 Follow the [document management guide](docs/document-management.md) for setup,
 upload APIs and worker operation. Dispatcher UI and NestJS changes are deferred.
 See [business tools](docs/business-tools.md) for authenticated `business_qa` chat,
 tool limits and existing backend contracts.
 All verified roles share knowledge search, Colombo date/time and caller-profile
-tools. The Shared tools Bruno folder tests this pack; search returns cited excerpts
-or no_knowledge. Combined generated explanations remain the next phase.
+tools. Shared tools and Combined answers Bruno folders test these paths. Phase 2
+supports bounded follow-up reads and generated explanations combining live facts
+with document guidance. Missing evidence is explicit; writes remain deferred.
 The .env template disables local application authentication/authorization; production
 rejects this bypass. All four profiles support knowledge Q&A. Older secured deferral
 setup below remains available for later business integration.
@@ -118,6 +122,16 @@ POST /api/v1/chat requires `Authorization: Bearer <user-access-token>`:
 Responses include conversation_id, answer, status and sources. Send the returned
 conversation ID with follow-ups; use order_id to switch orders. IDs and permissions
 are never inferred from free text. Missing auth returns 401; unavailable integrations
-return 503; deadline/step exhaustion returns 504. The current endpoint is only for
-deferral Q&A. PostgreSQL persistence and live NestJS/Gemini/Qdrant still need local
-integration verification after infrastructure and the business route are available.
+return 503; deadline/step exhaustion returns 504. The `deferral_qa` workflow requires
+the separately configured deferral endpoint. Use `business_qa` for implemented role
+tools and combined answers, or `knowledge_qa` for document-only questions.
+Local NestJS/Gemini/Qdrant integration has been exercised; published-trip reads
+still require permitted sample trips.
+
+## Repeatable evaluation
+
+See [evaluation instructions](evaluations/README.md) for the 17-case live suite,
+safe local credential configuration and JSON/Markdown results. It covers four-role
+document retrieval, live orders with reference evidence, follow-ups, access denials
+and explicitly synthetic conflict/instruction-handling checks.
+The demo corpus is a challenge booklet, not company operating policy.

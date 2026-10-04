@@ -3,6 +3,7 @@ from typing import TypedDict
 from langgraph.graph import END, START, StateGraph
 
 from app.agent.contracts import Source
+from app.guardrails.output import guarded_reply
 
 
 class State(TypedDict, total=False):
@@ -40,5 +41,6 @@ async def run_knowledge(request, memory, principal, retrieval, model, profile, m
     graph.add_edge("retrieve", "answer")
     graph.add_edge("answer", END)
     result = await graph.compile().ainvoke({}, {"recursion_limit": max_steps})
+    result = guarded_reply(result)
     memory.turns = [*memory.turns, {"user": request.message, "assistant": result["answer"]}][-6:]
     return result

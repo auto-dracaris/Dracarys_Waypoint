@@ -1,4 +1,4 @@
-# First assistant workflow
+# Assistant architecture
 
 ## Current initial build
 
@@ -15,8 +15,10 @@ Deferral_qa is an explicit legacy workflow, disabled in document development mod
 Each verified profile also exposes a shared pack: search_knowledge,
 get_current_datetime and get_my_profile. Knowledge-tool retrieval always enforces
 role/depot scope and catalog approval/version checks, including in local document
-mode. Phase 1 returns separately cited excerpts and deterministic tool facts;
-multi-round planning and generated combined explanations remain Phase 2 work.
+mode. Phase 2 permits three planning rounds and six read-only calls, using trusted
+API record IDs to follow up. Combined explanations separate recorded facts from
+document guidance and validate citation types. Source fallbacks preserve available
+facts; no new permission or API access comes from model or document instructions.
 
 Documents: local PDF/text -> extract -> page-aware chunks -> Gemini dense embeddings
 plus server-side BM25 -> Qdrant hybrid collection. Questions: role profile ->
@@ -39,16 +41,16 @@ After authentication, `agent/router.py` selects an immutable role profile from
 role-specific model instructions, topic guidance and explicit workflow capabilities.
 Topics guide future knowledge features; they are not security grants or additional
 retrieval filters. Retrieved documents must still pass role/depot checks in code.
-The store-manager profile allows get_my_orders, get_order_details and
-get_order_placement_options. Other profile tool lists remain empty. Business chat
+Each profile has explicit shared and role-specific read-only tools; the complete
+endpoint map is in [business tools](business-tools.md). Business chat
 always verifies a real access token, even in local document development mode.
-Gemini selects at most three tools; code validates all calls and endpoint paths,
-then renders the backend facts directly. The existing deferral adapter stays read-only.
+Gemini selects at most three tools per round; code validates all calls and endpoint
+paths, then renders or synthesizes cited facts. The existing deferral adapter stays read-only.
 
 Profiles share clients, memory and workflow implementations. The first task archetype
-is deferral_qa, available to managers and dispatchers only. Driver and loader
-profiles are defined but have no enabled workflows yet; knowledge Q&A comes after
-ingestion. Neither chat text nor a requested archetype can override the verified role.
+is deferral_qa, available to managers and dispatchers only. All four profiles now
+support knowledge_qa and business_qa. Neither chat text nor a requested archetype
+can override the verified role.
 The router chooses profiles directly; there is no agent-to-agent delegation.
 
 Request path: bearer token -> NestJS /auth/me -> owned conversation -> LangGraph
@@ -65,14 +67,14 @@ Modules:
 - `clients`: NestJS authentication/facts and Gemini policy explanation.
 - `storage`: AI-owned conversations, document catalog, jobs and private originals.
 
-The endpoint supports deferral Q&A only. Send order_id explicitly on the first
+The legacy deferral workflow requires an explicit order_id on the first
 factual turn. Follow-ups reuse that ID and fetch fresh records. Recorded reasons
 and dates are rendered from business facts; Gemini can add a separately labelled
 policy explanation with checked source IDs. Citation checks do not establish that
 every generated claim is accurate; evaluate explanations before enabling them.
 
-Memory contains the last order ID and six turns. Only the order ID is used as
-follow-up context in this slice; full-history reasoning and graph checkpoint/resume
+Memory contains the last successful order/trip detail IDs and six turns. The IDs
+provide follow-up context; full-history reasoning and graph checkpoint/resume
 are not implemented. Tokens stay outside stored graph/conversation data. Ownership
 includes verified user, role, depot and outlet. Transactions and advisory locks
 serialize turns across workers; busy conversations return 409. Failed turns roll
@@ -81,22 +83,24 @@ load. Agree on retention before production; no automatic cleanup exists yet.
 
 Retrieval accepts approved/current, role-matching depot-wide policies only. Never
 put outlet-private documents in this payload contract. Ingestion must match the
-query embedding model, dimensions and preprocessing. No corpus or ingestion
-pipeline is delivered in this slice. No identity headers or chat text grant access.
+query embedding model, dimensions and preprocessing. Management routes and the
+durable ingestion worker are implemented. No identity headers or chat text grant access.
 
-First feature: deferral Q&A. Summaries, drafts, general terms Q&A, ordering and
-recommendations come later.
+Read-only summaries, review-only drafts and document Q&A are implemented.
+Ordering writes and trending recommendations remain deferred.
 NestJS remains the authority for live records, permissions, and business writes.
 Allocation, LangSmith, OpenTelemetry, graph databases and the gateway are deferred.
 
 Total request deadlines and graph step limits are enforced. Retrieval is capped at
 three policy chunks of 4,000 characters each. Model-selected URLs and arbitrary
-tool execution are not exposed. Live integrations still require verification.
+tool execution are not exposed. Optional follow-up planning and synthesis are
+time-bounded and return available evidence when slow. See the
+[repeatable evaluation](../evaluations/README.md) for live results and limitations.
 
 References: [LangGraph memory](https://docs.langchain.com/oss/python/langgraph/add-memory),
 [Gemini structured output](https://ai.google.dev/gemini-api/docs/structured-output),
 [Qdrant filtering](https://qdrant.tech/documentation/concepts/filtering/).
 
 See [admin knowledge contract](admin-knowledge-contract.md) for document/source
-ownership, proposed endpoints, authentication and lifecycle requirements. This phase
-delivers contracts only; processing/persistence and ingestion routes come next.
+ownership, authentication and lifecycle requirements, and
+[document management](document-management.md) for implemented routes and worker setup.

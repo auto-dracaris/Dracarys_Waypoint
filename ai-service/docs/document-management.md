@@ -130,10 +130,10 @@ remain available to management until deletion for reviewing version history.
 
 ## Access and deployment limits
 
-`AI_AUTH_ENABLED=false` is the requested local-only bypass: management needs no token
-and retrieval does not enforce role/depot scope. Bind locally. Production rejects
-this bypass. With authentication enabled, management forwards the bearer token to
-the existing NestJS `/auth/me` endpoint and requires a verified dispatcher role.
+`AI_AUTH_ENABLED=false` allows local document-only chat to bypass identity and
+role/depot filtering. It does not bypass document management: management always
+forwards the bearer token to the existing NestJS `/auth/me` endpoint and requires
+a verified dispatcher role. Bind locally; production rejects the chat bypass.
 This implementation treats dispatcher management as global; finer management
 permissions must be agreed before deployment. End-user document access still uses
 the verified role and depot. No NestJS permission code is changed.

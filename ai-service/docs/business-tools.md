@@ -24,6 +24,37 @@ cannot select its own role through the message or request body.
 
 ## Tools and contracts
 
+The dispatcher quick action “Summarize today’s orders” directly reads
+`orders/summary` for the current Asia/Colombo calendar date, with the verified
+user's token. It skips model tool selection and further planning for this fixed
+read-only request. Other questions retain bounded model planning. If synthesis
+times out, the retrieved order totals remain available with a source citation.
+Clock-only evidence after failed planning is reported as an incomplete request,
+rather than an answered business question.
+
+## Answer style
+
+Each role has its own task instructions and shares the presentation rules in
+`app/agent/prompts.py`. Replies lead with the answer, use short paragraphs or
+plain-text bullets, and use numbered steps for procedures. The chat currently
+renders plain text, so prompts avoid Markdown tables, bold markers and code blocks.
+Dispatcher summaries highlight counts and scope; store-manager replies focus on
+their orders and cutoffs; driver replies focus on trips and recorded route changes;
+loader replies distinguish planned quantities from confirmed loading.
+
+Source citations remain validated and displayed by the chat. Missing information
+and partial reads remain explicit in ordinary language. Generation timeouts are
+logged internally; successful record fallback replies do not expose model or
+planning diagnostics. Prompt rules guide model output; they are not a guarantee
+of identical formatting for every provider response.
+
+Replies target 40–80 words, with a maximum of 120 words or 900 characters and up
+to four bullets. Follow-ups explain one part at a time. A shared guard applies to
+all three workflows before storing the conversation, including deterministic
+fallbacks. If an answer exceeds the maximum, the service returns a short request
+to narrow the question with `sources_only` status and retains all source cards.
+It does not cut facts mid-sentence or discard evidence to fit the limit.
+
 Base URL configured by `AI_NESTJS_BASE_URL`: `http://localhost:5000/api`.
 
 | Tool | Roles | Endpoint | Inputs |
@@ -81,8 +112,9 @@ perform only a GET; no model rewrite, policy inference or notification is involv
 ## Agent flow
 
 Verified role profile -> Gemini function selection -> validate all calls
--> execute up to three GET tools sequentially -> return sourced, deterministic facts.
-The model receives only the question, known order/trip IDs and tool schemas. Credentials
+-> execute permitted read-only tools -> plan missing reads within fixed limits
+-> explain live facts and document guidance separately with checked citations.
+The planner receives the question, known IDs and sanitized tool evidence. Credentials
 and raw backend responses do not enter the planner. SDK automatic execution is
 disabled. Application code owns tool names, endpoint paths, validation and access.
 No caller/model can supply a URL, token, role or arbitrary outlet to a tool.
@@ -96,15 +128,35 @@ UTC+05:30 Colombo clock, today and tomorrow, not operating dates or cutoff predi
 search_knowledge uses the existing hybrid retriever and authoritative catalog with
 role/depot enforcement **even when AI_AUTH_ENABLED=false**. It returns at most three
 document excerpts per search, preserving citation IDs and source/version metadata.
-Knowledge-only responses use sources_only, or no_knowledge when no permitted
-evidence is found. Other tool results remain available if a search returns nothing.
-No retrieved document text is used to trigger further tool calls in this phase.
-Generated combined explanations and additional planning rounds are Phase 2 work.
+Knowledge-only responses use answered when synthesis succeeds, sources_only when
+only excerpts are available, or no_knowledge when no permitted evidence is found.
+Other tool results remain available if search returns nothing. Document text is
+untrusted evidence and cannot grant permissions or introduce record IDs.
 
-One planning round is deliberate: it has no autonomous pagination loop. Searching
-an unknown reference returns matching records; ask a follow-up about the returned
-order ID to fetch details. `needs_input` asks the user to clarify when no function
-is selected. No free-text model answer is used as a substitute for API evidence.
+Phase 2 allows at most three planning rounds, three calls per round and six calls
+per request. Three document excerpts are retained across the whole request; up to
+six API/profile/time sources can accompany them. Exact repeated calls are skipped.
+New order/trip IDs must come from explicit input, scoped conversation memory, or
+validated API adapter metadata; policy text and notes cannot introduce them.
+Each subsequent API read still applies existing backend permissions. Calls in each
+round are validated as a batch before reads begin. The existing request deadline
+and graph step limit remain in force, including during synthesis.
+
+Manager orders are sorted newest placement first by NestJS, so page 1 can identify
+the latest matching order. Dispatcher lists have different sorting and must not be
+treated as latest placement. No ID from a still-pending call can be guessed in the
+same round. Order assignment responses expose a trip number, not a trip UUID; an
+order-to-trip detail jump cannot invent that UUID. A permitted trip list or an
+explicit UUID is still required, and managers do not gain driver trip tools.
+
+The model separates live facts from policy guidance and must cite supplied source
+IDs of the correct kind. Unsupported citations or synthesis failures fall back to
+cited factual tool output. Permission denials still fail closed. Knowledge-service
+or follow-up-provider failures can preserve facts already read with an explicit
+limitation; unavailable knowledge-only requests return 503. No source evidence means
+needs_input/no_knowledge, not a model guess. Dispatcher drafts stay deterministic.
+Citation checks establish provenance, not that every generated claim is accurate;
+review answer quality before production. There is no general conversation mode yet.
 
 Follow-ups accept conversation_id and refetch fresh API facts. Only the last detail
 order/trip IDs and bounded user/assistant turns persist. Bearer tokens stay in invocation
@@ -131,9 +183,9 @@ users requires a new conversation. No database migration or new environment
 configuration is needed for these tools; restart FastAPI after updating the code.
 
 The default knowledge_qa workflow still retrieves approved documents. business_qa
-returns live business facts and can include separately labeled knowledge excerpts;
-it does not yet synthesize a combined explanation. The older deferral_qa adapter
-remains unchanged and separately gated. The Shared tools Bruno folder tests the pack.
+returns live business facts and can synthesize a combined explanation with approved
+document evidence. The older deferral_qa adapter remains unchanged and separately
+gated. Shared tools and Combined answers Bruno folders test these paths.
 No order creation/cancellation, deferral mutation, message sending, inventory or
 trending-product recommendation is enabled by this implementation.
 
@@ -165,3 +217,32 @@ scoped knowledge query that correctly returned no_knowledge. No matching permitt
 documents were returned in that probe, so successful live citation retrieval remains
 to be tested with an approved matching document. Scope and citation handling are
 covered by automated tests. See [shared-tool results](live-common-tools-test-results.json).
+
+Phase 2 live testing found the manager's latest order, fetched its details and
+handled a conversation follow-up. No permitted policy matched the sampled query.
+A Gemini response-schema compatibility issue was fixed; a live probe with clearly
+synthetic API/policy evidence then produced valid citations of both kinds. This
+does not establish a positive live company-document match. See
+[Phase 2 results](live-phase2-test-results.json).
+
+Subsequent [repeatable evaluation](../evaluations/README.md) found the existing
+reference document restricted to depot 1 while the verified demo users belong to
+depot 4. Access enforcement was correct. The original was preserved and a clearly
+titled depot-4 reference copy was uploaded, indexed and approved. Live queries now
+retrieve the expected booklet pages and combine them with the real order status,
+with separate citations and an explicit reference-material boundary. This is not
+a positive match against genuine company operating policies.
+
+The suite retains its baseline: manual answer review found an unsupported delivery
+completion request answered with unrelated excerpts. The planner now instructs
+unsupported writes to select no tools, and that evaluation requires an explicit
+needs_input response with no sources. Backend writes remain unavailable.
+See [current results](../evaluations/results/latest.md) and
+[review notes](../evaluations/results/review-notes.md) for limitations and blocked data.
+
+Slow optional model calls have separate eight-second limits within the unchanged
+overall request deadline. Follow-up planning reserves three seconds for answering;
+synthesis reserves one second for returning/persisting retrieved evidence. A timed-out
+follow-up produces an explicit incomplete-planning warning; timed-out synthesis returns
+cited evidence with a generation-timeout notice. Initial planning, required tool reads,
+authentication and permissions still obey the overall deadline and failure rules.

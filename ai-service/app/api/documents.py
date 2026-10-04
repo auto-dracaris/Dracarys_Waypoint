@@ -33,8 +33,6 @@ async def administrator(
     request: Request, credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]
 ):
     settings = request.app.state.settings
-    if not settings.auth_enabled:
-        return None
     if not credentials:
         raise HTTPException(401, "Bearer authentication required")
     business = getattr(request.app.state, "business", None) or BusinessClient(settings)
