@@ -20,6 +20,13 @@ interface MapProps {
 }
 
 export function DeliveryMap({ depotPosition, vehiclePosition, routeCoordinates, vehicleId }: MapProps) {
+  // If warehouse and vehicle markers are too close, position them side by side
+  const isTooClose =
+    Math.hypot(vehiclePosition[0] - depotPosition[0], vehiclePosition[1] - depotPosition[1]) < 0.001
+  const effectiveVehiclePos: [number, number] = isTooClose
+    ? [depotPosition[0], depotPosition[1] + 0.003]
+    : vehiclePosition
+
   return (
     <div className="w-full h-full relative z-0">
       <MapContainer center={vehiclePosition} zoom={13} scrollWheelZoom={false} className="w-full h-full min-h-[700px]">
@@ -29,15 +36,15 @@ export function DeliveryMap({ depotPosition, vehiclePosition, routeCoordinates, 
         {/* Route Path Line */}
         <Polyline positions={routeCoordinates} color="#15803d" weight={5} />
 
-        {/* Peliyagoda Depot Marker */}
-        <Marker position={depotPosition} icon={DefaultIcon}>
+        {/* Peliyagoda Depot Marker - Warehouse covers vehicle */}
+        <Marker position={depotPosition} icon={DefaultIcon} zIndexOffset={1000}>
           <Popup>
             <div className="font-semibold">Peliyagoda Depot</div>
           </Popup>
         </Marker>
 
-        {/* Current Vehicle Position Marker */}
-        <Marker position={vehiclePosition} icon={DefaultIcon}>
+        {/* Current Vehicle Position Marker - Sits side by side if close to warehouse */}
+        <Marker position={effectiveVehiclePos} icon={DefaultIcon} zIndexOffset={600}>
           <Popup>
             <div className="font-semibold text-stone-900">{vehicleId} - En Route</div>
           </Popup>

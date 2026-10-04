@@ -1,13 +1,21 @@
-import React, { lazy, Suspense, useSyncExternalStore } from 'react'
+import React, { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react'
 import { Check, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/shadcn/button'
 import type { DeliveryDetails } from '@/features/store-manager/types'
+import { fetchRoadRoute } from '@/lib/routing'
 import { VehicleBanner } from '../vehicle-banner'
 
 const DeliveryMap = lazy(() => import('./delivery-map').then((module) => ({ default: module.DeliveryMap })))
 const subscribe = () => () => {}
 const clientSnapshot = () => true
 const serverSnapshot = () => false
+
+const INITIAL_PATH_COORDINATES: [number, number][] = [
+  [6.9583, 79.8881],
+  [6.972, 79.891],
+  [6.995, 79.895],
+  [7.0532, 79.8903],
+]
 
 interface DeliveryRouteMapProps {
   data: DeliveryDetails
@@ -17,12 +25,21 @@ export function DeliveryRouteMap({ data }: DeliveryRouteMapProps) {
   const isClient = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot)
   const depotCoordinates: [number, number] = [6.9583, 79.8881]
   const currentVehicleCoords: [number, number] = [6.995, 79.895]
-  const pathCoordinates: [number, number][] = [
-    [6.9583, 79.8881],
-    [6.972, 79.891],
-    [6.995, 79.895],
-    [7.0532, 79.8903],
-  ]
+
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>(INITIAL_PATH_COORDINATES)
+
+  useEffect(() => {
+    let cancelled = false
+    const profile = data.vehicleType?.toLowerCase().includes('van') ? 'van' : 'truck'
+    fetchRoadRoute(INITIAL_PATH_COORDINATES, { profile }).then((res) => {
+      if (!cancelled && res.geometry && res.geometry.length > 1) {
+        setRouteCoordinates(res.geometry)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [data.vehicleType])
 
   return (
     <div className="self-stretch rounded-lg border border-neutral-300 flex flex-col bg-white overflow-hidden">
@@ -36,7 +53,7 @@ export function DeliveryRouteMap({ data }: DeliveryRouteMapProps) {
         <div className="flex-2 relative z-0 bg-slate-100">
           <Suspense fallback={<p role="status">Loading delivery map…</p>}>
             {isClient ? (
-              <DeliveryMap depotPosition={depotCoordinates} vehiclePosition={currentVehicleCoords} routeCoordinates={pathCoordinates} vehicleId={data.vehicleId} />
+              <DeliveryMap depotPosition={depotCoordinates} vehiclePosition={currentVehicleCoords} routeCoordinates={routeCoordinates} vehicleId={data.vehicleId} />
             ) : (
               <p role="status">Loading delivery map…</p>
             )}

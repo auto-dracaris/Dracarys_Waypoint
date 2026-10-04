@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Polyline, Tooltip, ZoomControl, useMap
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Store, Truck, Van, Warehouse } from 'lucide-react'
 import L from 'leaflet'
+import { fetchRoadRoute } from '@/lib/routing'
 import { ALL_OUTLETS, PELIYAGODA_DEPOT, type MapPosition, type OutletMapItem, type RouteStopItem } from '../map-data'
 import 'leaflet/dist/leaflet.css'
 import '@/styles/delivery-map.css'
@@ -525,6 +526,7 @@ function ClusterMarkerItem({
   return (
     <Marker
       position={clusterPosition}
+      zIndexOffset={hasSelected ? 650 : 500}
       icon={createClusterIcon({
         count: cluster.vehicles.length,
         hasSelected,
@@ -613,7 +615,7 @@ function OutletClusterMarkerItem({ cluster, map }: OutletClusterMarkerItemProps)
     <Marker
       position={cluster.center}
       icon={createOutletClusterIcon(cluster.outlets.length)}
-      zIndexOffset={250}
+      zIndexOffset={150}
       eventHandlers={{
         click: (e) => {
           e.originalEvent?.stopPropagation()
@@ -638,6 +640,43 @@ interface VehicleMapLayersProps {
   showRouteStops?: boolean
   labelZoomThreshold?: number
   clusterPixelRadius?: number
+}
+
+/**
+ * Ensures vehicle or vehicle cluster markers that are too close to a warehouse (depot)
+ * marker are placed side by side horizontally instead of overlapping.
+ */
+function getSideBySidePosition(
+  position: MapPosition,
+  depots: DepotMapItem[],
+  map: L.Map,
+  zoom: number,
+  isCluster = false,
+): MapPosition {
+  const itemPt = map.project(L.latLng(position[0], position[1]), zoom)
+
+  for (const depot of depots) {
+    const depotPt = map.project(L.latLng(depot.position[0], depot.position[1]), zoom)
+    const dx = itemPt.x - depotPt.x
+    const dy = itemPt.y - depotPt.y
+    const dist = Math.hypot(dx, dy)
+
+    // Markers are too close if their screen pixel distance is within the threshold
+    const proximityThreshold = isCluster ? 54 : 46
+    if (dist < proximityThreshold) {
+      // Place side by side: depot on left, vehicle on right (or flip if vehicle was on the left)
+      const sideOffset = isCluster ? 52 : 44
+      const sign = dx < -6 ? -1 : 1
+      const sideX = depotPt.x + sign * sideOffset
+      // Keep vertically aligned with the warehouse marker center
+      const sideY = depotPt.y
+
+      const adjusted = map.unproject(L.point(sideX, sideY), zoom)
+      return [adjusted.lat, adjusted.lng]
+    }
+  }
+
+  return position
 }
 
 function VehicleMapLayers({
@@ -763,7 +802,7 @@ function VehicleMapLayers({
               key={`outlet-${outlet.id}`}
               position={outlet.position}
               icon={createStandardOutletIcon(outlet.id)}
-              zIndexOffset={200}
+              zIndexOffset={100}
             >
               <Tooltip
                 direction="top"
@@ -797,26 +836,18 @@ function VehicleMapLayers({
 
       {/* Vehicle Clusters and Single Vehicles */}
       {clusters.map((cluster) => {
-        // If a cluster/vehicle is right on top of a depot marker, offset slightly to depot parking
-        const isNearDepot = depots.some(
-          (d) => Math.hypot(d.position[0] - cluster.center[0], d.position[1] - cluster.center[1]) < 0.0008,
-        )
-        const clusterPosition: MapPosition = isNearDepot
-          ? [cluster.center[0] - 0.002, cluster.center[1] + 0.003]
-          : cluster.center
-
         // If cluster has 1 vehicle: render single vehicle marker
         if (cluster.vehicles.length === 1) {
           const v = cluster.vehicles[0]
           const isSelected = v.id === selectedVehicleId
-          const vehiclePos: MapPosition = isNearDepot
-            ? [v.position[0] - 0.002, v.position[1] + 0.003]
-            : v.position
+          // If vehicle is too close to a warehouse, position side by side horizontally
+          const vehiclePos = getSideBySidePosition(v.position, depots, map, currentZoom, false)
 
           return (
             <Marker
               key={v.id}
               position={vehiclePos}
+              zIndexOffset={isSelected ? 700 : 600}
               icon={createVehicleIcon({
                 vehicleId: v.id,
                 type: v.type,
@@ -842,7 +873,8 @@ function VehicleMapLayers({
           )
         }
 
-        // Check if all vehicles in this cluster are at identical coordinates (e.g. parked at depot)
+        // Multiple vehicles clustered: if near depot, position side by side
+        const clusterPosition = getSideBySidePosition(cluster.center, depots, map, currentZoom, true)
         const allAtSameCoord = cluster.vehicles.every(
           (v) =>
             Math.abs(v.position[0] - cluster.vehicles[0].position[0]) < 0.0001 &&
@@ -880,7 +912,7 @@ function VehicleMapLayers({
             key={`route-stop-${stop.sequence}-${stop.outletId}`}
             position={stop.position}
             icon={createStopIcon(stop.sequence, stop.isCompleted, stop.outletId)}
-            zIndexOffset={400}
+            zIndexOffset={300}
           >
             <Tooltip direction="top" offset={[0, -14]} className="wp-vehicle-tooltip">
               <span>
@@ -902,7 +934,7 @@ function VehicleMapLayers({
               key={`route-stop-${seq}`}
               position={pos}
               icon={createStopIcon(seq, isCompleted, selectedVehicle.outletId)}
-              zIndexOffset={400}
+              zIndexOffset={300}
             >
               <Tooltip direction="top" offset={[0, -14]} className="wp-vehicle-tooltip">
                 <span>Stop {seq} {isCompleted ? '(Completed)' : '(Pending)'}</span>
@@ -917,7 +949,7 @@ function VehicleMapLayers({
           key={`destination-${selectedVehicle?.id}-${destination.outletId}`}
           position={destination.position}
           icon={createOutletIcon(destination.outletId, destination.district)}
-          zIndexOffset={900}
+          zIndexOffset={200}
         >
           <Tooltip direction="top" offset={[0, -18]} className="wp-vehicle-tooltip">
             <span>
@@ -990,16 +1022,66 @@ export function DeliveryMap(props: DeliveryMapProps) {
     [allVehicles, selectedVehicleId],
   )
 
+  // Dynamically resolve road coordinates for the selected vehicle's trip in a single pass
+  const [activeRoadRoute, setActiveRoadRoute] = useState<{
+    vehicleId: string
+    coordinates: MapPosition[]
+  } | null>(null)
+
+  useEffect(() => {
+    if (!selectedVehicle) return
+
+    const stops = selectedVehicle.routeStops
+    const depot = depots.find((d) => d.name === selectedVehicle.depotName) || depots[0]
+    const depotPos = depot ? depot.position : PELIYAGODA_DEPOT
+
+    let waypoints: MapPosition[] = []
+    if (stops && stops.length > 0) {
+      // Trip with start (depot), stop 1, stop 2, ..., end (destination stop)
+      waypoints = [depotPos, ...stops.map((s) => s.position)]
+    } else if (selectedVehicle.routeCoordinates && selectedVehicle.routeCoordinates.length > 1) {
+      waypoints = selectedVehicle.routeCoordinates
+    }
+
+    if (waypoints.length < 2) return
+
+    let cancelled = false
+    fetchRoadRoute(waypoints, { profile: selectedVehicle.type }).then((res) => {
+      if (!cancelled && res.geometry && res.geometry.length > 1) {
+        setActiveRoadRoute({
+          vehicleId: selectedVehicle.id,
+          coordinates: res.geometry,
+        })
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedVehicle, depots])
+
+  // Vehicle with resolved real-road outline coordinates
+  const enhancedSelectedVehicle = useMemo(() => {
+    if (!selectedVehicle) return null
+    if (activeRoadRoute && activeRoadRoute.vehicleId === selectedVehicle.id) {
+      return {
+        ...selectedVehicle,
+        routeCoordinates: activeRoadRoute.coordinates,
+      }
+    }
+    return selectedVehicle
+  }, [selectedVehicle, activeRoadRoute])
+
   // Compute points for auto-fitting bounds
   const viewportPoints = useMemo(() => {
     const pts: MapPosition[] = []
     for (const d of depots) pts.push(d.position)
     for (const v of allVehicles) pts.push(v.position)
-    if (selectedVehicle?.routeCoordinates) {
-      for (const pt of selectedVehicle.routeCoordinates) pts.push(pt)
+    if (enhancedSelectedVehicle?.routeCoordinates) {
+      for (const pt of enhancedSelectedVehicle.routeCoordinates) pts.push(pt)
     }
     return pts
-  }, [depots, allVehicles, selectedVehicle])
+  }, [depots, allVehicles, enhancedSelectedVehicle])
 
   const initialCenter: MapPosition = selectedVehicle?.position || depots[0]?.position || PELIYAGODA_DEPOT
 
@@ -1028,7 +1110,7 @@ export function DeliveryMap(props: DeliveryMapProps) {
           allVehicles={allVehicles}
           depots={depots}
           outlets={outlets}
-          selectedVehicle={selectedVehicle}
+          selectedVehicle={enhancedSelectedVehicle}
           selectedVehicleId={selectedVehicleId}
           onSelectVehicle={onSelectVehicle}
           showRouteStops={showRouteStops}
@@ -1038,7 +1120,7 @@ export function DeliveryMap(props: DeliveryMapProps) {
 
         <MapViewport
           overviewPoints={viewportPoints}
-          selectedVehicle={selectedVehicle}
+          selectedVehicle={enhancedSelectedVehicle}
           showRouteStops={showRouteStops}
         />
 

@@ -49,4 +49,7 @@ export const API_ENDPOINTS = {
     status: (id: number) => `/vehicles/${id}/status`,
     driver: (id: number) => `/vehicles/${id}/driver`,
   },
+  routing: {
+    route: '/routing/route',
+  },
 } as const
