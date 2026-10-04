@@ -1,7 +1,5 @@
 # WayPoint target architecture: application, prediction and MLOps
 
-Design date: 4 October 2026. Status: finalized architecture proposal; new services are not implemented or deployed. Companion diagram: `waypoint-mlops-target.drawio`.
-
 ## Architecture decision
 
 Use a hybrid serving architecture: live travel/service-time predictions and optional batch demand forecasts. Keep NestJS as the business API, the existing chatbot as its own service, and Python prediction serving separate from training. Use Apache Airflow for data/training workflows, dbt Core for SQL transformations and data tests, MLflow for experiment tracking and model registry, S3-compatible object storage for immutable datasets/model files, and containerized Python training jobs.
