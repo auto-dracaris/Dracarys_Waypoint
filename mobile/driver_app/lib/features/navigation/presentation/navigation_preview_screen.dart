@@ -79,7 +79,15 @@ CameraTarget followTarget(LatLng point, double heading, MapMode mode) =>
         zoom: 19.5,
         pitch: 65,
       )
-    : CameraTarget(point: point, zoom: 18.5);
+    // 2D follows the same way, just seen from straight above: the map turns so
+    // the road ahead is up, and the van sits below the middle with more road in
+    // front of it than behind. (A north-up map with the van drawn sideways
+    // reads as the camera not following.)
+    : CameraTarget(
+        point: const Distance(roundResult: false).offset(point, 30, heading),
+        bearing: heading,
+        zoom: 18.5,
+      );
 
 class _NavigationPreviewScreenState
     extends ConsumerState<NavigationPreviewScreen> {
