@@ -1,0 +1,42 @@
+meta {
+  name: Chat: Driver pending route change
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/api/v1/chat
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{chat_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {"message": "What is the pending route change for this trip?", "workflow": "business_qa", "trip_id": "{{trip_id}}"}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("conversation_id", res.getBody().conversation_id);
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.answer: isDefined
+  res.body.sources: isDefined
+}
+
+docs {
+  Use the matching role's NestJS access token in secret chat_token.
+  Set order_id or trip_id to a real permitted record when required.
+  Follow-up requires a successful trip-detail request with the same user first.
+  Read-only: drafts are not sent; no route or loading record is changed.
+}

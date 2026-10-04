@@ -3,12 +3,20 @@ import { useEffect, useState } from 'react'
 import { useUser } from '@/features/auth/user-context'
 import { fetchPlacementOptions } from '@/features/store-manager/api'
 import { outletLabel } from '@/features/store-manager/order-format'
-import { Sidebar } from '@/components/layout/store-manager-sidebar' // Path based on your structure
+import MenuRounded from '@mui/icons-material/MenuRounded'
+import { Sidebar } from '@/components/layout/sidebar'
+import { loadSidebarCollapsed, saveSidebarCollapsed } from '@/lib/sidebar-preferences'
+import '@/styles/store-manager/layout.css'
 
 export function StoreManagerLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, accessToken, logout } = useUser()
+  const [navigationOpen, setNavigationOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(loadSidebarCollapsed)
+  useEffect(() => {
+    saveSidebarCollapsed(sidebarCollapsed)
+  }, [sidebarCollapsed])
   // The outlet this store manager orders for; the request fails while none is linked.
   const [outletName, setOutletName] = useState('')
   useEffect(() => {
@@ -27,54 +35,46 @@ export function StoreManagerLayout() {
     }
   }, [accessToken])
 
-  const getActiveNavId = () => {
-    if (location.pathname.includes('/deliveries')) return 'deliveries'
-    if (location.pathname.includes('/orders')) return 'orders'
-    return 'overview'
+  const activePage = location.pathname.includes('/delivery/') || location.pathname.includes('/deliveries')
+    ? 'Deliveries'
+    : location.pathname.includes('/orders') ? 'Orders'
+      : location.pathname.includes('/profile') ? 'Profile' : 'Overview'
+  const routes: Record<string, string> = {
+    Overview: '/store-manager',
+    Orders: '/store-manager/orders',
+    Deliveries: '/store-manager/deliveries',
+    Profile: '/store-manager/profile',
   }
-
-  const navConfig = [
-    { id: 'overview', label: 'Overview', iconName: 'home' as const, path: '/store-manager' },
-    {
-      id: 'orders',
-      label: 'Orders',
-      iconName: 'orders' as const,
-      path: '/store-manager/orders',
-    },
-    {
-      id: 'deliveries',
-      label: 'Deliveries',
-      iconName: 'deliveries' as const,
-      path: '/store-manager/deliveries',
-    },
-  ]
 
   // RequireRole only renders this layout for a signed-in store manager.
   if (!user) return null
 
   return (
-    <div className="w-full min-h-screen bg-stone-50 flex justify-start items-start">
-      {/* Fixed Sidebar */}
+    <div className={`store-manager-shell ${location.pathname === '/store-manager/profile' ? 'store-profile-shell' : ''}`}>
       <Sidebar
-        outletName={outletName}
-        activeNavId={getActiveNavId()}
-        navItems={navConfig}
-        user={{
+        role="Store Manager"
+        hubLabel={outletName || 'Store Manager'}
+        open={navigationOpen}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={() => setSidebarCollapsed((previous) => !previous)}
+        onClose={() => setNavigationOpen(false)}
+        activePage={activePage}
+        profile={{
           name: `${user.firstName} ${user.lastName}`,
           initials: `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase(),
-          // store_manager -> Store Manager
-          role: user.role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
           status: 'Signed in',
         }}
-        onNavSelect={(id) => {
-          const target = navConfig.find((n) => n.id === id)
-          if (target) navigate(target.path)
+        onNavigate={(page) => {
+          if (page === 'Log out') logout()
+          else if (routes[page]) navigate(routes[page])
         }}
-        onLogout={logout}
       />
 
-      {/* Dynamic Page Content */}
-      <div className="flex-1 overflow-y-auto h-screen">
+      <div className="store-manager-content">
+        <button type="button" className="store-navigation-toggle type-text-sm-medium" aria-label="Open navigation" aria-controls="main-navigation" aria-expanded={navigationOpen} onClick={() => setNavigationOpen(true)}>
+          <MenuRounded fontSize="inherit" />
+          <span>Menu</span>
+        </button>
         <Outlet />
       </div>
     </div>

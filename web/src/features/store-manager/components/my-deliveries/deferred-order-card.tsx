@@ -1,39 +1,28 @@
-import { Button } from '@/components/ui/shadcn/button'
-import { AlertTriangle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { StatusBadge } from '@/components/ui/status-badge'
+import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
+import AcUnitRounded from '@mui/icons-material/AcUnitRounded'
+import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined'
+import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
 
 interface DeferredOrderCardProps {
   orderTitle: string
   reason: string
   statusLabel?: string
+  newDateLabel?: string
+  requirement?: string
   onViewOrder?: () => void
 }
-
-export function DeferredOrderCard({ orderTitle, reason, statusLabel = 'Needs attention', onViewOrder }: DeferredOrderCardProps) {
-  return (
-    <div className="w-full bg-red-50 rounded-lg border border-red-200 p-6 flex flex-col justify-between h-[210px] overflow-hidden">
-      {/* Top Header Row */}
-      <div className="flex justify-between items-center">
-        <h4 className="text-stone-900 text-xl font-medium font-sans">Order deferred</h4>
-        <span className="px-3 py-1 bg-red-100 text-red-700 rounded-2xl text-xs font-semibold font-sans">{statusLabel}</span>
+export function DeferredOrderCard({ orderTitle, reason, statusLabel = 'Needs attention', newDateLabel = 'Not yet confirmed', requirement, onViewOrder }: DeferredOrderCardProps) {
+  return <section className="store-deferred-order">
+    <div className="store-deferred-heading"><h3 className="type-text-xl-medium">Order deferred</h3><StatusBadge tone="error" size="md" leadingIcon={<WarningAmberRounded />}>{statusLabel}</StatusBadge></div>
+    <div className="store-deferred-details">
+      <div className="store-deferred-reason">
+        <span className="store-overview-icon-surface">{requirement === 'ambient' ? <Inventory2Outlined aria-hidden="true" /> : <AcUnitRounded aria-hidden="true" />}</span>
+        <div><p className="type-text-sm-medium">{orderTitle}</p><p className="type-text-sm-regular">{reason}</p></div>
       </div>
-
-      {/* Middle Content */}
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center shrink-0">
-          <AlertTriangle className="h-6 w-6 text-indigo-700" />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <p className="text-stone-900 text-sm font-medium font-sans">{orderTitle}</p>
-          <p className="text-stone-600 text-sm font-normal font-sans">{reason}</p>
-        </div>
-      </div>
-
-      {/* Footer Action Button */}
-      <div>
-        <Button onClick={onViewOrder} className="w-40 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold h-9 rounded-sm flex items-center gap-2 shadow-none font-sans">
-          View order <span className="text-xl">→</span>
-        </Button>
-      </div>
+      <div className="store-deferred-date"><p className="type-text-xs-regular">New delivery date</p><p className="type-text-sm-semibold">{newDateLabel}</p></div>
     </div>
-  )
+    <Button variant="danger" size="sm" trailingIcon={<ArrowForwardRounded />} onClick={onViewOrder}>View order</Button>
+  </section>
 }

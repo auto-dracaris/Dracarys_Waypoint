@@ -1,0 +1,19 @@
+meta {
+  name: Development OpenAPI specification
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/openapi.json
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  base_url: http://127.0.0.1:8000
+}
+
+assert {
+  res.status: eq 200
+}

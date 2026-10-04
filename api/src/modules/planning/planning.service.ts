@@ -20,6 +20,9 @@ import { Order } from '../../database/entities/order.entity';
 import { PriorityIndex } from '../../database/entities/priority-index.entity';
 import { Trip } from '../../database/entities/trip.entity';
 import { Vehicle } from '../../database/entities/vehicle.entity';
+import { notice } from '../notifications/notification.catalog';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Outgoing } from '../notifications/notifications.service';
 import { OrdersRepository } from '../orders/repositories/orders.repository';
 import { PlanQueryDto } from './dto/plan-query.dto';
 import { allocate } from './engine/allocation';
@@ -68,6 +71,7 @@ export class PlanningService {
     private readonly planningRepository: PlanningRepository,
     private readonly ordersRepository: OrdersRepository,
     private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -145,6 +149,12 @@ export class PlanningService {
     const deferredToDate = await this.ordersRepository.findNextOperatingDay(
       dto.date,
     );
+    // Read before the draft is published, while it is still told apart from
+    // anything published earlier.
+    const [trips, priorities] = await Promise.all([
+      this.planningRepository.findTrips(plan.depotId, dto.date),
+      this.planningRepository.findPriorities(plan.depotId, dto.date),
+    ]);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -166,6 +176,15 @@ export class PlanningService {
     } finally {
       await queryRunner.release();
     }
+    void this.notificationsService.notify(
+      this.publishNotices(
+        plan.depotId,
+        dto.date,
+        deferredToDate,
+        trips,
+        priorities,
+      ),
+    );
 
     return new ApiResponseDto(
       HttpStatus.OK,
@@ -189,14 +208,82 @@ export class PlanningService {
       try {
         const { depotId } = await this.gather({ date, depot });
         if ((await this.stateOf(depotId, date)) === 'none') {
-          await this.run({ date, depot }, null);
+          const { data } = await this.run({ date, depot }, null);
+          const { trips, deferred } = (
+            data as { totals: { trips: number; deferred: number } }
+          ).totals;
+          // A day with nothing ordered has no draft worth a look.
+          if (trips || deferred) {
+            void this.notificationsService.notify([
+              {
+                to: { dispatchers: true },
+                ...notice.planDraftReady({ depot, date, trips, deferred }),
+              },
+            ]);
+          }
         }
       } catch (error) {
         this.logger.error(
           `Cutoff run for ${depot} on ${date} failed: ${(error as Error).message}`,
         );
+        void this.notificationsService.notify([
+          {
+            to: { dispatchers: true },
+            ...notice.planRunFailed(depot, date, (error as Error).message),
+          },
+        ]);
       }
     }
+  }
+
+  /**
+   * Who hears about a published plan: each trip's driver, the depot's
+   * loaders, and the store manager of every order, planned or deferred.
+   */
+  private publishNotices(
+    depotId: number,
+    date: string,
+    deferredToDate: string | null,
+    trips: Trip[],
+    priorities: PriorityIndex[],
+  ): Outgoing[] {
+    const stops = trips.flatMap((trip) => trip.stops ?? []);
+    return [
+      ...trips.map((trip) => ({
+        to: { userIds: [trip.driverId] },
+        ...notice.tripAssigned({
+          id: trip.id,
+          tripNo: trip.tripNo,
+          serviceDate: date,
+          district: trip.district?.name ?? null,
+          // Each order is its own stop row; a stop to a driver is an outlet.
+          stops: new Set((trip.stops ?? []).map((stop) => stop.order!.outletId))
+            .size,
+        }),
+      })),
+      ...(trips.length
+        ? [
+            {
+              to: { loadersOfDepot: depotId },
+              ...notice.tripsToLoad(date, trips.length),
+            },
+          ]
+        : []),
+      ...stops.map((stop) => ({
+        to: { storeManagersOfOutlets: [stop.order!.outletId] },
+        ...notice.orderScheduled(stop.orderId, date),
+      })),
+      ...priorities
+        .filter((priority) => priority.deferralReason)
+        .map((priority) => ({
+          to: { storeManagersOfOutlets: [priority.order!.outletId] },
+          ...notice.orderDeferred(
+            priority.orderId,
+            priority.deferralReason!,
+            deferredToDate,
+          ),
+        })),
+    ];
   }
 
   /** Everything the algorithms need for one depot's run, read from the database. */

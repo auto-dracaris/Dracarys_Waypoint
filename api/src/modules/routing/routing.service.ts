@@ -13,6 +13,11 @@ import { RouteRequestDto } from './dto/route-request.dto';
 // How long to wait for the routing engine before giving up.
 const TIMEOUT_MS = 8000;
 
+interface Waypoint {
+  lat: number;
+  lng: number;
+}
+
 interface OsrmStep {
   geometry: { coordinates: [number, number][] };
 }
@@ -23,15 +28,17 @@ interface OsrmLeg {
   steps?: OsrmStep[];
 }
 
+interface OsrmRoute {
+  distance: number;
+  duration: number;
+  geometry: { coordinates: [number, number][] };
+  legs: OsrmLeg[];
+}
+
 interface OsrmResponse {
   code: string;
   message?: string;
-  routes?: {
-    distance: number;
-    duration: number;
-    geometry: { coordinates: [number, number][] };
-    legs: OsrmLeg[];
-  }[];
+  routes?: OsrmRoute[];
 }
 
 /**
@@ -52,46 +59,7 @@ export class RoutingService {
         ? (await this.vehiclesRepository.findByDriver(userId))?.type
         : undefined) ??
       VehicleType.VAN;
-    // OSRM takes longitude first.
-    const path = dto.waypoints
-      .map((point) => `${point.lng},${point.lat}`)
-      .join(';');
-    const base = this.configService
-      .get<string>('OSRM_URL', 'http://localhost:8081')
-      .replace(/\/+$/, '');
-
-    let body: OsrmResponse;
-    try {
-      let response = await fetch(
-        `${base}/route/v1/van/${path}?overview=full&geometries=geojson&steps=true`,
-        { signal: AbortSignal.timeout(TIMEOUT_MS) },
-      );
-
-      // If the primary profile (e.g. truck) fails or returns bad gateway, try van profile
-      if (!response.ok && profile !== VehicleType.VAN) {
-        try {
-          const fallbackRes = await fetch(
-            `${base}/route/v1/${VehicleType.VAN}/${path}?overview=full&geometries=geojson&steps=true`,
-            { signal: AbortSignal.timeout(TIMEOUT_MS) },
-          );
-          if (fallbackRes.ok) {
-            response = fallbackRes;
-          }
-        } catch {
-          // Keep original response for error handling
-        }
-      }
-
-      body = (await response.json()) as OsrmResponse;
-    } catch {
-      throw new BadGatewayException('The routing service is not reachable');
-    }
-    const route = body.routes?.[0];
-    if (body.code !== 'Ok' || !route) {
-      throw new UnprocessableEntityException(
-        body.message ?? 'No road route was found between those points',
-      );
-    }
+    const route = await this.calculate(dto.waypoints, profile);
 
     return new ApiResponseDto(HttpStatus.OK, 'Route calculated', {
       profile,
@@ -121,5 +89,61 @@ export class RoutingService {
         };
       }),
     });
+  }
+
+  /** The road path through `waypoints`, as [lat, lng] pairs. */
+  async roadPath(
+    waypoints: Waypoint[],
+    profile: VehicleType,
+  ): Promise<[number, number][]> {
+    const route = await this.calculate(waypoints, profile);
+    return route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+  }
+
+  private async calculate(
+    waypoints: Waypoint[],
+    profile: VehicleType,
+  ): Promise<OsrmRoute> {
+    // OSRM takes longitude first.
+    const path = waypoints
+      .map((point) => `${point.lng},${point.lat}`)
+      .join(';');
+    const base = this.configService
+      .get<string>('OSRM_URL', 'http://localhost:8081')
+      .replace(/\/+$/, '');
+
+    let body: OsrmResponse;
+    try {
+      let response = await fetch(
+        `${base}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true`,
+        { signal: AbortSignal.timeout(TIMEOUT_MS) },
+      );
+
+      // If the primary profile (e.g. truck) fails or returns bad gateway, try van profile
+      if (!response.ok && profile !== VehicleType.VAN) {
+        try {
+          const fallbackRes = await fetch(
+            `${base}/route/v1/${VehicleType.VAN}/${path}?overview=full&geometries=geojson&steps=true`,
+            { signal: AbortSignal.timeout(TIMEOUT_MS) },
+          );
+          if (fallbackRes.ok) {
+            response = fallbackRes;
+          }
+        } catch {
+          // Keep original response for error handling
+        }
+      }
+
+      body = (await response.json()) as OsrmResponse;
+    } catch {
+      throw new BadGatewayException('The routing service is not reachable');
+    }
+    const route = body.routes?.[0];
+    if (body.code !== 'Ok' || !route) {
+      throw new UnprocessableEntityException(
+        body.message ?? 'No road route was found between those points',
+      );
+    }
+    return route;
   }
 }

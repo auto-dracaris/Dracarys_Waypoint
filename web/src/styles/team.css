@@ -51,9 +51,6 @@
 .team-member-column {
   width: 27%;
 }
-.team-table tbody tr:nth-child(even) td:last-child {
-  background: transparent;
-}
 .team-table tbody td {
   height: var(--wp-space-8xl);
 }

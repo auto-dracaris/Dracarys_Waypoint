@@ -216,6 +216,30 @@ src/
   module re-registering them. Feature-specific entities are still registered
   by their own module's `TypeOrmModule.forFeature`.
 
+## Queues
+
+- RabbitMQ carries the work that must not sit on a request: SMS
+  (`src/common/sms/`), driver position fixes
+  (`VehicleLocationsConsumer`, `POST /vehicles/:id/locations` answers `202`)
+  and push notifications (`NotificationsConsumer`).
+  Each has its own durable queue, built from `src/common/rmq/rmq.options.ts` and
+  consumed by a microservice connected in `main.ts`. A new queue needs a
+  `ClientsModule` registration, a `connectMicroservice` call and a consumer
+  that acks by hand.
+
+## Notifications
+
+- A service tells people about a change by calling
+  `NotificationsService.notify([...])` **without awaiting it**, after its own
+  write has been saved. It stores one `notifications` row per recipient and
+  queues the pushes; it never throws, so it cannot fail or slow the action.
+- All wording lives in `src/modules/notifications/notification.catalog.ts`
+  (`notice.tripAssigned(...)` and friends). A new moment is a new
+  `NotificationType`, a builder there, and one `notify` call at the point where
+  the state really changes, never on the branch that answers a replay.
+- Recipients are either ids already at hand (`userIds`) or a group resolved at
+  send time (`dispatchers`, `loadersOfDepot`, `storeManagersOfOutlets`).
+
 ## Testing & docs
 
 - HTTP behaviour is covered by the Bruno collection in `docs/api-test/`, run with

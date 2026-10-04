@@ -158,4 +158,39 @@ void main() {
       expect(find.textContaining('Today · '), findsOneWidget);
     });
   });
+
+  testWidgets('the assistant button sits beside the bell and opens the chat',
+      (tester) async {
+    tester.view.physicalSize = const Size(402 * 3, 1000 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final router = GoRouter(routes: [
+      GoRoute(path: '/', builder: (_, _) => const MyTripsScreen()),
+      GoRoute(
+          path: '/chat',
+          builder: (_, _) => const Scaffold(body: Text('Chat page'))),
+      GoRoute(
+          path: '/updates',
+          builder: (_, _) => const Scaffold(body: Text('Updates page'))),
+    ]);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        tripsRepositoryProvider
+            .overrideWithValue(MockTripsRepository(latency: Duration.zero)),
+        authRepositoryProvider
+            .overrideWithValue(MockAuthRepository(latency: Duration.zero)),
+      ],
+      child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
+    ));
+    await tester.pumpAndSettle();
+
+    final chat = tester.getCenter(find.byKey(const Key('chat-button')));
+    final bell = tester.getCenter(find.byKey(const Key('bell-button')));
+    expect(chat.dx, lessThan(bell.dx));
+    expect((chat.dy - bell.dy).abs(), lessThan(4));
+
+    await tester.tap(find.byKey(const Key('chat-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Chat page'), findsOneWidget);
+  });
 }

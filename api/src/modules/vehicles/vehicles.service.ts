@@ -3,9 +3,14 @@ import {
   ConflictException,
   ForbiddenException,
   HttpStatus,
+  Inject,
   Injectable,
+  Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { lastValueFrom, timeout } from 'rxjs';
 import { QueryFailedError } from 'typeorm';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { DepotsRepository } from '../../common/repositories/depots.repository';
@@ -14,8 +19,14 @@ import { TripStopStatus } from '../../common/enums/trip-stop-status.enum';
 import { UserStatus } from '../../common/enums/user-status.enum';
 import { VehicleStatus } from '../../common/enums/vehicle-status.enum';
 import { today } from '../../common/utils/date.util';
+import { tripIdAt } from '../../common/utils/vehicle.util';
 import { Vehicle } from '../../database/entities/vehicle.entity';
 import { UsersRepository } from '../users/repositories/users.repository';
+import {
+  LOCATION_CLIENT,
+  LOCATION_STORE_PATTERN,
+  LocationJob,
+} from './constants/location.constants';
 import { AssignDriverDto } from './dto/assign-driver.dto';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { LocationBatchDto } from './dto/location-batch.dto';
@@ -28,6 +39,10 @@ import { VehiclesRepository } from './repositories/vehicles.repository';
 // Postgres's unique-violation code; `vehicles.driver_id` is unique.
 const UNIQUE_VIOLATION = '23505';
 
+// While the broker is unreachable the client holds a publish until it is back;
+// the handset is told to retry instead of being left waiting.
+const PUBLISH_TIMEOUT_MS = 5000;
+
 // The outcomes a driver records; anything else is still ahead of the vehicle.
 const RECORDED_STOP = new Set([
   TripStopStatus.DELIVERED,
@@ -37,10 +52,13 @@ const RECORDED_STOP = new Set([
 
 @Injectable()
 export class VehiclesService {
+  private readonly logger = new Logger(VehiclesService.name);
+
   constructor(
     private readonly vehiclesRepository: VehiclesRepository,
     private readonly depotsRepository: DepotsRepository,
     private readonly usersRepository: UsersRepository,
+    @Inject(LOCATION_CLIENT) private readonly locationClient: ClientProxy,
   ) {}
 
   /** `actorId` is the dispatcher making the call, recorded as `created_by`. */
@@ -201,7 +219,9 @@ export class VehiclesService {
 
   /**
    * Position fixes from the handset of the vehicle's own driver, batched so
-   * ones taken offline can follow later.
+   * ones taken offline can follow later. The request only queues them — this
+   * is the busiest route there is, so the writes happen in
+   * `VehicleLocationsConsumer`, off the request path.
    */
   async addLocations(
     vehicleId: number,
@@ -212,25 +232,64 @@ export class VehiclesService {
     if (vehicle.driverId !== driverId) {
       throw new ForbiddenException('You are not the driver of this vehicle');
     }
-    const trip = await this.vehiclesRepository.findTripOnRoad(vehicleId);
-    await this.vehiclesRepository.saveLocations(
-      vehicleId,
-      dto.points.map((point) => ({
-        id: point.clientId,
-        tripId: trip?.id ?? null,
-        lat: point.lat,
-        lng: point.lng,
-        heading: point.heading ?? null,
-        speedKmh: point.speedKmh ?? null,
-        recordedAt: new Date(point.recordedAt),
-        createdById: driverId,
-        updatedById: driverId,
-      })),
-    );
 
-    return new ApiResponseDto(HttpStatus.OK, 'Locations saved', {
+    const job: LocationJob = {
+      vehicleId,
+      driverId,
+      receivedAt: new Date().toISOString(),
+      points: dto.points,
+    };
+    // Unlike an SMS, a batch that was not queued is the caller's problem: the
+    // handset keeps its fixes until it gets a 202. If the publish does land
+    // after the timeout, the retry is harmless — rows are keyed by `clientId`.
+    try {
+      await lastValueFrom(
+        this.locationClient
+          .emit(LOCATION_STORE_PATTERN, job)
+          .pipe(timeout(PUBLISH_TIMEOUT_MS)),
+        { defaultValue: undefined },
+      );
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to queue locations for vehicle ${vehicleId}: ${error?.message || error}`,
+        error?.stack,
+      );
+      throw new ServiceUnavailableException(
+        'Locations could not be queued, send them again',
+      );
+    }
+
+    return new ApiResponseDto(HttpStatus.ACCEPTED, 'Locations queued', {
       received: dto.points.length,
     });
+  }
+
+  /** The consumer's half of `addLocations`: writes a queued batch. */
+  async storeLocations(job: LocationJob): Promise<void> {
+    const times = job.points.map((point) => Date.parse(point.recordedAt));
+    const trips = await this.vehiclesRepository.findTripsRunningBetween(
+      job.vehicleId,
+      new Date(Math.min(...times)),
+      new Date(Math.max(...times)),
+    );
+    await this.vehiclesRepository.saveLocations(
+      job.vehicleId,
+      job.points.map((point) => {
+        const recordedAt = new Date(point.recordedAt);
+        return {
+          id: point.clientId,
+          tripId: tripIdAt(trips, recordedAt),
+          lat: point.lat,
+          lng: point.lng,
+          heading: point.heading ?? null,
+          speedKmh: point.speedKmh ?? null,
+          recordedAt,
+          receivedAt: new Date(job.receivedAt),
+          createdById: job.driverId,
+          updatedById: job.driverId,
+        };
+      }),
+    );
   }
 
   private async findOrThrow(vehicleId: number): Promise<Vehicle> {

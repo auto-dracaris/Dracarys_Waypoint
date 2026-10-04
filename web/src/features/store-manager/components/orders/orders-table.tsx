@@ -1,6 +1,15 @@
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import SearchRounded from '@mui/icons-material/SearchRounded'
+import SwapVertRounded from '@mui/icons-material/SwapVertRounded'
+import FilterListRounded from '@mui/icons-material/FilterListRounded'
+import ChevronLeftRounded from '@mui/icons-material/ChevronLeftRounded'
+import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { StatusBadge } from '@/components/ui/status-badge'
 import type { Paginated } from '@/lib/api-client'
-import { statusStyles } from '../../order-format'
+import type { MyOrderSort, TempRequirement } from '../../api'
 
 export interface OrderTableRow {
   id: string
@@ -10,146 +19,77 @@ export interface OrderTableRow {
   status: string
   statusVariant: 'yellow' | 'green' | 'red' | 'gray'
 }
-
+const orderStatusTones = { yellow: 'warning', green: 'success', red: 'error', gray: 'neutral' } as const
+const columns: { key: MyOrderSort; label: string }[] = [
+  { key: 'reference', label: 'Order' }, { key: 'requestedDate', label: 'Requested date' },
+  { key: 'tempRequirement', label: 'Requirement' }, { key: 'orderUnits', label: 'Quantity' },
+  { key: 'status', label: 'Status' },
+]
 interface OrdersTableProps<Tab extends string> {
   items: OrderTableRow[]
   selectedId: string | null
   onSelect: (id: string) => void
   tabs: readonly Tab[]
   tab: Tab
+  counts: Partial<Record<Tab, number>>
   onTab: (tab: Tab) => void
   search: string
   onSearch: (search: string) => void
+  requirement: TempRequirement | ''
+  onRequirement: (value: TempRequirement | '') => void
+  sort: { key: MyOrderSort; direction: 'ASC' | 'DESC' } | null
+  onSort: (key: MyOrderSort) => void
   loading: boolean
   error: string
   onRetry: () => void
   meta: Paginated<unknown>['meta'] | null
+  limit: number
+  onLimit: (limit: number) => void
   onPage: (page: number) => void
 }
-
-export function OrdersTable<Tab extends string>({ items, selectedId, onSelect, tabs, tab, onTab, search, onSearch, loading, error, onRetry, meta, onPage }: OrdersTableProps<Tab>) {
-  const first = meta ? (meta.page - 1) * meta.limit + 1 : 0
-  return (
-    <div className="flex-1 bg-white rounded-xl border border-neutral-200 shadow-sm flex flex-col overflow-hidden">
-      {/* Header & Controls */}
-      <div className="p-5 flex flex-col gap-4 border-b border-neutral-200">
-        <h2 className="text-stone-900 text-2xl font-medium font-sans">Recent orders</h2>
-
-        <div className="flex justify-between items-center mt-1">
-          {/* Tabs */}
-          <div className="flex p-1 bg-neutral-100 rounded-xl gap-1" role="group" aria-label="Filter orders">
-            {tabs.map((label) => (
-              <button
-                key={label}
-                aria-pressed={tab === label}
-                onClick={() => onTab(label)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium font-sans flex items-center gap-1.5 ${tab === label ? 'bg-white shadow-sm text-stone-900' : 'text-stone-600 hover:bg-neutral-200'}`}
-              >
-                {label} {tab === label && meta && <span className="text-stone-400">{meta.total}</span>}
-              </button>
-            ))}
-          </div>
-
-          {/* Search */}
-          <div className="relative w-64">
-            <Search className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
-            <input
-              type="text"
-              placeholder="Search order ID"
-              aria-label="Search order ID"
-              value={search}
-              onChange={(event) => onSearch(event.target.value)}
-              className="w-full h-10 pl-9 pr-3 rounded-lg border border-neutral-300 text-sm font-sans outline-none focus:border-yellow-400"
-            />
-          </div>
-        </div>
+export function OrdersTable<Tab extends string>({ items, selectedId, onSelect, tabs, tab, counts, onTab, search, onSearch, requirement, onRequirement, sort, onSort, loading, error, onRetry, meta, limit, onLimit, onPage }: OrdersTableProps<Tab>) {
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const first = meta && meta.total > 0 ? (meta.page - 1) * meta.limit + 1 : 0
+  const current = meta?.page ?? 1
+  const pages = meta?.totalPages ?? 0
+  const start = Math.max(1, Math.min(current - 1, pages - 3))
+  const visiblePages = Array.from({ length: Math.min(4, pages) }, (_, index) => start + index)
+  return <section className="store-orders-table-card" aria-label="Recent orders" aria-busy={loading}>
+    <h2 className="type-display-md-medium">Recent orders</h2>
+    <div className="store-orders-toolbar">
+      <div className="store-orders-tabs" role="group" aria-label="Filter orders">
+        {tabs.map((label) => <button key={label} type="button" aria-pressed={tab === label} onClick={() => onTab(label)} className="type-text-sm-regular">{label}{counts[label] !== undefined && <span>{counts[label]}</span>}</button>)}
       </div>
-
-      {/* Table Area */}
-      <div className="overflow-x-auto flex-1">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-neutral-100 border-b border-neutral-200">
-              <th className="font-medium text-stone-500 text-sm py-3 px-6 w-[20%]">Order</th>
-              <th className="font-medium text-stone-500 text-sm py-3 px-4 w-[20%]">Requested date</th>
-              <th className="font-medium text-stone-500 text-sm py-3 px-4 w-[20%]">Requirement</th>
-              <th className="font-medium text-stone-500 text-sm py-3 px-4 w-[20%]">Quantity</th>
-              <th className="font-medium text-stone-500 text-sm py-3 px-4 w-[20%]">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => {
-              const isSelected = item.id === selectedId
-              return (
-                <tr
-                  key={item.id}
-                  onClick={() => onSelect(item.id)}
-                  className={`border-b border-neutral-200 cursor-pointer transition-colors relative ${isSelected ? 'bg-yellow-50' : 'hover:bg-neutral-50'}`}
-                >
-                  <td className="py-3 px-6 text-stone-900 text-sm font-sans relative">
-                    {isSelected && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-yellow-500" />}
-                    <button aria-pressed={isSelected} onClick={() => onSelect(item.id)}>
-                      {item.id}
-                    </button>
-                  </td>
-                  <td className="py-3 px-4 text-stone-900 text-sm font-sans">{item.requestedDate}</td>
-                  <td className="py-3 px-4 text-stone-900 text-sm font-sans">{item.requirement}</td>
-                  <td className="py-3 px-4 text-stone-900 text-sm font-sans">{item.quantity}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium font-sans whitespace-nowrap ${statusStyles[item.statusVariant]}`}>{item.status}</span>
-                  </td>
-                </tr>
-              )
-            })}
-            {!items.length && (
-              <tr>
-                <td colSpan={5} className="py-12 px-6 text-center text-sm font-sans text-stone-500">
-                  {loading ? (
-                    <p role="status">Loading orders…</p>
-                  ) : error ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <p role="alert">{error}</p>
-                      <button onClick={onRetry} className="h-9 px-3 bg-white border border-neutral-200 rounded-md text-stone-800 text-sm font-medium hover:bg-neutral-50">
-                        Try again
-                      </button>
-                    </div>
-                  ) : (
-                    <p>No orders here yet.</p>
-                  )}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="store-orders-search-controls">
+        <Button size="xs" leadingIcon={<FilterListRounded />} aria-expanded={filtersOpen} aria-controls="store-order-filters" onClick={() => setFiltersOpen(!filtersOpen)}>Filter{requirement ? ' (1)' : ''}</Button>
+        <div className="store-orders-search"><SearchRounded aria-hidden="true" /><Input controlSize="sm" aria-label="Search order ID" placeholder="Search order ID" value={search} maxLength={50} onChange={(event) => onSearch(event.target.value)} /></div>
       </div>
-
-      {/* Pagination Footer */}
-      {meta && meta.total > 0 && (
-        <div className="p-3 bg-neutral-50 border-t border-neutral-200 flex justify-between items-center">
-          <span className="text-stone-500 text-sm font-sans px-3" role="status">
-            Showing {first}–{Math.min(first + items.length - 1, meta.total)} of {meta.total} results
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              disabled={meta.page <= 1}
-              onClick={() => onPage(meta.page - 1)}
-              className="h-9 px-3 bg-white border border-neutral-200 rounded-md text-stone-800 text-sm font-medium flex items-center gap-1 hover:bg-neutral-50 disabled:opacity-50"
-            >
-              <ChevronLeft className="w-4 h-4" /> Previous
-            </button>
-            <span className="text-stone-600 text-sm font-sans px-1">
-              Page {meta.page} of {meta.totalPages}
-            </span>
-            <button
-              disabled={meta.page >= meta.totalPages}
-              onClick={() => onPage(meta.page + 1)}
-              className="h-9 px-3 bg-white border border-neutral-200 rounded-md text-stone-800 text-sm font-medium flex items-center gap-1 hover:bg-neutral-50 disabled:opacity-50"
-            >
-              Next <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
-  )
+    {filtersOpen && <div id="store-order-filters" className="store-orders-filter-fields">
+      <label htmlFor="store-order-requirement" className="type-text-sm-medium">Requirement</label>
+      <Select id="store-order-requirement" controlSize="sm" value={requirement} onChange={(event) => onRequirement(event.target.value as TempRequirement | '')}><option value="">All requirements</option><option value="ambient">Ambient</option><option value="chilled">Chilled</option></Select>
+      <Button size="xs" onClick={() => onRequirement('')}>Clear filter</Button>
+    </div>}
+    {error && <div className="store-orders-error type-text-sm-regular" role="alert"><p>{error}</p><Button size="sm" onClick={onRetry}>Try again</Button></div>}
+    <div className="store-orders-table-scroll">
+      <table className="store-orders-table"><caption className="sr-only">Orders for your outlet</caption>
+        <thead><tr>{columns.map(({ key, label }) => <th key={key} scope="col" aria-sort={sort?.key === key ? sort.direction === 'ASC' ? 'ascending' : 'descending' : 'none'}><button type="button" className="type-text-sm-medium" onClick={() => onSort(key)}>{label}<SwapVertRounded aria-hidden="true" /></button></th>)}</tr></thead>
+        <tbody>{items.map((item) => <tr key={item.id} onClick={() => onSelect(item.id)} className={item.id === selectedId ? 'store-order-row--selected' : ''}>
+          <td><button type="button" aria-pressed={item.id === selectedId} onClick={(event) => { event.stopPropagation(); onSelect(item.id) }}>{item.id}</button></td>
+          <td>{item.requestedDate}</td><td>{item.requirement}</td><td>{item.quantity}</td>
+          <td><StatusBadge tone={orderStatusTones[item.statusVariant]}>{item.status}</StatusBadge></td>
+        </tr>)}
+        {!items.length && <tr><td colSpan={5} className="store-orders-empty">{loading ? <p role="status">Loading orders…</p> : !error && <p>No orders here yet.</p>}</td></tr>}</tbody>
+      </table>
+    </div>
+    <div className="store-orders-footer">
+      <span className="type-text-sm-regular" role="status">Showing {first}–{meta && items.length ? Math.min(first + items.length - 1, meta.total) : 0} of {meta?.total ?? 0} results</span>
+      <nav className="store-orders-pagination" aria-label="Order pages">
+        <Button size="xs" disabled={loading || current <= 1} leadingIcon={<ChevronLeftRounded />} onClick={() => onPage(current - 1)}>Previous</Button>
+        {visiblePages.map((number) => <Button key={number} size="xs" variant={number === current ? 'primary' : 'outline'} aria-label={`Page ${number}`} aria-current={number === current ? 'page' : undefined} disabled={loading} onClick={() => onPage(number)}>{number}</Button>)}
+        <Button size="xs" disabled={loading || current >= pages} trailingIcon={<ChevronRightRounded />} onClick={() => onPage(current + 1)}>Next</Button>
+        <Select controlSize="sm" aria-label="Orders per page" value={limit} onChange={(event) => onLimit(Number(event.target.value))}>{[6, 10, 20, 50].map((size) => <option key={size} value={size}>{size} per page</option>)}</Select>
+      </nav>
+    </div>
+  </section>
 }

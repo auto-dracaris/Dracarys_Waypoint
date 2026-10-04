@@ -1,0 +1,76 @@
+@reference "../index.css";
+
+.profile-page {
+  min-height: calc(100svh - var(--wp-space-xl));
+  padding: var(--wp-space-4xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp-space-xl);
+  background: var(--wp-neutral-50);
+  border: 1px solid var(--wp-warm-neutral-200);
+  border-radius: var(--wp-radius-2xl);
+  color: var(--wp-text-primary);
+  font-family: var(--font-waypoint);
+}
+.profile-header { display: flex; justify-content: space-between; gap: var(--wp-space-xl); }
+.profile-header p { margin-top: var(--wp-space-xs); color: var(--wp-text-secondary); }
+.profile-overview { position: relative; overflow: hidden; border-radius: var(--wp-radius-3xl); background: var(--wp-terminal-surface); }
+.profile-cover { height: 172px; background: var(--wp-warm-neutral-900); overflow: hidden; }
+.profile-cover img { width: 100%; height: 100%; object-fit: cover; object-position: right center; }
+.profile-identity { min-height: 144px; padding: var(--wp-space-3xl) var(--wp-space-4xl); padding-left: 179px; display: flex; justify-content: space-between; gap: var(--wp-space-xl); }
+.profile-name { min-width: 0; display: flex; flex-direction: column; gap: var(--wp-space-xs); }
+.profile-name p { color: var(--wp-text-secondary); overflow-wrap: anywhere; }
+.profile-avatar { position: absolute; top: 100px; left: 26px; width: 144px; height: 144px; border: var(--wp-space-sm) solid var(--wp-terminal-surface); border-radius: var(--wp-radius-full); overflow: hidden; display: grid; place-items: center; background: var(--wp-yellow-400); }
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.profile-signed-in { align-self: flex-start; padding: var(--wp-space-md); border-radius: var(--wp-radius-sm); white-space: nowrap; }
+.profile-settings { display: grid; grid-template-columns: minmax(0, 840fr) minmax(0, 516fr); gap: var(--wp-space-lg); margin-top: calc(-1 * var(--wp-space-xs)); }
+.profile-card { padding: var(--wp-space-3xl); background: var(--wp-terminal-surface); border: 1px solid var(--wp-warm-neutral-200); border-radius: var(--wp-radius-xl); min-width: 0; }
+.profile-form { display: flex; flex-direction: column; align-items: flex-start; gap: var(--wp-space-2xl); }
+.profile-form > p, .profile-field > span, .profile-store-help { color: var(--wp-text-secondary); }
+.profile-field { display: flex; flex-direction: column; gap: var(--wp-space-md); width: 100%; }
+.profile-page .wp-form-control { min-height: calc(var(--wp-space-6xl) + var(--wp-space-xxs)); padding: var(--wp-space-lg); }
+.profile-phone { display: flex; position: relative; width: 100%; }
+.profile-phone > svg { position: absolute; top: var(--wp-space-lg); left: var(--wp-space-lg); width: var(--wp-space-3xl); height: var(--wp-space-3xl); color: var(--wp-text-secondary); }
+.profile-phone .wp-form-control { padding-left: calc(var(--wp-space-6xl) - var(--wp-space-xxs)); }
+.profile-assignment { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--wp-space-3xl); padding: var(--wp-space-xl); width: 100%; background: var(--wp-neutral-100); }
+.profile-assignment dt { color: var(--wp-text-secondary); margin-bottom: var(--wp-space-xs); }
+.profile-assignment dd { margin: 0; overflow-wrap: anywhere; }
+.profile-page .wp-button { min-height: calc(var(--wp-space-5xl) + var(--wp-space-xs)); padding: var(--wp-space-md) var(--wp-space-2xl); }
+.profile-save { min-width: var(--wp-spacing-40); }
+.profile-page .wp-button--outline { background: var(--wp-neutral-50); }
+.profile-signed-in { color: var(--wp-terminal-success); }
+.profile-supporting { display: flex; flex-direction: column; gap: var(--wp-space-lg); }
+.profile-knowledge { flex: 1; min-height: calc(var(--wp-spacing-80) - var(--wp-space-xs)); display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: var(--wp-space-4xl); }
+.profile-contributor { padding: var(--wp-space-md); border-radius: var(--wp-radius-sm); }
+.profile-form .profile-error, .profile-error { color: var(--wp-text-error-primary); }
+.profile-form .profile-success, .profile-success { color: var(--wp-terminal-success); }
+.profile-dialog { width: min(calc(100% - var(--wp-space-4xl)), var(--wp-spacing-140)); margin: auto; color: var(--wp-text-primary); }
+.profile-dialog::backdrop { background: color-mix(in srgb, var(--wp-warm-neutral-950) 45%, transparent); }
+.profile-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--wp-space-xl); margin-bottom: var(--wp-space-3xl); }
+.profile-dialog .wp-button { align-self: flex-start; }
+.store-profile-shell { font-family: var(--font-waypoint); }
+.store-profile-shell > div:last-child { padding: var(--wp-space-md); min-width: 0; }
+.store-profile-shell > aside { min-height: 100svh; }
+.store-profile-shell .profile-page :is(button, input, a):focus-visible { outline: 2px solid var(--wp-yellow-500); outline-offset: var(--wp-space-xxs); }
+.overview-shell:has(.profile-page) > .sidebar:not(.sidebar--collapsed) { width: calc(var(--wp-spacing-56) + var(--wp-space-xl)); flex-basis: calc(var(--wp-spacing-56) + var(--wp-space-xl)); }
+.knowledge-upload { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--wp-space-4xl); }
+.knowledge-list { width: 100%; display: flex; flex-direction: column; gap: var(--wp-space-lg); }
+.knowledge-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--wp-space-xl); }
+.knowledge-actions { display: flex; gap: var(--wp-space-md); flex-wrap: wrap; }
+.knowledge-roles { display: flex; flex-wrap: wrap; gap: var(--wp-space-xl); }
+.knowledge-roles label { display: flex; gap: var(--wp-space-md); align-items: center; }
+.knowledge-roles input { accent-color: var(--wp-yellow-500); }
+@media (max-width: 1200px) { .profile-settings { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); } .profile-card h2 { @apply type-display-xs-medium; } }
+@media (max-width: 960px) { .profile-settings, .knowledge-upload { grid-template-columns: minmax(0, 1fr); } .profile-knowledge { min-height: var(--wp-spacing-64); } }
+@media (max-width: 767px) {
+  .profile-page { padding: var(--wp-space-xl); border-radius: var(--wp-radius-xl); }
+  .profile-header h1 { @apply type-display-md-medium; }
+  .profile-cover { height: var(--wp-spacing-40); }
+  .profile-avatar { width: var(--wp-spacing-24); height: var(--wp-spacing-24); top: var(--wp-spacing-24); left: var(--wp-space-xl); }
+  .profile-identity { padding: var(--wp-space-5xl) var(--wp-space-xl) var(--wp-space-xl); flex-direction: column; }
+  .profile-name { padding-top: var(--wp-space-md); }
+  .profile-signed-in { position: absolute; top: calc(var(--wp-spacing-40) + var(--wp-space-xl)); right: var(--wp-space-xl); }
+  .profile-card { padding: var(--wp-space-xl); }
+  .profile-assignment { gap: var(--wp-space-xl); }
+  .store-profile-shell > div:last-child { width: 100%; height: auto; }
+}

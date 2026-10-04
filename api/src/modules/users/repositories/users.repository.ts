@@ -49,6 +49,18 @@ export class UsersRepository extends BaseRepository<User> {
     });
   }
 
+  /** Ids of the active users in a role, optionally only one depot's. */
+  async findActiveIdsByRole(
+    role: UserRole,
+    depotId?: number,
+  ): Promise<number[]> {
+    const users = await this.repository.find({
+      select: { id: true },
+      where: { role, status: UserStatus.ACTIVE, ...(depotId && { depotId }) },
+    });
+    return users.map((user) => user.id);
+  }
+
   /**
    * Paginated list narrowed by role/status. `search` is an OR across name
    * and phone — TypeORM expresses OR as an array of where-objects, each one

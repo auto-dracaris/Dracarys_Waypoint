@@ -2,7 +2,6 @@ import { StatusBadge } from '@/components/ui/status-badge'
 import SwapVertRounded from '@mui/icons-material/SwapVertRounded'
 import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded'
 import ArrowDownwardRounded from '@mui/icons-material/ArrowDownwardRounded'
-import CheckRounded from '@mui/icons-material/CheckRounded'
 import { Button } from '@/components/ui/button'
 import type { Paginated } from '@/lib/api-client'
 import { availabilityTones, type FleetVehicle, type VehicleSort, type VehicleSortKey } from '../data'
@@ -17,7 +16,6 @@ const columns: { label: string; key?: VehicleSortKey }[] = [
 
 export function FleetTable({
   vehicles,
-  checked,
   selectedId,
   sort,
   loading,
@@ -26,13 +24,11 @@ export function FleetTable({
   meta,
   onPage,
   onSort,
-  onCheck,
   onSelect,
   onClear,
   onRetry,
 }: {
   vehicles: FleetVehicle[]
-  checked: Set<string>
   selectedId?: string
   sort: VehicleSort
   loading: boolean
@@ -41,7 +37,6 @@ export function FleetTable({
   meta: Paginated<unknown>['meta'] | null
   onPage: (page: number) => void
   onSort: (key: VehicleSortKey) => void
-  onCheck: (id: string) => void
   onSelect: (id: string) => void
   onClear: () => void
   onRetry: () => void
@@ -50,7 +45,7 @@ export function FleetTable({
   return (
     <>
       <div className="fleet-table-scroll" role="region" aria-label="Vehicle inventory" tabIndex={0}>
-        <table className="fleet-table">
+        <table className="fleet-table fleet-vehicle-table">
           <caption className="sr-only">Vehicle inventory. Select a vehicle to view details; use column headings to sort.</caption>
           <thead>
             <tr>
@@ -78,13 +73,9 @@ export function FleetTable({
           </thead>
           <tbody>
             {vehicles.map((vehicle) => (
-              <tr key={vehicle.id} className={checked.has(vehicle.id) ? 'fleet-row-checked' : ''} onClick={() => onSelect(vehicle.id)}>
+              <tr key={vehicle.id} className={vehicle.id === selectedId ? 'fleet-row-selected' : ''} onClick={() => onSelect(vehicle.id)}>
                 <td>
                   <div className="fleet-id-cell">
-                    <span className="fleet-checkbox">
-                      <input type="checkbox" aria-label={`Select ${vehicle.id}`} checked={checked.has(vehicle.id)} onClick={(event) => event.stopPropagation()} onChange={() => onCheck(vehicle.id)} />
-                      {checked.has(vehicle.id) && <CheckRounded fontSize="inherit" />}
-                    </span>
                     <button className="type-text-xs-regular" aria-pressed={vehicle.id === selectedId} onClick={() => onSelect(vehicle.id)}>
                       {vehicle.id}
                     </button>

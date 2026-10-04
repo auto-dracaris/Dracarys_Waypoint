@@ -14,7 +14,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-class LocationPointDto {
+export class LocationPointDto {
   // Minted on the handset, so a point sent twice is stored once.
   @IsUUID(undefined, { message: 'clientId must be a UUID' })
   clientId: string;
@@ -44,7 +44,9 @@ class LocationPointDto {
 
 export class LocationBatchDto {
   @ArrayNotEmpty({ message: 'points must hold at least one fix' })
-  @ArrayMaxSize(50, { message: 'points must hold at most 50 fixes' })
+  // Enough for an offline spell to drain in a few calls while a full batch
+  // stays under Express's 100 KB JSON limit.
+  @ArrayMaxSize(500, { message: 'points must hold at most 500 fixes' })
   @ValidateNested({ each: true })
   @Type(() => LocationPointDto)
   points: LocationPointDto[];

@@ -1,0 +1,37 @@
+meta {
+  name: Document: Replace version
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{base_url}}/api/v1/documents/{{document_id}}/versions
+  body: multipartForm
+  auth: none
+}
+
+headers {
+  Idempotency-Key: {{request_key}}
+}
+
+body:multipart-form {
+  file: @file({{replacement_file}})
+  metadata: {{document_metadata}}
+}
+
+script:post-response {
+  if (res.getStatus() === 202) {
+    const data = res.getBody();
+    bru.setVar("document_id", data.document_id);
+    bru.setVar("document_version", data.version);
+    bru.setVar("job_id", data.job_id);
+  }
+}
+
+assert {
+  res.status: eq 202
+  res.body.document_id: isDefined
+  res.body.version: isDefined
+  res.body.job_id: isDefined
+}
+

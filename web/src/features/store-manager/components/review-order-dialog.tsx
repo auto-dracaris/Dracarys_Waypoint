@@ -1,118 +1,32 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/shadcn/dialog'
-import { Button } from '@/components/ui/shadcn/button'
-import { Package, Snowflake } from 'lucide-react'
+import { useRef } from 'react'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/shadcn/dialog'
+import { Button } from '@/components/ui/button'
+import { StatusBadge } from '@/components/ui/status-badge'
+import ViewInArOutlined from '@mui/icons-material/ViewInArOutlined'
+import AcUnitRounded from '@mui/icons-material/AcUnitRounded'
+import InfoOutlined from '@mui/icons-material/InfoOutlined'
 import type { PlaceOrderFormValues } from '@/features/store-manager/types'
 import type { StoreOutlet } from '@/features/store-manager/api'
 import { formatDay, outletLabel, windowLabel } from '@/features/store-manager/order-format'
-
 interface ReviewOrderDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  data: PlaceOrderFormValues | null
-  outlet: StoreOutlet
-  onConfirm: () => void
-  submitting: boolean
-  error: string
+  open: boolean; onOpenChange: (open: boolean) => void; data: PlaceOrderFormValues | null
+  outlet: StoreOutlet; onConfirm: () => void; submitting: boolean; error: string
 }
-
 export function ReviewOrderDialog({ open, onOpenChange, data, outlet, onConfirm, submitting, error }: ReviewOrderDialogProps) {
+  const title = useRef<HTMLHeadingElement>(null)
   if (!data) return null
-
-  const isAmbient = data.temperatureMode === 'ambient'
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px] p-6 bg-stone-50 gap-6 border-neutral-200">
-        <DialogHeader>
-          <DialogTitle className="text-stone-900 text-2xl font-medium font-sans">Review your order</DialogTitle>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-6">
-          {/* Order Information Section */}
-          <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-200 flex flex-col gap-4">
-            <h3 className="text-stone-900 text-base font-medium font-sans">Order information</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1">
-                <span className="text-stone-500 text-sm font-medium font-sans">Outlet</span>
-                <div className="h-9 px-3 bg-white border border-neutral-200 rounded-md flex items-center text-stone-900 text-sm font-sans">{outletLabel(outlet)}</div>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-stone-500 text-sm font-medium font-sans">Serving depot</span>
-                <div className="h-9 px-3 bg-white border border-neutral-200 rounded-md flex items-center text-stone-900 text-sm font-sans">{outlet.depot ?? '—'}</div>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-stone-500 text-sm font-medium font-sans">Requested delivery date</span>
-                <div className="h-9 px-3 bg-white border border-neutral-200 rounded-md flex items-center text-stone-900 text-sm font-sans">{formatDay(data.deliveryDate, true)}</div>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-stone-500 text-sm font-medium font-sans">Delivery window</span>
-                <div className="h-9 px-3 bg-white border border-neutral-200 rounded-md flex items-center text-stone-900 text-sm font-sans">{windowLabel(outlet)}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Load Summary Section */}
-          <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-200 flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <h3 className="text-stone-900 text-base font-medium font-sans">Load summary</h3>
-              <div className={`h-6 px-2.5 rounded-full flex items-center gap-1.5 ${isAmbient ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>
-                {isAmbient ? <Package className="w-3.5 h-3.5" /> : <Snowflake className="w-3.5 h-3.5" />}
-                <span className="text-xs font-medium font-sans capitalize">{data.temperatureMode}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="p-3 bg-white border border-neutral-200 rounded-lg flex flex-col gap-1">
-                <span className="text-stone-500 text-xs font-medium font-sans">Quantity</span>
-                <span className="text-stone-900 text-base font-semibold font-sans">
-                  {data.quantity} {data.quantity === 1 ? 'case' : 'cases'}
-                </span>
-              </div>
-              <div className="p-3 bg-white border border-neutral-200 rounded-lg flex flex-col gap-1">
-                <span className="text-stone-500 text-xs font-medium font-sans">Total weight</span>
-                <span className="text-stone-900 text-base font-semibold font-sans">{data.weight} kg</span>
-              </div>
-              <div className="p-3 bg-white border border-neutral-200 rounded-lg flex flex-col gap-1">
-                <span className="text-stone-500 text-xs font-medium font-sans">Total volume</span>
-                <span className="text-stone-900 text-base font-semibold font-sans">{data.volume} m³</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1 mt-1">
-              <span className="text-stone-900 text-sm font-semibold font-sans">Delivery notes</span>
-              <span className="text-stone-500 text-sm font-sans">{data.notes || 'No additional notes'}</span>
-            </div>
-          </div>
-
-          {/* Info Box */}
-          <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex gap-3 items-start">
-            <div className="w-5 h-5 bg-blue-700 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-              <span className="text-white text-xs font-bold font-serif italic">i</span>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <p className="text-stone-900 text-sm font-semibold font-sans">What happens after submission?</p>
-              <p className="text-stone-600 text-sm font-sans">Your order is confirmed as soon as it is submitted. Delivery planning starts after the 16:00 cutoff.</p>
-              <p className="text-stone-600 text-sm font-sans">We'll notify you when delivery is scheduled or explain why the order is deferred.</p>
-            </div>
-          </div>
-        </div>
-
-        {error && (
-          <p role="alert" className="text-red-600 text-sm font-sans">
-            {error}
-          </p>
-        )}
-
-        {/* Footer Actions */}
-        <div className="pt-4 border-t border-neutral-200 flex justify-end gap-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-32 h-10 border-neutral-300 text-stone-800 font-semibold font-sans shadow-none">
-            Back to edit
-          </Button>
-          <Button onClick={onConfirm} disabled={submitting} className="w-32 h-10 bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold font-sans shadow-none">
-            {submitting ? 'Submitting…' : 'Submit order'}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
+  const rows = [['Outlet', outletLabel(outlet)], ['Serving depot', outlet.depot ?? '—'], ['Requested delivery date', formatDay(data.deliveryDate, true)], ['Receiving window', windowLabel(outlet)]]
+  return <Dialog open={open} onOpenChange={(value) => { if (!submitting) onOpenChange(value) }}>
+    <DialogContent className="store-review-dialog" initialFocus={title} showCloseButton={!submitting}>
+      <DialogTitle ref={title} tabIndex={-1} className="type-display-xs-medium">Review your order</DialogTitle>
+      <section className="store-review-section"><h3 className="type-text-md-semibold">Order information</h3><dl className="store-review-information">{rows.map(([label, value]) => <div key={label}><dt className="type-text-sm-medium">{label}</dt><dd className="type-text-sm-regular">{value}</dd></div>)}</dl></section>
+      <section className="store-review-section"><div className="store-review-heading"><h3 className="type-text-md-semibold">Load summary</h3><StatusBadge tone={data.temperatureMode === 'ambient' ? 'warning' : 'info'} leadingIcon={data.temperatureMode === 'ambient' ? <ViewInArOutlined /> : <AcUnitRounded />}>{data.temperatureMode === 'ambient' ? 'Ambient' : 'Chilled'}</StatusBadge></div>
+        <dl className="store-review-metrics">{[['Quantity', `${data.quantity} ${data.quantity === 1 ? 'case' : 'cases'}`], ['Total weight', `${data.weight} kg`], ['Total volume', `${data.volume} m³`]].map(([label, value]) => <div key={label}><dt className="type-text-xs-medium">{label}</dt><dd className="type-text-md-semibold">{value}</dd></div>)}</dl>
+        <h4 className="type-text-sm-semibold">Delivery notes</h4><p className="type-text-sm-regular">{data.notes || 'No additional notes'}</p>
+      </section>
+      <div className="store-review-notice"><InfoOutlined aria-hidden="true" /><div><h3 className="type-text-sm-semibold">What happens after submission?</h3><p className="type-text-sm-regular">Your order is confirmed as soon as it is submitted. Delivery planning starts after the cutoff.</p><p className="type-text-sm-regular">We’ll notify you when delivery is scheduled or explain why the order is deferred.</p></div></div>
+      {error && <p role="alert" className="store-place-error type-text-sm-regular">{error}</p>}
+      <footer className="store-review-actions"><Button size="md" disabled={submitting} onClick={() => onOpenChange(false)}>Back to edit</Button><Button size="md" variant="primary" loading={submitting} loadingLabel="Submitting…" onClick={onConfirm}>Submit order</Button></footer>
+    </DialogContent>
+  </Dialog>
 }

@@ -19,9 +19,20 @@ void main() {
     },
   );
 
-  test('flat follow stays centred on the van', () {
+  test('flat follow also turns with the van and looks ahead of it', () {
     final t = followTarget(van, 90, MapMode.flat);
-    expect(t.point, van);
+    expect(t.bearing, 90); // the map turns so the road ahead is up
+    expect(t.pitch, 0); // ...but is seen from straight above
     expect(t.zoom, 18.5);
+    expect(dist(van, t.point), closeTo(30, 0.1));
+    expect((dist.bearing(van, t.point) + 360) % 360, closeTo(90, 0.5));
+  });
+
+  test('both modes follow the heading as it changes', () {
+    for (final mode in MapMode.values) {
+      expect(followTarget(van, 0, mode).bearing, 0);
+      expect(followTarget(van, 135, mode).bearing, 135);
+      expect(followTarget(van, 270, mode).bearing, 270);
+    }
   });
 }

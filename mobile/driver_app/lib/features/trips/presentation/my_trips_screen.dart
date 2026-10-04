@@ -35,7 +35,10 @@ class MyTripsScreen extends ConsumerWidget {
     return Scaffold(
       body: Column(
         children: [
-          AppHeader(onBellTap: () => context.go('/updates')),
+          AppHeader(
+            onBellTap: () => context.go('/updates'),
+            onChatTap: () => context.push('/chat'),
+          ),
           const _TitleRow(),
           DaySelector(
             day: day,

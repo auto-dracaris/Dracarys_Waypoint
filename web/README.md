@@ -22,9 +22,53 @@ Store Manager routes:
 | Place order | `/store-manager/orders/create` |
 | Deliveries | `/store-manager/deliveries` |
 | Delivery tracking | `/store-manager/delivery/:id` |
+| My Profile | `/store-manager/profile` |
 | Existing Store Manager login | `/store-manager/login` |
 
 Both areas use one development server, production build, and BrowserRouter. `main.tsx` mounts `app/App.tsx`, which declares all routes under the Hub or Store Manager layout. Use React Router links and navigation, including between areas. Production hosting must serve `index.html` for application routes so direct links and refresh work.
+
+Dispatcher profile: `/profile`, reached from the sidebar account button. Its
+knowledge contribution card opens `/knowledge`; Store Manager profiles have no
+contribution card or document-management access. Both profiles use the supplied
+Figma layout and WayPoint tokens, showing real signed-in names, phone numbers,
+assigned access and avatar (initials when absent). Email is not supplied by the API.
+Profile edits use `PUT /auth/me`; passwords use `PUT /auth/change-password`.
+No role/depot/outlet permissions are editable on this page.
+
+Knowledge contribution uses the separate AI service: local Vite proxies `/ai-api`
+to `http://localhost:8000`. Restart Vite after changing proxy configuration. In
+production, proxy `/ai-api` to FastAPI or set `VITE_AI_API_URL` to its reachable base
+URL and configure its allowed origins. NestJS remains on the existing `/api` proxy.
+The AI API always verifies dispatcher tokens for document management, even when
+local document-only chat authentication is disabled. Start the ingestion worker
+before uploading; documents require processing plus explicit approval before use.
+Uploads default to the caller's depot and selected roles. The page supports PDF
+and UTF-8 text, source URL metadata, original download, processing retry and approval.
+Processing/deletion/version-replacement backend routes are unchanged.
+
+Run `npm run check:profiles` for focused profile/role guards and API payload checks.
+
+## Floating assistant
+
+Assistant answers use `react-markdown` and `remark-gfm` for readable headings,
+emphasis, lists and tables, styled with WayPoint tokens. User messages and source
+excerpts remain plain text. Raw HTML and remote images are not rendered; links
+allow only explicit HTTP/HTTPS URLs and open with `noopener noreferrer`.
+
+Signed-in dispatchers and store managers have a bottom-right chat button on portal
+pages. It opens a modal side panel without resizing the page; small screens use the
+full width. Close with the close button, Escape or the backdrop. Chat remains in
+memory across portal navigation and closing/reopening the panel; signing out or
+switching account/role/depot/outlet clears it. It is not saved to browser storage.
+
+Messages use the same `/ai-api` proxy and `VITE_AI_API_URL` setting as knowledge
+contribution. The caller's token is sent in the Authorization header with
+`workflow=business_qa`, and the returned conversation ID is reused for follow-ups.
+The UI supports source excerpts, loading/error states, retry, Stop and New conversation.
+Enter sends; Shift+Enter inserts a line break. Messages are limited to 2,000 characters.
+The AI API remains the authority for identity, allowed tools and record access.
+Run `npm run check:assistant` for focused semantic and transport checks; these do
+not establish browser layout or keyboard/focus behavior.
 
 One Tailwind pipeline loads both sets of styles. The router sets `data-area` on the document before paint; fonts, corner sizes, base colours, focus and scrollbar rules follow the active area. This includes portaled shadcn dialogs and selects. Existing demo data, login behavior, and service integration status are preserved.
 

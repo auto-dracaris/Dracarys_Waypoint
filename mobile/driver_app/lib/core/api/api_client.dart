@@ -66,6 +66,21 @@ class ApiClient {
   Future<Object?> patch(String path, {Object? body, bool auth = true}) =>
       _request('PATCH', path, body: body, auth: auth);
 
+  /// POSTs JSON to [url] (a full address, not under [baseUrl]) and returns the
+  /// reply as it is: for services that answer with plain JSON instead of the
+  /// API envelope, such as the AI assistant. Signs in with the same token and
+  /// refreshes it the same way; failures carry the service's `detail` text.
+  Future<Object?> postJson(String url, {Object? body, Duration? timeout}) =>
+      _request(
+        'POST',
+        '',
+        body: body,
+        auth: true,
+        absoluteUrl: url,
+        raw: true,
+        timeout: timeout,
+      );
+
   /// Sends [file] with [fields] as `multipart/form-data` (the API's one file
   /// route is `POST /images`).
   Future<Object?> upload(
@@ -82,6 +97,9 @@ class ApiClient {
     required bool auth,
     Map<String, String> fields = const {},
     Upload? file,
+    String? absoluteUrl,
+    bool raw = false,
+    Duration? timeout,
   }) async {
     Future<http.Response> attempt() => _send(
       method,
@@ -91,12 +109,14 @@ class ApiClient {
       auth: auth,
       fields: fields,
       file: file,
+      absoluteUrl: absoluteUrl,
+      timeout: timeout,
     );
     var response = await attempt();
     if (response.statusCode == 401 && auth) {
       if (await _refresh()) response = await attempt();
     }
-    return _unwrap(response);
+    return raw ? _unwrapRaw(response) : _unwrap(response);
   }
 
   Future<http.Response> _send(
@@ -107,8 +127,11 @@ class ApiClient {
     required bool auth,
     Map<String, String> fields = const {},
     Upload? file,
+    String? absoluteUrl,
+    Duration? timeout,
   }) async {
-    final uri = Uri.parse('$baseUrl$path').replace(queryParameters: query);
+    final uri = Uri.parse(absoluteUrl ?? '$baseUrl$path')
+        .replace(queryParameters: query);
     final http.BaseRequest request;
     if (file != null) {
       request = http.MultipartRequest(method, uri)
@@ -136,7 +159,7 @@ class ApiClient {
     }
     try {
       final response = await http.Response.fromStream(
-        await _http.send(request).timeout(timeout),
+        await _http.send(request).timeout(timeout ?? this.timeout),
       );
       onReachability?.call(true);
       return response;
@@ -213,6 +236,28 @@ class ApiClient {
     } catch (_) {
       return null;
     }
+  }
+
+  /// A reply from a service that does not use the API envelope: the body is
+  /// the data, and an error explains itself in `detail`.
+  Object? _unwrapRaw(http.Response r) {
+    Object? decoded;
+    try {
+      decoded = jsonDecode(utf8.decode(r.bodyBytes));
+    } catch (_) {}
+    if (r.statusCode >= 200 && r.statusCode < 300) return decoded;
+    final detail = decoded is Map ? decoded['detail'] : null;
+    final message = detail is String
+        ? detail
+        : detail is List && detail.isNotEmpty && detail.first is Map
+        ? '${(detail.first as Map)['msg'] ?? 'Invalid request'}'
+        : null;
+    throw ApiException(
+      r.statusCode,
+      message != null && message.isNotEmpty
+          ? message
+          : 'Request failed (${r.statusCode})',
+    );
   }
 
   Object? _unwrap(http.Response r) {

@@ -4,10 +4,19 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/src/styles/app-loading.css" />
     <title>WayPoint — Delivery Overview</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="app-loading" role="status" aria-live="polite">
+        <div class="app-loading-brand">
+          <img class="app-loading-logo" src="/src/assets/overview/logo.svg" alt="" width="200" height="119" />
+          <div class="app-loading-track" aria-hidden="true"><span></span></div>
+          <span class="app-loading-label">Loading WayPoint…</span>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/account/presentation/account_screen.dart';
+import '../../features/assistant/presentation/chat_screen.dart';
 import '../../features/account/presentation/change_password_screen.dart';
 import '../../features/account/presentation/edit_profile_screen.dart';
 import '../../features/auth/presentation/auth_controller.dart';
@@ -58,6 +59,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           phone: state.uri.queryParameters['phone'] ?? '',
         ),
       ),
+      GoRoute(path: '/chat', builder: (_, _) => const ChatScreen()),
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => AppShell(shell: shell),
         branches: [

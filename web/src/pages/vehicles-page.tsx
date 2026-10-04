@@ -1,6 +1,6 @@
+import { NotificationsButton } from '@/features/notifications/components/notifications-button'
 import { IconButton } from '@/components/ui/icon-button'
 import { useEffect, useRef, useState } from 'react'
-import NotificationsRounded from '@mui/icons-material/NotificationsRounded'
 import MenuRounded from '@mui/icons-material/MenuRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import AddRounded from '@mui/icons-material/AddRounded'
@@ -48,7 +48,6 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
   const [searchTerm, setSearchTerm] = useState(vehicleFromUrl)
   const [sort, setSort] = useState<VehicleSort>({ key: null, direction: 'ascending' })
   const [selectedId, setSelectedId] = useState(vehicleFromUrl)
-  const [checked, setChecked] = useState(new Set<string>())
   const panel = useDetailPanel(vehicleFromUrl() !== '')
   const [detail, setDetail] = useState<{ vehicleId: string; data: VehicleDetail | null; error: string } | null>(null)
   const [editing, setEditing] = useState<'availability' | 'driver' | 'create' | null>(null)
@@ -145,14 +144,6 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
     setFilter(next)
     setPage(1)
   }
-  function toggleChecked(id: string) {
-    setChecked((previous) => {
-      const next = new Set(previous)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
   async function saveAvailability(availability: VehicleAvailability) {
     if (!selected || !accessToken) return
     const affected = await setVehicleAvailability(accessToken, selected.dbId, availability)
@@ -190,9 +181,7 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
           <h1 className="type-display-lg-medium">Vehicles</h1>
         </div>
         <div className="fleet-header-actions">
-          <Button variant="danger" size="md" className="decision-button" onClick={() => onNavigate('Order notifications')}>
-            <NotificationsRounded fontSize="inherit" />3 orders need a decision
-          </Button>
+          <NotificationsButton />
         </div>
       </header>
       <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">
@@ -244,7 +233,6 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
           </div>
           <FleetTable
             vehicles={roster}
-            checked={checked}
             selectedId={selected?.id}
             sort={sort}
             loading={!vehicles && !error}
@@ -253,7 +241,6 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
             meta={meta}
             onPage={setPage}
             onSort={onSort}
-            onCheck={toggleChecked}
             onSelect={(id) => {
               setSelectedId(id)
               panel.show()
