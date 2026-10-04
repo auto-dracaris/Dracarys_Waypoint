@@ -39,7 +39,7 @@ export class IssuesController {
   }
 
   // No `@Roles`: every signed-in role may read, and the service narrows what
-  // a non-dispatcher sees to their own reports.
+  // callers to their own reports, or a loader's active depot trip.
   @Get()
   findAll(
     @Query() query: QueryIssueDto,

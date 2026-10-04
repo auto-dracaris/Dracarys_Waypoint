@@ -17,11 +17,19 @@ import { Order } from '../../../database/entities/order.entity';
 import { RouteChange } from '../../../database/entities/route-change.entity';
 import { TripStop } from '../../../database/entities/trip-stop.entity';
 import { Trip } from '../../../database/entities/trip.entity';
-import { TripListQueryDto } from '../dto/trip-list-query.dto';
+import { TripListQueryDto, TripListStatus } from '../dto/trip-list-query.dto';
 
-// A draft is still the planner's proposal and a cancelled trip is gone;
-// neither is shown to the people who carry trips out.
-const HIDDEN = [TripStatus.DRAFT, TripStatus.CANCELLED];
+const TAB_STATUS = {
+  [TripListStatus.READY_TO_LOAD]: TripStatus.PLANNED,
+  [TripListStatus.IN_PROGRESS]: TripStatus.LOADING,
+  [TripListStatus.AWAITING_PLAN]: TripStatus.DRAFT,
+};
+
+export interface TripTabCounts {
+  readyToLoad: number;
+  inProgress: number;
+  awaitingPlan: number;
+}
 
 /** Whose trips to list: a driver's own, or a depot's. */
 export type TripScope = { driverId: number } | { depotId: number };
@@ -66,7 +74,7 @@ export class TripsRepository extends BaseRepository<Trip> {
     scope: TripScope,
     date: string,
     query: TripListQueryDto,
-  ): Promise<[Trip[], number]> {
+  ): Promise<[Trip[], number, TripTabCounts]> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
 
@@ -75,7 +83,12 @@ export class TripsRepository extends BaseRepository<Trip> {
       .innerJoin('trip.vehicle', 'vehicle')
       .select('trip.id', 'id')
       .where('trip.serviceDate = :date', { date })
-      .andWhere('trip.status NOT IN (:...hidden)', { hidden: HIDDEN });
+      .andWhere('trip.status NOT IN (:...hidden)', {
+        hidden:
+          'driverId' in scope
+            ? [TripStatus.DRAFT, TripStatus.CANCELLED]
+            : [TripStatus.CANCELLED],
+      });
 
     if ('driverId' in scope) {
       qb.andWhere(
@@ -89,6 +102,26 @@ export class TripsRepository extends BaseRepository<Trip> {
     } else {
       qb.andWhere('trip.depotId = :depotId', { depotId: scope.depotId });
     }
+    // Counts describe the whole visible day, independent of the tab, page,
+    // or incremental sync cursor.
+    const statusCounts = await qb
+      .clone()
+      .select('trip.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('trip.status')
+      .getRawMany<{ status: TripStatus; count: string }>();
+    const countOf = (status: TripStatus) =>
+      Number(statusCounts.find((row) => row.status === status)?.count ?? 0);
+    const counts = {
+      readyToLoad: countOf(TripStatus.PLANNED),
+      inProgress: countOf(TripStatus.LOADING),
+      awaitingPlan: countOf(TripStatus.DRAFT),
+    };
+    if (query.status) {
+      qb.andWhere('trip.status = :status', {
+        status: TAB_STATUS[query.status],
+      });
+    }
     if (query.updatedSince) {
       qb.andWhere('trip.updatedAt > :since', { since: query.updatedSince });
     }
@@ -101,12 +134,12 @@ export class TripsRepository extends BaseRepository<Trip> {
       .limit(limit)
       .getRawMany<{ id: string }>();
     if (!rows.length) {
-      return [[], total];
+      return [[], total, counts];
     }
     const trips = await this.detailed()
       .where('trip.id IN (:...ids)', { ids: rows.map((row) => row.id) })
       .getMany();
-    return [trips, total];
+    return [trips, total, counts];
   }
 
   /** The latest load shortfall reported for the trip, with its order and outlet. */

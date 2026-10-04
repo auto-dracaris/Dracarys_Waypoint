@@ -52,6 +52,16 @@ const TRIP_STATUS: Record<TripStatus, string> = {
   [TripStatus.CANCELLED]: 'cancelled',
 };
 
+const TRIP_STATUS_LABELS: Record<TripStatus, string> = {
+  [TripStatus.DRAFT]: 'Awaiting Plan',
+  [TripStatus.PLANNED]: 'Ready to Load',
+  [TripStatus.LOADING]: 'In Progress',
+  [TripStatus.LOADED]: 'Ready',
+  [TripStatus.DISPATCHED]: 'In Progress',
+  [TripStatus.COMPLETED]: 'Completed',
+  [TripStatus.CANCELLED]: 'Cancelled',
+};
+
 // The outcomes a driver records at a stop.
 const RECORDED = new Set([
   TripStopStatus.DELIVERED,
@@ -130,7 +140,7 @@ export class TripsService {
             depotId: (await this.usersRepository.findById(user.userId))!
               .depotId,
           };
-    const [trips, total] = await this.tripsRepository.findForDay(
+    const [trips, total, counts] = await this.tripsRepository.findForDay(
       scope,
       query.date ?? today(),
       query,
@@ -138,7 +148,13 @@ export class TripsService {
 
     return new ApiResponseDto(HttpStatus.OK, 'Trips retrieved successfully', {
       items: trips.map((trip) => this.toSummary(trip)),
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        counts,
+      },
     });
   }
 
@@ -712,13 +728,12 @@ export class TripsService {
 
   /**
    * The trip, if the caller may see it: a driver their own, a loader their
-   * depot's, a dispatcher any. A draft or cancelled trip does not exist as
-   * far as drivers and loaders are concerned.
+   * depot's (including proposals), a dispatcher any. Drivers cannot see drafts.
    */
   async loadFor(tripId: string, user: AuthenticatedUser): Promise<Trip> {
     const trip = await this.tripsRepository.findDetail(tripId);
     const hidden =
-      trip?.status === TripStatus.DRAFT ||
+      (trip?.status === TripStatus.DRAFT && user.role !== UserRole.LOADER) ||
       trip?.status === TripStatus.CANCELLED;
     if (!trip || (hidden && user.role !== UserRole.DISPATCHER)) {
       throw new NotFoundException(`Trip with ID "${tripId}" not found`);
@@ -870,9 +885,17 @@ export class TripsService {
     return {
       id: trip.id,
       name: `Trip ${trip.tripNo}`,
+      tripNo: trip.tripNo,
+      brand: trip.brand,
+      depot: trip.depot?.name,
+      totalUnits: (trip.stops ?? []).reduce(
+        (total, row) => total + (row.order?.orderUnits ?? 0),
+        0,
+      ),
       subtitle: `${trip.brand} deliveries · ${trip.district!.name}`,
       departure: trip.plannedDepartAt,
       status: TRIP_STATUS[trip.status],
+      statusLabel: TRIP_STATUS_LABELS[trip.status],
       planVersion: trip.planVersion,
       updatedAt: trip.updatedAt,
       vehicle: {

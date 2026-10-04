@@ -1,0 +1,18 @@
+info:
+  name: Acknowledge Issue
+  type: http
+  seq: 7
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/issues/{{issueId}}/acknowledge"
+  auth:
+    type: bearer
+    token: "{{dispatcherAccessToken}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
