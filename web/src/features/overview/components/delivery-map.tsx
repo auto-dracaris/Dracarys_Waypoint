@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { Store, Truck, Van, Warehouse } from 'lucide-react'
 import L from 'leaflet'
 import { fetchRoadRoute } from '@/lib/routing'
+import { createVehicleIcon } from '../vehicle-icon'
 import { ALL_OUTLETS, PELIYAGODA_DEPOT, type MapPosition, type OutletMapItem, type RouteStopItem } from '../map-data'
 import 'leaflet/dist/leaflet.css'
 import '@/styles/delivery-map.css'
@@ -170,54 +171,6 @@ function createDepotIcon(name: string, showLabel = true) {
     `,
     iconSize: [0, 0],
     iconAnchor: [16, 16],
-  })
-}
-
-// 2. Single Vehicle Icon (Yellow pin for selected, White pin for unselected)
-function createVehicleIcon({
-  vehicleId,
-  type,
-  isSelected,
-  showLabel = true,
-}: {
-  vehicleId: string
-  type: 'truck' | 'van'
-  isSelected: boolean
-  showLabel?: boolean
-}) {
-  const IconComponent = type === 'van' ? Van : Truck
-  const svg = renderToStaticMarkup(<IconComponent size={14} strokeWidth={2} />)
-
-  if (isSelected) {
-    return L.divIcon({
-      className: 'wp-map-marker-container',
-      html: `
-        <div class="wp-vehicle-marker wp-vehicle-marker--selected">
-          <div class="wp-vehicle-pin">
-            <span class="wp-vehicle-icon">${svg}</span>
-            <span class="wp-vehicle-pointer"></span>
-          </div>
-          <div class="wp-vehicle-label">${vehicleId}</div>
-        </div>
-      `,
-      iconSize: [0, 0],
-      iconAnchor: [16, 34],
-    })
-  }
-
-  return L.divIcon({
-    className: 'wp-map-marker-container',
-    html: `
-      <div class="wp-vehicle-marker wp-vehicle-marker--unselected" title="${vehicleId}">
-        <div class="wp-vehicle-pin">
-          <span class="wp-vehicle-icon">${svg}</span>
-          <span class="wp-vehicle-pointer"></span>
-        </div>
-        ${showLabel ? `<div class="wp-vehicle-label">${vehicleId}</div>` : ''}
-      </div>
-    `,
-    iconSize: [0, 0],
-    iconAnchor: [16, 34],
   })
 }
 
