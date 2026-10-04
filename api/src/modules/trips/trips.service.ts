@@ -29,6 +29,8 @@ import {
 } from '../../database/entities/route-change.entity';
 import { TripStop } from '../../database/entities/trip-stop.entity';
 import { Trip } from '../../database/entities/trip.entity';
+import { notice } from '../notifications/notification.catalog';
+import { NotificationsService } from '../notifications/notifications.service';
 import { UsersRepository } from '../users/repositories/users.repository';
 import {
   ArriveStopDto,
@@ -124,6 +126,7 @@ export class TripsService {
     private readonly codes: TripCodesService,
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /** A driver's own trips for the day, or for a loader their depot's. */
@@ -246,6 +249,9 @@ export class TripsService {
         dispatchCode = await this.codes.issueDispatchCode(trip, manager);
       });
       await this.codes.sendDispatchCode(trip, dispatchCode!);
+      void this.notificationsService.notify([
+        { to: { userIds: [trip.driverId] }, ...notice.tripReady(trip) },
+      ]);
     }
 
     // The code is for the loader to hand to the driver. A repeat of this call
@@ -330,6 +336,12 @@ export class TripsService {
         );
       });
       await this.codes.sendDeliveryCodes(trip, stops, issued!);
+      void this.notificationsService.notify(
+        stops.map((stop) => ({
+          to: { storeManagersOfOutlets: [stop.outletId] },
+          ...notice.orderOutForDelivery(stop.rows.map((row) => row.orderId)),
+        })),
+      );
     }
 
     return new ApiResponseDto(
@@ -497,6 +509,26 @@ export class TripsService {
           manager,
         );
       });
+
+      const lines = [...delivered].map(([row, units]) => ({
+        orderId: row.orderId,
+        delivered: units,
+        ordered: row.order!.orderUnits,
+      }));
+      void this.notificationsService.notify([
+        {
+          to: { storeManagersOfOutlets: [stop.outletId] },
+          ...notice.deliveryRecorded(lines),
+        },
+        ...(lines.some((line) => line.delivered < line.ordered)
+          ? [
+              {
+                to: { dispatchers: true },
+                ...notice.deliveryProblem(trip, outletName(stop.outlet), lines),
+              },
+            ]
+          : []),
+      ]);
     }
 
     return new ApiResponseDto(
@@ -678,6 +710,12 @@ export class TripsService {
         manager,
       );
     });
+    void this.notificationsService.notify([
+      {
+        to: { userIds: [trip.driverId] },
+        ...notice.routeChanged(trip, dto.reason.trim()),
+      },
+    ]);
 
     return new ApiResponseDto(
       HttpStatus.OK,

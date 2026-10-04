@@ -1,0 +1,43 @@
+info:
+  name: Report Store Manager Issue
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/issues"
+  body:
+    type: json
+    data: |-
+      {
+        "clientId": "{{issueId}}",
+        "type": "receipt_shortfall",
+        "orderId": "{{orderReference}}",
+        "affectedCases": 1,
+        "note": "One case short against the delivery note"
+      }
+  auth:
+    type: bearer
+    token: "{{storeManagerAccessToken}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  A store manager reports what they found on receiving an order. `type` is one of `receipt_shortfall`, `receipt_damage`, `other`.
+
+  `orderId` is always required and must be an order of the caller's own outlet that has reached it (status `docked`, `delivered` or `failed`). `affectedCases` is required for `receipt_shortfall` and `receipt_damage`. No `tripId`: the trip and vehicle follow from the order.
+
+  **Response** `201` with the issue: `{ id, type, title, status: "open", statusLabel, description, affectedCases, recordedAt, createdAt, reportedBy, order, trip, photoUrl, resolvedBy, resolvedAt, resolutionNote }`. Every active dispatcher gets an `issue_reported` notification.
+
+  **Sending it twice.** `clientId` (a UUID from the caller) becomes the issue's id. The same `clientId` again returns the stored issue with `200` and creates nothing; someone else's `clientId` is `409`. Leave it out and the server makes the id.
+
+  **Optional fields.** `note` (up to 500 characters; without one the description is the type's title), `photoImageId` (an image the caller uploaded with purpose `issue_photo`, else `400`), `recordedAt` (the reporter's own clock, ISO timestamp; defaults to now).
+
+  **Errors**
+  - `400` a type a store manager cannot report, `orderId` missing, or `affectedCases` missing for a receipt type
+  - `404` the order does not exist or belongs to another outlet
+  - `422` the order has not reached the outlet yet, or `affectedCases` is more than the order has

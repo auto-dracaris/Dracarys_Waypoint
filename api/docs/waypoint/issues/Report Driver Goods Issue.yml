@@ -1,0 +1,55 @@
+info:
+  name: Report Driver Goods Issue
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/issues"
+  body:
+    type: json
+    data: |-
+      {
+        "clientId": "{{issueId}}",
+        "type": "damaged",
+        "tripId": "{{tripId}}",
+        "orderId": "{{orderReference}}",
+        "affectedCases": 2,
+        "note": "Two cases crushed in transit",
+        "recordedAt": "2026-10-05T10:42:00+05:30"
+      }
+  auth:
+    type: bearer
+    token: "{{driverAccessToken}}"
+
+runtime:
+  variables:
+    - name: issueId
+      value: 3f0c6c1e-6f0b-4c0e-9d53-2b8a4a0f8c11
+    - name: tripId
+      value: 6e4152e8-35c3-4647-81fe-2f5762014a35
+    - name: orderReference
+      value: "1"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  A driver reports a problem with the goods of one order on their trip. `type` is one of `damaged`, `temperature_breach`, `short_delivery`, `wrong_items`.
+
+  `tripId`, `orderId` (the reference, e.g. `ORD0000012`) and `affectedCases` are all required for these types.
+
+  **Response** `201` with the issue: `{ id, type, title, status: "open", statusLabel, description, affectedCases, recordedAt, createdAt, reportedBy, order, trip, photoUrl, resolvedBy, resolvedAt, resolutionNote }`. Every active dispatcher gets an `issue_reported` notification.
+
+  **Sending it twice.** `clientId` (a UUID from the caller) becomes the issue's id. The same `clientId` again returns the stored issue with `200` and creates nothing; someone else's `clientId` is `409`. Leave it out and the server makes the id.
+
+  **Optional fields.** `note` (up to 500 characters; without one the description is the type's title), `photoImageId` (an image the caller uploaded with purpose `issue_photo`, else `400`), `recordedAt` (the reporter's own clock, ISO timestamp; defaults to now).
+
+  **Errors**
+  - `400` a type a driver cannot report, `tripId` missing, or `orderId` / `affectedCases` missing for a goods type
+  - `403` the trip is not assigned to this driver
+  - `404` the trip does not exist, or the order is not on this trip
+  - `422` `affectedCases` is more than the order has

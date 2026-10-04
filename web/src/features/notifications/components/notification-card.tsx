@@ -63,18 +63,22 @@ export function NotificationCard({ item, onRead, onAction }: { item: Notificatio
                   </div>
                 ))}
               </dl>
-              <Button variant="danger" className="notification-primary-action" onClick={() => onAction(item)}>
-                {item.actionLabel}
-                <ArrowForwardRounded fontSize="inherit" />
-              </Button>
+              {item.actionLabel && (
+                <Button variant="danger" className="notification-primary-action" onClick={() => onAction(item)}>
+                  {item.actionLabel}
+                  <ArrowForwardRounded fontSize="inherit" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
       ) : (
-        <button type="button" className="notification-action type-text-sm-semibold" onClick={() => onAction(item)}>
-          <span>{item.actionLabel}</span>
-          <ArrowForwardRounded fontSize="inherit" />
-        </button>
+        item.actionLabel && (
+          <button type="button" className="notification-action type-text-sm-semibold" onClick={() => onAction(item)}>
+            <span>{item.actionLabel}</span>
+            <ArrowForwardRounded fontSize="inherit" />
+          </button>
+        )
       )}
     </article>
   )

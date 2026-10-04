@@ -9,6 +9,7 @@ import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ImagesModule } from './modules/images/images.module';
 import { IssuesModule } from './modules/issues/issues.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { OutletsModule } from './modules/outlets/outlets.module';
 import { PlanningModule } from './modules/planning/planning.module';
@@ -61,6 +62,7 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
     TripsModule,
     RoutingModule,
     IssuesModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
