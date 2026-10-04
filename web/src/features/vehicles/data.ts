@@ -23,6 +23,15 @@ export interface FleetVehicle {
   temperature: string
 }
 
+export interface TripTimelineStop {
+  seq: number
+  outletId: string
+  outletName: string | null
+  plannedArrivalAt: string
+  status: string
+  orderCount?: number
+}
+
 export interface DraftTrip {
   id: string
   title: string
@@ -31,6 +40,11 @@ export interface DraftTrip {
   orders: number
   window: string
   nextStop: string | null
+  brand?: string
+  plannedMinutes?: number
+  plannedKm?: number
+  plannedFuelL?: number
+  timeline?: TripTimelineStop[]
 }
 
 export interface VehicleDetail {

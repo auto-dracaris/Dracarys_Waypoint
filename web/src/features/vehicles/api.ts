@@ -22,15 +22,29 @@ interface ApiVehicle {
   plannedTrips?: number
 }
 
+interface ApiTripStop {
+  seq: number
+  outletId: string
+  outletName: string | null
+  plannedArrivalAt: string
+  status: string
+  orderCount: number
+}
+
 interface ApiTrip {
   id: string
   tripNo: number
   status: TripStatus
+  brand?: string
   plannedDepartAt: string
   plannedEndAt: string
+  plannedMinutes?: number
+  plannedKm?: number
+  plannedFuelL?: number
   stops: number
   orders: number
   nextStop: string | null
+  timeline?: ApiTripStop[]
 }
 
 interface ApiVehicleDetail extends ApiVehicle {
@@ -46,7 +60,11 @@ const statusByAvailability: Record<VehicleAvailability, ApiStatus> = { Available
 const sortColumns: Record<VehicleSortKey, string> = { id: 'uniqueId', type: 'type', weight: 'weightCapKg', availability: 'status' }
 
 const capitalise = (value: string) => `${value[0].toUpperCase()}${value.slice(1)}`
-const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Colombo' })
+const clock = (iso: string) => {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return isNaN(d.getTime()) ? '—' : d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Colombo' })
+}
 
 /** Tomorrow's date (YYYY-MM-DD) where Waypoint operates; the day dispatchers are planning. */
 export function planningDate(): string {
@@ -84,6 +102,18 @@ function toTrip(trip: ApiTrip): DraftTrip {
     orders: trip.orders,
     window: `${clock(trip.plannedDepartAt)} – ${clock(trip.plannedEndAt)}`,
     nextStop: trip.nextStop,
+    brand: trip.brand,
+    plannedMinutes: trip.plannedMinutes,
+    plannedKm: trip.plannedKm,
+    plannedFuelL: trip.plannedFuelL,
+    timeline: trip.timeline?.map((stop) => ({
+      seq: stop.seq,
+      outletId: stop.outletId,
+      outletName: stop.outletName,
+      plannedArrivalAt: clock(stop.plannedArrivalAt),
+      status: capitalise(stop.status),
+      orderCount: stop.orderCount,
+    })),
   }
 }
 
