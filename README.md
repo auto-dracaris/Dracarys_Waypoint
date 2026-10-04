@@ -38,28 +38,33 @@ WayPoint plans and tracks deliveries from depots to retail outlets. Store manage
 **You need** Docker with Compose v2.24 or newer (`docker compose version`).
 
 1. **Create the environment files** and fill in the values:
-
    ```bash
    cp api/.env.example api/.env
    cp ai-service/.env.example ai-service/.env
    ```
 
-   - `api/.env`: set `JWT_SECRET`, and the phones and passwords for the seeded accounts (`SYSTEM_DISPATCHER_*`, `DEMO_STORE_MANAGER_*`, `DEMO_DRIVER_*`, `DEMO_LOADER_*`). SMS, Cloudinary and Firebase keys are only needed for those features.
-   - `ai-service/.env`: set `AI_GEMINI_API_KEY` for AI answers.
+* `api/.env`: set `JWT_SECRET`, and the phones and passwords for the seeded accounts (`SYSTEM_DISPATCHER_*`, `DEMO_STORE_MANAGER_*`, `DEMO_DRIVER_*`, `DEMO_LOADER_*`). SMS, Cloudinary and Firebase keys are only needed for those features.
+* `ai-service/.env`: set `AI_GEMINI_API_KEY` for AI answers.
 
-   Database, RabbitMQ and service addresses are set by Compose, so you don't need to change them.
+Database, RabbitMQ and service addresses are set by Compose, so you don't need to change them.
 
 2. **Add the dataset.** The API seeds vehicles, outlets and the calendar from the dataset CSVs. Put them in `api/data/General Data/`. They are not in git, download from here [download the General Data from the original Tech-Triathlon dataset here](https://drive.google.com/drive/folders/1d-272bTFyx4QBpWSFe4_kE8-p5S_Zx8q?usp=sharing).
-
 3. **Start everything:**
 
    ```bash
    docker compose up -d --build
    ```
 
-   The first start takes a few minutes. It downloads the Sri Lanka routing data, and the API creates its tables and runs the seed migrations.
+The first start takes a few minutes. It downloads the Sri Lanka routing data, and the API creates its tables and runs the seed migrations.
 
-4. **Open http://localhost:8080** 
+4. **Open http://localhost:8080**
+Alternatively, you can access the **live hosted system** at: **[https://way-point.site/](https://way-point.site/)**
+**Seeded Demo Accounts:**
+Use the following credentials to test the system across different roles:
+* **Dispatcher:** `0711120401` / `Waypoint@123`
+* **Store Manager:** `0764511038` / `Waypoint@123`
+* **Loader:** `0784562377` / `Waypoint@123`
+* **Driver:** `0760299855` / `Waypoint@123`
 
 
 
@@ -67,11 +72,12 @@ WayPoint plans and tracks deliveries from depots to retail outlets. Store manage
 
 Run the supporting services in Docker and the apps on your machine, so they reload as you edit:
 
-```bash
-docker compose up -d postgres rabbitmq ai-postgres qdrant gateway
+   ```bash
+   docker compose up -d postgres rabbitmq ai-postgres qdrant gateway
 
-cd api && npm install && npm run dev            # http://localhost:5000, uses DB_PORT=5433
-cd web && npm install && npm run dev            # Vite proxies /api to :5000 and /ai-api to :8000
-```
+   cd api && npm install && npm run dev            # http://localhost:5000, uses DB_PORT=5433
+   cd web && npm install && npm run dev            # Vite proxies /api to :5000 and /ai-api to :8000
+   ```
 
-To run the AI service and the driver app locally, follow [ai-service/README.md](ai-service/README.md) and [mobile/driver_app/README.md](mobile/driver_app/README.md).
+
+To run the AI service and the driver app locally, follow [ai-service/README.md](https://www.google.com/search?q=ai-service/README.md) and [mobile/driver_app/README.md](https://www.google.com/search?q=mobile/driver_app/README.md).
