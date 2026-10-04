@@ -51,8 +51,15 @@ export const placeOrderSchema = z.object({
 })
 
 export const reportIssueSchema = z.object({
-  issueType: z.string().min(1, 'Please select an issue type'),
-  acceptedCases: z.number().min(0, 'Cannot be negative'),
-  damagedCases: z.number().min(1, 'You must report at least 1 case'),
-  notes: z.string().optional(),
+  issueType: z.enum(['Damaged goods', 'Missing goods', 'Wrong items']),
+  acceptedCases: z.number().int('Use whole cases').min(0, 'Cannot be negative'),
+  damagedCases: z.number().int('Use whole cases').min(0, 'Cannot be negative'),
+  notes: z.string().max(2000, 'Notes cannot exceed 2000 characters.').optional(),
+}).superRefine((values, context) => {
+  if (values.issueType === 'Damaged goods' && values.damagedCases < 1) {
+    context.addIssue({ code: 'custom', path: ['damagedCases'], message: 'You must report at least 1 damaged case' })
+  }
+  if (values.issueType === 'Wrong items' && !values.notes?.trim()) {
+    context.addIssue({ code: 'custom', path: ['notes'], message: 'Describe which items were wrong' })
+  }
 })

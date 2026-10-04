@@ -10,6 +10,8 @@ from fastapi.responses import JSONResponse
 from app.api.chat import router as chat_router
 from app.api.documents import router as documents_router
 from app.api.health import router as health_router
+from app.api.issue_drafts import router as issue_drafts_router
+from app.api.order_drafts import router as order_drafts_router
 from app.api.upload_limit import UploadBodyLimit
 from app.core.config import Settings
 from app.core.logging import configure_logging
@@ -74,6 +76,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(health_router)
     application.include_router(chat_router)
     application.include_router(documents_router)
+    application.include_router(issue_drafts_router)
+    application.include_router(order_drafts_router)
     return application
 
 

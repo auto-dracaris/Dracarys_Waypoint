@@ -10,8 +10,12 @@ import { ReviewOrderDialog } from '@/features/store-manager/components/review-or
 import { fetchPlacementOptions, placeOrder, type PlacementOptions } from '@/features/store-manager/api'
 import { formatDay, formatMoment, outletLabel } from '@/features/store-manager/order-format'
 import { useUser } from '@/features/auth/user-context'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded'
+import { IconButton } from '@/components/ui/icon-button'
+import { draftOrderNotes } from '@/features/assistant/issue-drafts'
+import '@/features/assistant/draft-notes.css'
 
 const today = () => new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -25,6 +29,11 @@ export function PlaceOrderPage() {
   const [pendingOrderData, setPendingOrderData] = useState<PlaceOrderFormValues | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const draftRequest = useRef<AbortController | null>(null)
+  const notesInput = useRef<HTMLTextAreaElement | null>(null)
+  const [drafting, setDrafting] = useState(false)
+  const [draftMessage, setDraftMessage] = useState('')
+  const [draftError, setDraftError] = useState('')
   const form = useForm<PlaceOrderFormInput, unknown, PlaceOrderFormValues>({
     resolver: zodResolver(placeOrderSchema),
     // The quantities start empty; the delivery day is filled in once the open days load.
@@ -50,11 +59,51 @@ export function PlaceOrderPage() {
       stale = true
     }
   }, [accessToken, setValue])
+  useEffect(() => () => { draftRequest.current?.abort() }, [accessToken])
+
+  async function generateNotes() {
+    if (draftRequest.current || !accessToken || !options) return
+    setDraftMessage(''); setDraftError('')
+    const values = form.getValues()
+    const parsed = placeOrderSchema.safeParse(values)
+    if (!parsed.success) {
+      setDraftError('Select a delivery date and enter the quantity, weight and volume first.'); return
+    }
+    if (!options.deliveryDays.some((day) => day.date === values.deliveryDate)
+      || !options.tempRequirements.includes(values.temperatureMode)) {
+      setDraftError('Select an available date and temperature requirement first.'); return
+    }
+    const snapshot = JSON.stringify(values)
+    const controller = new AbortController()
+    draftRequest.current = controller; setDrafting(true)
+    try {
+      const result = await draftOrderNotes(accessToken, {
+        requested_date: values.deliveryDate, temperature_requirement: values.temperatureMode,
+        quantity: values.quantity, weight_kg: values.weight, volume_m3: values.volume,
+        notes: values.notes ?? '',
+      }, controller.signal)
+      if (draftRequest.current !== controller || controller.signal.aborted) return
+      if (JSON.stringify(form.getValues()) !== snapshot) {
+        setDraftMessage('Your order details changed. Click the sparkle again for an updated note.'); return
+      }
+      if (result.origin === 'form' && values.notes?.trim()) {
+        setDraftMessage('AI drafting was unavailable. Your existing notes were kept.'); return
+      }
+      form.setValue('notes', result.draft, { shouldDirty: true, shouldValidate: true })
+      setDraftMessage(result.origin === 'ai' ? 'AI draft ready. Review and edit it before placing your order.' : 'Note prepared from your order details. Review it before placing your order.')
+      notesInput.current?.focus()
+    } catch (error) {
+      if (!controller.signal.aborted) setDraftError(error instanceof Error ? error.message : 'Could not draft your note. Please try again.')
+    } finally {
+      if (draftRequest.current === controller) { draftRequest.current = null; setDrafting(false) }
+    }
+  }
 
   // Watch form values to dynamically update the "Order summary" side panel
   const summary = form.watch()
 
   function onSubmit(data: PlaceOrderFormValues) {
+    if (drafting) return
     setPendingOrderData(data)
     setSubmitError('')
     setIsReviewOpen(true)
@@ -330,11 +379,23 @@ export function PlaceOrderPage() {
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid} className="space-y-1.5">
                       <FieldLabel className="text-stone-900 text-sm font-medium font-sans">Delivery notes (optional)</FieldLabel>
+                      <div className="issue-notes-wrap">
                       <textarea
                         {...field}
+                        ref={(element) => { field.ref(element); notesInput.current = element }}
+                        maxLength={500}
+                        aria-label="Delivery notes (optional)"
+                        aria-describedby="order-draft-feedback"
                         placeholder="Add instructions relevant to this delivery"
                         className="w-full h-24 p-3 rounded-md border border-neutral-300 text-stone-900 text-sm font-sans outline-none resize-none placeholder:text-stone-400 focus:ring-1 focus:ring-yellow-400"
                       />
+                      <IconButton size="sm" className="issue-draft-button" aria-label="Draft delivery notes with AI" title={drafting ? 'Drafting your note…' : 'Draft with AI'} aria-busy={drafting} disabled={drafting || !accessToken || isReviewOpen || submitting} onClick={() => void generateNotes()}><AutoAwesomeRounded className={drafting ? 'motion-safe:animate-pulse' : ''} /></IconButton>
+                      </div>
+                      <div id="order-draft-feedback" className="text-xs font-sans">
+                        {drafting && <p role="status" className="text-stone-500">Drafting your delivery note…</p>}
+                        {draftMessage && <p role="status" className="text-stone-500">{draftMessage}</p>}
+                        {draftError && <p role="alert" className="text-red-500">{draftError}</p>}
+                      </div>
                       {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                     </Field>
                   )}
@@ -400,7 +461,7 @@ export function PlaceOrderPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={!options.deliveryDays.length} className="px-6 h-10 bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold font-sans shadow-none gap-2">
+              <Button type="submit" disabled={!options.deliveryDays.length || drafting} className="px-6 h-10 bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold font-sans shadow-none gap-2">
                 Review order <ArrowRight className="w-4 h-4" />
               </Button>
             </div>

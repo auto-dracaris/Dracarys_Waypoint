@@ -7,6 +7,7 @@ import { VehiclesPage } from '@/pages/vehicles-page'
 import { OutletsPage } from '@/pages/outlets-page'
 import { TeamPage } from '@/pages/team-page'
 import { OrdersPage } from '@/pages/orders-page'
+import { IssuesPage } from '@/pages/issues-page'
 import { FinalPlanReviewPage } from '@/pages/final-plan-review-page'
 import { PublishPlanConfirmationPage } from '@/pages/publish-plan-confirmation-page'
 import { LoadingExceptionReviewPage } from '@/pages/loading-exception-review-page'
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="outlets" element={<HubPage>{(hub) => <OutletsPage {...hub.pageProps} />}</HubPage>} />
             <Route path="team" element={<HubPage>{(hub) => <TeamPage {...hub.pageProps} onViewVehicle={(id) => hub.navigate('Vehicles', id)} />}</HubPage>} />
             <Route path="orders" element={<HubPage>{(hub) => <OrdersPage {...hub.pageProps} />}</HubPage>} />
+            <Route path="issues" element={<HubPage>{(hub) => <IssuesPage {...hub.pageProps} />}</HubPage>} />
             <Route path="planning" element={<HubPage>{(hub) => <FinalPlanReviewPage {...hub.pageProps} />}</HubPage>} />
             <Route
               path="planning/published"
