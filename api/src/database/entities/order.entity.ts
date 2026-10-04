@@ -9,20 +9,13 @@ import { Outlet } from './outlet.entity';
 import { User } from './user.entity';
 
 /**
- * A store manager's request for one delivery day. A Fresh outlet can hold two
- * orders for the same `requested_date` (ambient and chilled), so the key is
- * the order's own id, never outlet + date.
+ * A store manager's request for one delivery day. An outlet can hold several
+ * orders for the same `requested_date`, so the key is the order's own id,
+ * never outlet + date.
  */
 @Entity('orders')
 @Index(['requestedDate', 'status'])
 @Index(['outletId', 'requestedDate'])
-// An outlet orders each temperature once per delivery day; a cancelled order
-// frees the slot again.
-@Index(
-  'uq_orders_outlet_date_temp',
-  ['outletId', 'requestedDate', 'tempRequirement'],
-  { unique: true, where: `"status" <> 'cancelled'` },
-)
 export class Order extends AutoIncBaseEntity {
   @Column({ name: 'outlet_id', type: 'int' })
   outletId: number;
