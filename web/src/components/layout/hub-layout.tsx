@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { StyledEngineProvider } from '@mui/material/styles'
 import { useHubController } from '@/features/hub/use-hub-controller'
 import { useUser } from '@/features/auth/user-context'
@@ -9,6 +9,7 @@ import '@/styles/overview.css'
 
 export function HubLayout() {
   const hub = useHubController()
+  const location = useLocation()
   const { user } = useUser()
   const profile = user ? { name: `${user.firstName} ${user.lastName}`, initials: `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase(), status: 'Signed in' } : undefined
   const notice = (
@@ -37,7 +38,7 @@ export function HubLayout() {
                       ? 'Planning'
                       : hub.isOperations
                         ? 'Operations'
-                        : 'Overview'
+                        : location.pathname === '/profile' ? 'Profile' : location.pathname === '/knowledge' ? 'Knowledge base' : 'Overview'
           }
         />
         <main className="overview-main">

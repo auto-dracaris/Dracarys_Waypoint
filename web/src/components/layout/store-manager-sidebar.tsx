@@ -22,9 +22,10 @@ interface SidebarProps {
   user: UserProfile
   onNavSelect: (id: string) => void
   onLogout: () => void
+  onViewProfile: () => void
 }
 
-export function Sidebar({ outletName, activeNavId, navItems, user, onNavSelect, onLogout }: SidebarProps) {
+export function Sidebar({ outletName, activeNavId, navItems, user, onNavSelect, onLogout, onViewProfile }: SidebarProps) {
   // Helper to render the correct icon dynamically
   const renderIcon = (iconName: NavItem['iconName']) => {
     switch (iconName) {
@@ -77,13 +78,13 @@ export function Sidebar({ outletName, activeNavId, navItems, user, onNavSelect, 
       {/* User Profile / Logout Footer */}
       <div className="self-stretch p-2">
         <div className="p-4 bg-stone-900 rounded-lg flex flex-col gap-3">
-          <div className="flex items-center gap-3">
+          <button type="button" aria-label="View my profile" onClick={onViewProfile} className="flex items-center gap-3 text-left rounded-sm focus-visible:outline-2 focus-visible:outline-yellow-400">
             <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-stone-900 font-bold text-sm">{user.initials}</div>
             <div className="flex flex-col">
               <span className="text-neutral-100 text-sm font-semibold">{user.role}</span>
               <span className="text-stone-400 text-xs">{user.status}</span>
             </div>
-          </div>
+          </button>
           <div className="h-px bg-stone-700" />
           <div onClick={onLogout} className="flex items-center gap-2 cursor-pointer text-stone-300 hover:text-white transition-colors py-1">
             <LogOut className="h-4 w-4" />

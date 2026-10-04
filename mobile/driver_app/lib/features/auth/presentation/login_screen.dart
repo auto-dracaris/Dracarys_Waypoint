@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/demo_mode_switch.dart';
 import '../../../core/widgets/primary_button.dart';
 import 'auth_controller.dart';
 import 'auth_form_state.dart';
@@ -9,19 +10,22 @@ import 'auth_scaffold.dart';
 import 'validators.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.notice});
+
+  /// A one-off message from the screen that sent the driver here.
+  final String? notice;
 
   @override
   AuthFormState<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends AuthFormState<LoginScreen> {
-  final _email = TextEditingController();
+  final _phone = TextEditingController();
   final _password = TextEditingController();
 
   @override
   void dispose() {
-    _email.dispose();
+    _phone.dispose();
     _password.dispose();
     super.dispose();
   }
@@ -32,16 +36,21 @@ class _LoginScreenState extends AuthFormState<LoginScreen> {
       title: 'Sign in',
       subtitle: 'Welcome back, driver.',
       children: [
+        if (widget.notice != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(widget.notice!, key: const Key('login-notice')),
+          ),
         Form(
           key: formKey,
           child: Column(
             children: [
               TextFormField(
-                key: const Key('email'),
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Email'),
-                validator: validateEmail,
+                key: const Key('phone'),
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Phone number'),
+                validator: validatePhone,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -62,7 +71,7 @@ class _LoginScreenState extends AuthFormState<LoginScreen> {
           isLoading: busy,
           onPressed: () => submit(() => ref
               .read(authControllerProvider.notifier)
-              .login(email: _email.text.trim(), password: _password.text)),
+              .login(phone: _phone.text.trim(), password: _password.text)),
         ),
         const SizedBox(height: 12),
         TextButton(
@@ -70,6 +79,12 @@ class _LoginScreenState extends AuthFormState<LoginScreen> {
           onPressed: () => context.go('/signup'),
           child: const Text('Create account'),
         ),
+        TextButton(
+          key: const Key('go-forgot'),
+          onPressed: () => context.go('/forgot-password'),
+          child: const Text('Forgot password?'),
+        ),
+        const DemoModeSwitch(),
       ],
     );
   }

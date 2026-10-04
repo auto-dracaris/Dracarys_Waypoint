@@ -8,34 +8,63 @@ void main() {
   test('login returns the demo driver and sets the session', () async {
     final r = repo();
     expect(await r.currentDriver(), isNull);
-    final d = await r.login(email: 'x@y.lk', password: 'secret1');
+    final d = await r.login(phone: '0770000002', password: 'secret1');
     expect(d.name, 'Nimal Silva');
     expect(d.initials, 'NS');
     expect((await r.currentDriver())!.code, 'DRV021');
   });
 
   test('login rejects a short password', () async {
-    expect(() => repo().login(email: 'x@y.lk', password: '123'),
+    expect(() => repo().login(phone: '0770000002', password: '123'),
         throwsA(isA<AuthException>()));
   });
 
-  test('signUp then login returns the new driver; logout clears session',
-      () async {
+  test('signUp needs the OTP before the account can sign in', () async {
     final r = repo();
-    final created = await r.signUp(
-        name: 'Kasun Perera', email: 'K@y.lk', password: 'secret1');
-    expect(created.name, 'Kasun Perera');
-    expect(created.initials, 'KP');
-    final again = await r.login(email: 'k@y.lk', password: 'secret1');
-    expect(again.id, created.id);
+    final challenge = await r.signUp(
+        firstName: 'Kasun',
+        lastName: 'Perera',
+        phone: '0771111111',
+        password: 'Secret1!');
+    expect(challenge.phone, '0771111111');
+    expect(
+        () => r.login(phone: '0771111111', password: 'Secret1!'),
+        throwsA(isA<AuthException>()
+            .having((e) => e.message, 'message', contains('verify'))));
+    await r.verifyOtp(
+        phone: '0771111111', otp: '123456', otpId: challenge.otpId);
+    final d = await r.login(phone: '0771111111', password: 'Secret1!');
+    expect(d.name, 'Kasun Perera');
+    expect(d.initials, 'KP');
     await r.logout();
     expect(await r.currentDriver(), isNull);
   });
 
-  test('signUp with an existing email throws AuthException', () async {
+  test('a wrong OTP is rejected', () async {
     final r = repo();
-    await r.signUp(name: 'A B', email: 'a@b.lk', password: 'secret1');
-    expect(() => r.signUp(name: 'C D', email: 'A@B.lk', password: 'secret1'),
+    final c = await r.signUp(
+        firstName: 'A',
+        lastName: 'B',
+        phone: '0772222222',
+        password: 'Secret1!');
+    expect(
+        () => r.verifyOtp(phone: '0772222222', otp: '000000', otpId: c.otpId),
+        throwsA(isA<AuthException>()));
+  });
+
+  test('signUp with an existing phone throws AuthException', () async {
+    final r = repo();
+    await r.signUp(
+        firstName: 'A',
+        lastName: 'B',
+        phone: '0773333333',
+        password: 'Secret1!');
+    expect(
+        () => r.signUp(
+            firstName: 'C',
+            lastName: 'D',
+            phone: '0773333333',
+            password: 'Secret1!'),
         throwsA(isA<AuthException>()));
   });
 }

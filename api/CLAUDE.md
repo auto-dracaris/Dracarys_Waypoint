@@ -216,6 +216,16 @@ src/
   module re-registering them. Feature-specific entities are still registered
   by their own module's `TypeOrmModule.forFeature`.
 
+## Queues
+
+- RabbitMQ carries the work that must not sit on a request: SMS
+  (`src/common/sms/`) and driver position fixes
+  (`VehicleLocationsConsumer`, `POST /vehicles/:id/locations` answers `202`).
+  Each has its own durable queue, built from `src/common/rmq/rmq.options.ts` and
+  consumed by a microservice connected in `main.ts`. A new queue needs a
+  `ClientsModule` registration, a `connectMicroservice` call and a consumer
+  that acks by hand.
+
 ## Testing & docs
 
 - HTTP behaviour is covered by the Bruno collection in `docs/api-test/`, run with

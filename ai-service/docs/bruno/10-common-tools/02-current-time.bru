@@ -1,0 +1,36 @@
+meta {
+  name: Chat: Current Colombo time
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/v1/chat
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{chat_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {"message": "What is the current date and time in Asia/Colombo?", "workflow": "business_qa"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.answer: isDefined
+  res.body.sources: isDefined
+}
+
+docs {
+  Any of the four roles may use these shared tools with a verified NestJS access token.
+  Set secret chat_token. Authentication remains required in local document mode.
+  Knowledge search returns permitted excerpts with citations or an explicit no_knowledge result.
+  Phase 1 does not synthesize a policy explanation or perform additional planning rounds.
+}

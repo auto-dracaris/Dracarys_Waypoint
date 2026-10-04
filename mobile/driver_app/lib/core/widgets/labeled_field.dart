@@ -19,6 +19,8 @@ class LabeledField extends StatelessWidget {
     this.labelStyle,
     this.caption,
     this.fieldKey,
+    this.keyboardType,
+    this.obscureText = false,
   });
 
   final String label;
@@ -37,6 +39,8 @@ class LabeledField extends StatelessWidget {
 
   /// Key for the underlying text field, so tests and callers can find it.
   final Key? fieldKey;
+  final TextInputType? keyboardType;
+  final bool obscureText;
 
   @override
   Widget build(BuildContext context) {
@@ -47,17 +51,23 @@ class LabeledField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: labelStyle ??
-                AppText.textXsSemibold.copyWith(color: AppColors.inkSecondary)),
+        Text(
+          label,
+          style:
+              labelStyle ??
+              AppText.textXsSemibold.copyWith(color: AppColors.inkSecondary),
+        ),
         if (caption != null)
-          Text(caption!,
-              style:
-                  AppText.textXsRegular.copyWith(color: AppColors.inkMuted)),
+          Text(
+            caption!,
+            style: AppText.textXsRegular.copyWith(color: AppColors.inkMuted),
+          ),
         const SizedBox(height: 6),
         TextField(
           key: fieldKey,
           controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscureText,
           onChanged: onChanged,
           minLines: minLines,
           maxLines: maxLines,
@@ -67,20 +77,26 @@ class LabeledField extends StatelessWidget {
             filled: true,
             fillColor: fillColor,
             hintText: hint,
-            hintStyle:
-                AppText.textSmRegular.copyWith(color: AppColors.inkFaint),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            hintStyle: AppText.textSmRegular.copyWith(
+              color: AppColors.inkFaint,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
             enabledBorder: border,
             focusedBorder: border.copyWith(
-                borderSide: const BorderSide(color: AppColors.ink)),
+              borderSide: const BorderSide(color: AppColors.ink),
+            ),
           ),
         ),
         if (errorText != null)
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text(errorText!,
-                style: AppText.textXsRegular.copyWith(color: AppColors.red700)),
+            child: Text(
+              errorText!,
+              style: AppText.textXsRegular.copyWith(color: AppColors.red700),
+            ),
           ),
       ],
     );

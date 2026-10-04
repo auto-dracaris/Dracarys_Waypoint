@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/api/error_message.dart';
 import '../../../core/clock.dart';
 import '../../../core/format.dart';
 import '../../../core/router/routes.dart';
@@ -40,6 +41,8 @@ class _RouteUpdateScreenState extends ConsumerState<RouteUpdateScreen> {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Route acknowledged')));
       context.go(AppRoutes.updates);
+    } catch (e) {
+      if (mounted) showErrorSnack(context, e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -118,11 +121,16 @@ class _TopNav extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SvgPicture.asset('assets/images/back_arrow.svg',
-                          width: 18, height: 14),
+                      SvgPicture.asset(
+                        'assets/images/back_arrow.svg',
+                        width: 18,
+                        height: 14,
+                      ),
                       const SizedBox(width: 6),
-                      Text('My trips',
-                          style: AppText.outfit(14, AppColors.vehicleText)),
+                      Text(
+                        'My trips',
+                        style: AppText.outfit(14, AppColors.vehicleText),
+                      ),
                     ],
                   ),
                 ),
@@ -166,22 +174,30 @@ class _Body extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: const BoxDecoration(
-                    color: AppColors.surface, shape: BoxShape.circle),
-                child: const Icon(Icons.autorenew,
-                    size: 24, color: AppColors.yellow600),
+                  color: AppColors.surface,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.autorenew,
+                  size: 24,
+                  color: AppColors.yellow600,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Route updated by dispatcher',
-                        style: AppText.textSmBold),
+                    Text(
+                      'Route updated by dispatcher',
+                      style: AppText.textSmBold,
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       'Updated ${formatNotificationTime(change.updatedAt, now)} · Plan v${change.planVersion}',
-                      style: AppText.textXsRegular
-                          .copyWith(color: AppColors.inkSecondary),
+                      style: AppText.textXsRegular.copyWith(
+                        color: AppColors.inkSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -199,23 +215,31 @@ class _Body extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.info_outline,
-                  size: 18, color: AppColors.inkMuted),
+              const Icon(
+                Icons.info_outline,
+                size: 18,
+                color: AppColors.inkMuted,
+              ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text.rich(TextSpan(
-                  style: AppText.textXsRegular
-                      .copyWith(color: AppColors.inkSecondary),
-                  children: [
-                    TextSpan(
+                child: Text.rich(
+                  TextSpan(
+                    style: AppText.textXsRegular.copyWith(
+                      color: AppColors.inkSecondary,
+                    ),
+                    children: [
+                      TextSpan(
                         text: 'Reason: ',
                         style: _inter.copyWith(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.ink)),
-                    TextSpan(text: change.reason),
-                  ],
-                )),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      TextSpan(text: change.reason),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -230,22 +254,30 @@ class _Body extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.cloud_queue, size: 16, color: AppColors.inkFaint),
+              const Icon(
+                Icons.cloud_queue,
+                size: 16,
+                color: AppColors.inkFaint,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Updated route not yet downloaded. Saved route still available offline.',
                   style: _inter.copyWith(
-                      fontSize: 11, height: 14 / 11, color: AppColors.inkMuted),
+                    fontSize: 11,
+                    height: 14 / 11,
+                    color: AppColors.inkMuted,
+                  ),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 12),
-        Text('STOP SEQUENCE CHANGES — TRIP 1',
-            style: AppText.textXsSemibold
-                .copyWith(color: AppColors.inkSecondary)),
+        Text(
+          'STOP SEQUENCE CHANGES — TRIP 1',
+          style: AppText.textXsSemibold.copyWith(color: AppColors.inkSecondary),
+        ),
         const SizedBox(height: 8),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,8 +307,11 @@ class _Body extends StatelessWidget {
 }
 
 class _SequenceColumn extends StatelessWidget {
-  const _SequenceColumn(
-      {required this.title, required this.stops, required this.updated});
+  const _SequenceColumn({
+    required this.title,
+    required this.stops,
+    required this.updated,
+  });
 
   final String title;
   final List<SequenceStop> stops;
@@ -289,14 +324,16 @@ class _SequenceColumn extends StatelessWidget {
       decoration: BoxDecoration(
         color: updated ? AppColors.surface : AppColors.card,
         border: Border.all(
-            color: updated ? AppColors.yellow300 : AppColors.border),
+          color: updated ? AppColors.yellow300 : AppColors.border,
+        ),
         borderRadius: BorderRadius.circular(8),
         boxShadow: updated
             ? const [
                 BoxShadow(
-                    color: Color(0x0D000000),
-                    offset: Offset(0, 2),
-                    blurRadius: 2),
+                  color: Color(0x0D000000),
+                  offset: Offset(0, 2),
+                  blurRadius: 2,
+                ),
               ]
             : null,
       ),
@@ -308,7 +345,8 @@ class _SequenceColumn extends StatelessWidget {
             child: Text(
               title,
               style: AppText.textXsSemibold.copyWith(
-                  color: updated ? AppColors.ink : AppColors.inkSecondary),
+                color: updated ? AppColors.ink : AppColors.inkSecondary,
+              ),
             ),
           ),
           for (var i = 0; i < stops.length; i++) ...[
@@ -322,8 +360,11 @@ class _SequenceColumn extends StatelessWidget {
 }
 
 class _StopRow extends StatelessWidget {
-  const _StopRow(
-      {required this.number, required this.stop, required this.updated});
+  const _StopRow({
+    required this.number,
+    required this.stop,
+    required this.updated,
+  });
 
   final int number;
   final SequenceStop stop;
@@ -340,21 +381,29 @@ class _StopRow extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.check_circle,
-                    size: 12, color: AppColors.lime700),
+                const Icon(
+                  Icons.check_circle,
+                  size: 12,
+                  color: AppColors.lime700,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
-                  child: Text(label,
-                      style: _inter.copyWith(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.ink)),
+                  child: Text(
+                    label,
+                    style: _inter.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                    ),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 2),
-            Text('Completed',
-                style: _inter.copyWith(fontSize: 10, color: AppColors.inkMuted)),
+            Text(
+              'Completed',
+              style: _inter.copyWith(fontSize: 10, color: AppColors.inkMuted),
+            ),
           ],
         ),
       );
@@ -368,20 +417,24 @@ class _StopRow extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Flexible(
-              child: Text(label,
-                  style: _inter.copyWith(
-                      fontSize: 11,
-                      fontWeight: updated ? FontWeight.w700 : FontWeight.w500,
-                      color: AppColors.ink)),
+              child: Text(
+                label,
+                style: _inter.copyWith(
+                  fontSize: 11,
+                  fontWeight: updated ? FontWeight.w700 : FontWeight.w500,
+                  color: AppColors.ink,
+                ),
+              ),
             ),
             if (updated && moved) _MovementTag(stop.movement),
           ],
         ),
         const SizedBox(height: 2),
         if (stop.area != null)
-          Text(stop.area!,
-              style:
-                  _inter.copyWith(fontSize: 10, color: AppColors.inkSecondary)),
+          Text(
+            stop.area!,
+            style: _inter.copyWith(fontSize: 10, color: AppColors.inkSecondary),
+          ),
       ],
     );
   }
@@ -404,9 +457,10 @@ class _MovementTag extends StatelessWidget {
       child: Text(
         up ? 'UP ↑' : 'DOWN',
         style: _inter.copyWith(
-            fontSize: 8,
-            fontWeight: FontWeight.w700,
-            color: up ? AppColors.yellow600 : AppColors.inkMuted),
+          fontSize: 8,
+          fontWeight: FontWeight.w700,
+          color: up ? AppColors.yellow600 : AppColors.inkMuted,
+        ),
       ),
     );
   }
@@ -419,8 +473,7 @@ class _ImpactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base =
-        AppText.textXsRegular.copyWith(color: AppColors.inkSecondary);
+    final base = AppText.textXsRegular.copyWith(color: AppColors.inkSecondary);
     final warning = change.tightWindow;
     return Container(
       padding: const EdgeInsets.all(12),
@@ -436,19 +489,30 @@ class _ImpactCard extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.access_time, size: 16, color: AppColors.inkMuted),
+              const Icon(
+                Icons.access_time,
+                size: 16,
+                color: AppColors.inkMuted,
+              ),
               const SizedBox(width: 6),
               Expanded(
-                child: Text.rich(TextSpan(style: base, children: [
-                  TextSpan(text: '${change.impactStopName} arrival now '),
+                child: Text.rich(
                   TextSpan(
-                      text: change.impactArrivalNow,
-                      style: _inter.copyWith(
+                    style: base,
+                    children: [
+                      TextSpan(text: '${change.impactStopName} arrival now '),
+                      TextSpan(
+                        text: change.impactArrivalNow,
+                        style: _inter.copyWith(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.ink)),
-                  TextSpan(text: ' (was ${change.impactArrivalWas})'),
-                ])),
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      TextSpan(text: ' (was ${change.impactArrivalWas})'),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -456,13 +520,19 @@ class _ImpactCard extends StatelessWidget {
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.warning,
-                    size: 16, color: AppColors.errorPrimary),
+                const Icon(
+                  Icons.warning,
+                  size: 16,
+                  color: AppColors.errorPrimary,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(warning,
-                      style: AppText.textXsSemibold
-                          .copyWith(color: AppColors.errorPrimary)),
+                  child: Text(
+                    warning,
+                    style: AppText.textXsSemibold.copyWith(
+                      color: AppColors.errorPrimary,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -498,7 +568,9 @@ class _Actions extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppButton(
-            label: acknowledged ? 'Route acknowledged' : 'Acknowledge updated route',
+            label: acknowledged
+                ? 'Route acknowledged'
+                : 'Acknowledge updated route',
             padding: 14,
             radius: 8,
             backgroundColor: AppColors.brandYellow,
@@ -510,21 +582,24 @@ class _Actions extends StatelessWidget {
             onTap: onViewTrip,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text.rich(TextSpan(
-                style: AppText.textSmSemibold
-                    .copyWith(color: AppColors.inkSecondary),
-                children: [
-                  const TextSpan(text: 'View full trip '),
-                  TextSpan(
-                    text: 'here →',
-                    style: TextStyle(
-                      color: AppColors.ink,
-                      decoration: TextDecoration.underline,
-                      fontVariations: const [FontVariation('wght', 600)],
-                    ),
+              child: Text.rich(
+                TextSpan(
+                  style: AppText.textSmSemibold.copyWith(
+                    color: AppColors.inkSecondary,
                   ),
-                ],
-              )),
+                  children: [
+                    const TextSpan(text: 'View full trip '),
+                    TextSpan(
+                      text: 'here →',
+                      style: TextStyle(
+                        color: AppColors.ink,
+                        decoration: TextDecoration.underline,
+                        fontVariations: const [FontVariation('wght', 600)],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],

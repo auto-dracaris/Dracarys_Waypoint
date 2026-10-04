@@ -1,0 +1,45 @@
+{
+  "tested_at_utc": "2026-10-04T05:23:48.685987+00:00",
+  "suite_version": 1,
+  "evidence_notes": [
+    "Automatic hints and citation checks do not prove semantic correctness.",
+    "Synthetic fixtures are not company policy; original documents are preserved."
+  ],
+  "cases": [
+    {
+      "id": "manager-record-and-reference",
+      "kind": "chat",
+      "status": "failed",
+      "checks": {
+        "http_200": false,
+        "answer_present": false,
+        "citation_ids_valid": true,
+        "expected_page_retrieved": false,
+        "reference_cited": false,
+        "api_cited": false,
+        "actual_status_present": false
+      },
+      "http_status": 504,
+      "answer_status": null,
+      "source_pages": [],
+      "manual_review_required": false,
+      "elapsed_seconds": 30.315
+    },
+    {
+      "id": "manager-followup",
+      "kind": "chat",
+      "status": "blocked",
+      "reason": "No successful preceding conversation",
+      "elapsed_seconds": 0.0
+    }
+  ],
+  "test_login_sessions_revoked": true,
+  "summary": {
+    "passed": 0,
+    "failed": 1,
+    "blocked": 1,
+    "chat_latency_median_seconds": 15.158,
+    "chat_latency_max_seconds": 30.315,
+    "manual_review_cases": []
+  }
+}

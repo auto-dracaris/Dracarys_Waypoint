@@ -1,0 +1,16 @@
+meta {
+  name: Document: Metadata and history
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/api/v1/documents/{{document_id}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
