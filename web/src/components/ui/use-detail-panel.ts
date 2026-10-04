@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { loadDetailPanelMode, saveDetailPanelMode, type DetailPanelMode } from '@/lib/detail-panel-preferences'
+import type { DetailPanelMode } from '@/lib/detail-panel-preferences'
 
 export interface DetailPanelState {
   mode: DetailPanelMode
@@ -10,15 +10,18 @@ export interface DetailPanelState {
   close: () => void
 }
 
-/** One per page: the display mode is a preference shared by every detail panel, the open state is the page's own. */
+/** Every page starts docked; opening a pop-up is temporary until it is closed. */
 export function useDetailPanel(initiallyOpen = false): DetailPanelState {
-  const [mode, setModeState] = useState(loadDetailPanelMode)
+  const [mode, setModeState] = useState<DetailPanelMode>('side')
   const [open, setOpen] = useState(initiallyOpen)
   function setMode(next: DetailPanelMode) {
     setModeState(next)
-    saveDetailPanelMode(next)
     // Choosing the pop-up shows the current item straight away.
     if (next === 'modal') setOpen(true)
   }
-  return { mode, setMode, open, show: () => setOpen(true), close: () => setOpen(false) }
+  function close() {
+    setOpen(false)
+    setModeState('side')
+  }
+  return { mode, setMode, open, show: () => setOpen(true), close }
 }

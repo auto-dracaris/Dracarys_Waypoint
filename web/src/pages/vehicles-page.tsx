@@ -48,7 +48,6 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
   const [searchTerm, setSearchTerm] = useState(vehicleFromUrl)
   const [sort, setSort] = useState<VehicleSort>({ key: null, direction: 'ascending' })
   const [selectedId, setSelectedId] = useState(vehicleFromUrl)
-  const [checked, setChecked] = useState(new Set<string>())
   const panel = useDetailPanel(vehicleFromUrl() !== '')
   const [detail, setDetail] = useState<{ vehicleId: string; data: VehicleDetail | null; error: string } | null>(null)
   const [editing, setEditing] = useState<'availability' | 'driver' | 'create' | null>(null)
@@ -145,14 +144,6 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
     setFilter(next)
     setPage(1)
   }
-  function toggleChecked(id: string) {
-    setChecked((previous) => {
-      const next = new Set(previous)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
   async function saveAvailability(availability: VehicleAvailability) {
     if (!selected || !accessToken) return
     const affected = await setVehicleAvailability(accessToken, selected.dbId, availability)
@@ -242,7 +233,6 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
           </div>
           <FleetTable
             vehicles={roster}
-            checked={checked}
             selectedId={selected?.id}
             sort={sort}
             loading={!vehicles && !error}
@@ -251,7 +241,6 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
             meta={meta}
             onPage={setPage}
             onSort={onSort}
-            onCheck={toggleChecked}
             onSelect={(id) => {
               setSelectedId(id)
               panel.show()

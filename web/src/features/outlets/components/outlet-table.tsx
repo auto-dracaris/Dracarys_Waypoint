@@ -1,7 +1,6 @@
 import SwapVertRounded from '@mui/icons-material/SwapVertRounded'
 import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded'
 import ArrowDownwardRounded from '@mui/icons-material/ArrowDownwardRounded'
-import CheckRounded from '@mui/icons-material/CheckRounded'
 import { Button } from '@/components/ui/button'
 import type { Outlet, OutletSort, OutletSortKey, PageMeta } from '../data'
 
@@ -16,7 +15,6 @@ const columns: { label: string; key: OutletSortKey }[] = [
 
 export function OutletTable({
   outlets,
-  checked,
   selectedId,
   sort,
   loading,
@@ -25,13 +23,11 @@ export function OutletTable({
   meta,
   onPage,
   onSort,
-  onCheck,
   onSelect,
   onClear,
   onRetry,
 }: {
   outlets: Outlet[]
-  checked: Set<string>
   selectedId?: string
   sort: OutletSort
   loading: boolean
@@ -40,7 +36,6 @@ export function OutletTable({
   meta: PageMeta | null
   onPage: (page: number) => void
   onSort: (key: OutletSortKey) => void
-  onCheck: (id: string) => void
   onSelect: (id: string) => void
   onClear: () => void
   onRetry: () => void
@@ -73,13 +68,9 @@ export function OutletTable({
           </thead>
           <tbody>
             {outlets.map((outlet) => (
-              <tr key={outlet.id} className={checked.has(outlet.id) ? 'fleet-row-checked' : ''} onClick={() => onSelect(outlet.id)}>
+              <tr key={outlet.id} className={outlet.id === selectedId ? 'fleet-row-selected' : ''} onClick={() => onSelect(outlet.id)}>
                 <td>
                   <div className="fleet-id-cell">
-                    <span className="fleet-checkbox">
-                      <input type="checkbox" aria-label={`Select ${outlet.id}`} checked={checked.has(outlet.id)} onClick={(event) => event.stopPropagation()} onChange={() => onCheck(outlet.id)} />
-                      {checked.has(outlet.id) && <CheckRounded fontSize="inherit" />}
-                    </span>
                     <button aria-pressed={outlet.id === selectedId} onClick={() => onSelect(outlet.id)}>
                       {outlet.id}
                     </button>

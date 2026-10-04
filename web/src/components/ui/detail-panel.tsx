@@ -1,5 +1,4 @@
 import { useEffect, useRef, type ReactNode } from 'react'
-import ViewSidebarOutlined from '@mui/icons-material/ViewSidebarOutlined'
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
 import { IconButton } from './icon-button'
@@ -18,15 +17,13 @@ export function DetailPanel({ panel, label, className = '', children }: { panel:
   }, [modal, panel.open])
   const toolbar = (
     <div className="wp-detail-panel-toolbar" role="group" aria-label="Panel display">
-      <IconButton size="sm" aria-label="Show as side panel" aria-pressed={!modal} onClick={() => panel.setMode('side')}>
-        <ViewSidebarOutlined fontSize="inherit" />
-      </IconButton>
-      <IconButton size="sm" aria-label="Show as pop-up" aria-pressed={modal} onClick={() => panel.setMode('modal')}>
-        <OpenInNewRounded fontSize="inherit" />
-      </IconButton>
-      {modal && (
+      {modal ? (
         <IconButton size="sm" className="wp-detail-panel-close" aria-label="Close details" onClick={panel.close}>
           <CloseRounded fontSize="inherit" />
+        </IconButton>
+      ) : (
+        <IconButton size="sm" aria-label="Show as pop-up" aria-haspopup="dialog" onClick={() => panel.setMode('modal')}>
+          <OpenInNewRounded fontSize="inherit" />
         </IconButton>
       )}
     </div>

@@ -139,6 +139,7 @@
 .sidebar-toggle svg {
   width: var(--wp-space-3xl);
   height: var(--wp-space-3xl);
+  opacity: 0.5;
 }
 .sidebar-toggle:hover {
   background: var(--wp-warm-neutral-100);
@@ -173,6 +174,12 @@
     align-self: flex-start;
     height: 100svh;
     overflow-y: auto;
+  }
+  .sidebar .brand-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--wp-warm-neutral-50);
   }
   .sidebar--collapsed {
     flex-basis: var(--wp-spacing-20);
@@ -225,6 +232,21 @@
   .sidebar--collapsed .logout-button {
     justify-content: center;
     padding-bottom: var(--wp-space-xs);
+  }
+}
+@media (min-width: 768px) and (hover: hover) {
+  .sidebar-toggle {
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+  .sidebar:hover .sidebar-toggle,
+  .sidebar:focus-within .sidebar-toggle {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-toggle {
+    transition: none;
   }
 }
 @media (min-width: 768px) and (max-width: 1023px) {

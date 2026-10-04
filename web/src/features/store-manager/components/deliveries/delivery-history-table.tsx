@@ -1,19 +1,34 @@
-import { Calendar, ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
+import { useState } from 'react'
+import SearchRounded from '@mui/icons-material/SearchRounded'
+import SwapVertRounded from '@mui/icons-material/SwapVertRounded'
+import ChevronLeftRounded from '@mui/icons-material/ChevronLeftRounded'
+import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
+import { StatusBadge, type StatusBadgeProps } from '@/components/ui/status-badge'
+import { DeliveryDateFilter } from './delivery-date-filter'
 import type { DeliveryHistoryItem } from '@/features/store-manager/types'
 import type { DeliveryStage } from '@/features/store-manager/api'
 import type { Paginated } from '@/lib/api-client'
 
 export type DeliveryTab = 'all' | DeliveryStage
-
 const tabs: { key: DeliveryTab; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'upcoming', label: 'Upcoming' },
-  { key: 'awaiting', label: 'Awaiting confirmation' },
-  { key: 'completed', label: 'Completed' },
+  { key: 'all', label: 'All' }, { key: 'upcoming', label: 'Upcoming' },
+  { key: 'awaiting', label: 'Awaiting confirmation' }, { key: 'completed', label: 'Completed' },
 ]
-
+const tones: Record<DeliveryHistoryItem['statusVariant'], StatusBadgeProps['tone']> = {
+  yellow: 'warning', green: 'success', red: 'error', blue: 'info', default: 'neutral',
+}
+type HistoryRow = DeliveryHistoryItem & { sortDate?: string }
+type SortKey = 'id' | 'requirement' | 'deliveryDate' | 'latestUpdate' | 'status'
+const columns: { key: SortKey; label: string }[] = [
+  { key: 'id', label: 'Order ID' }, { key: 'requirement', label: 'Requirement' },
+  { key: 'deliveryDate', label: 'Delivery date' }, { key: 'latestUpdate', label: 'Arrival / latest update' },
+  { key: 'status', label: 'Status' },
+]
 interface DeliveryHistoryTableProps {
-  items: DeliveryHistoryItem[]
+  items: HistoryRow[]
   selectedId: string | null
   onSelect: (id: string) => void
   counts: Record<DeliveryTab, number> | null
@@ -21,7 +36,6 @@ interface DeliveryHistoryTableProps {
   onTab: (tab: DeliveryTab) => void
   search: string
   onSearch: (search: string) => void
-  // YYYY-MM-DD, or empty for every day.
   date: string
   onDate: (date: string) => void
   loading: boolean
@@ -32,141 +46,61 @@ interface DeliveryHistoryTableProps {
 }
 
 export function DeliveryHistoryTable({ items, selectedId, onSelect, counts, tab, onTab, search, onSearch, date, onDate, loading, error, onRetry, meta, onPage }: DeliveryHistoryTableProps) {
+  const [sort, setSort] = useState<{ key: SortKey; descending: boolean } | null>(null)
+  const visible = [...items]
+  if (sort) visible.sort((a, b) => {
+    const left = sort.key === 'deliveryDate' ? a.sortDate ?? a.deliveryDate : a[sort.key]
+    const right = sort.key === 'deliveryDate' ? b.sortDate ?? b.deliveryDate : b[sort.key]
+    const comparison = left.localeCompare(right, undefined, { numeric: true })
+    return sort.descending ? -comparison : comparison
+  })
   return (
-    <div className="flex-2 bg-white rounded-xl border border-neutral-200 shadow-sm flex flex-col overflow-hidden">
-      {/* Header & Controls */}
-      <div className="p-6 flex flex-col gap-4 border-b border-neutral-200">
-        <div className="flex justify-between items-center">
-          <h2 className="text-stone-900 text-2xl font-medium font-sans">Delivery history</h2>
-          <div className="relative w-72">
-            <Search className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
-            <input
-              type="text"
-              placeholder="Search order ID"
-              aria-label="Search order ID"
-              value={search}
-              onChange={(event) => onSearch(event.target.value)}
-              className="w-full h-10 pl-9 pr-3 rounded-lg border border-neutral-300 text-sm font-sans outline-none focus:border-yellow-400"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-between items-center mt-2">
-          {/* Tabs */}
-          <div className="flex p-1 bg-neutral-100 rounded-xl gap-1" role="group" aria-label="Filter deliveries">
-            {tabs.map(({ key, label }) => (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={tab === key}
-                onClick={() => onTab(key)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium font-sans flex gap-1.5 ${tab === key ? 'bg-white shadow-sm text-stone-900' : 'text-stone-600 hover:bg-neutral-200'}`}
-              >
-                {label} {counts && <span className="text-stone-400">{counts[key]}</span>}
-              </button>
-            ))}
-          </div>
-
-          {/* Date Filter */}
-          <div className="flex items-center gap-1">
-            <label className="h-9 px-3 border border-neutral-200 rounded-md text-stone-800 text-sm font-medium flex items-center gap-2 hover:bg-neutral-50 cursor-pointer">
-              <Calendar className="w-4 h-4" />
-              <span className="sr-only">Delivery date</span>
-              {!date && <span aria-hidden="true">Delivery date</span>}
-              <input type="date" value={date} onChange={(event) => onDate(event.target.value)} className={date ? 'bg-transparent outline-none' : 'w-0 opacity-0'} />
-            </label>
-            {date && (
-              <button type="button" onClick={() => onDate('')} aria-label="Clear delivery date" className="h-9 w-9 flex items-center justify-center rounded-md text-stone-500 hover:bg-neutral-100">
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+    <section className="store-delivery-history" aria-label="Delivery history">
+      <div className="store-delivery-history-heading">
+        <h2 className="type-display-md-medium">Delivery history</h2>
+        <div className="store-delivery-search">
+          <SearchRounded aria-hidden="true" />
+          <Input controlSize="sm" aria-label="Search order ID" placeholder="Search order ID" value={search} onChange={(event) => onSearch(event.target.value)} />
         </div>
       </div>
-
-      {/* Table Area */}
-      <div className="overflow-x-auto flex-1">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-neutral-100 border-b border-neutral-200">
-              <th className="font-medium text-stone-500 text-sm py-3 px-4 w-[20%]">Order ID ↑↓</th>
-              <th className="font-medium text-stone-500 text-sm py-3 px-4 w-[15%]">Requirement ↑↓</th>
-              <th className="font-medium text-stone-500 text-sm py-3 px-4 w-[20%]">Delivery date ↑↓</th>
-              <th className="font-medium text-stone-500 text-sm py-3 px-4 w-[25%]">Arrival / latest update ↑↓</th>
-              <th className="font-medium text-stone-500 text-sm py-3 px-4 w-[20%]">Status ↑↓</th>
-            </tr>
-          </thead>
+      <div className="store-delivery-history-toolbar">
+        <div className="store-delivery-tabs" role="group" aria-label="Filter deliveries">
+          {tabs.map(({ key, label }) => (
+            <button key={key} type="button" aria-pressed={tab === key} onClick={() => onTab(key)} className="type-text-sm-regular">
+              {label}{counts && <span>{counts[key]}</span>}
+            </button>
+          ))}
+        </div>
+        <DeliveryDateFilter date={date} onDate={onDate} />
+      </div>
+      <div className="store-delivery-table-scroll">
+        <table className="store-delivery-table">
+          <caption className="sr-only">Deliveries to your outlet. Column sorting applies to the displayed page.</caption>
+          <thead><tr>
+            {columns.map(({ key, label }) => <th key={key} scope="col" aria-sort={sort?.key === key ? sort.descending ? 'descending' : 'ascending' : 'none'}>
+              <button type="button" className="type-text-sm-medium" onClick={() => setSort({ key, descending: sort?.key === key && !sort.descending })}>{label}<SwapVertRounded aria-hidden="true" /></button>
+            </th>)}
+          </tr></thead>
           <tbody>
-            {(loading || error || items.length === 0) && (
-              <tr>
-                <td colSpan={5} className="py-10 px-4 text-center text-stone-500 text-sm font-sans">
-                  {loading ? (
-                    'Loading deliveries…'
-                  ) : error ? (
-                    <span className="text-red-700">
-                      {error}{' '}
-                      <button type="button" onClick={onRetry} className="text-blue-600 font-medium hover:underline">
-                        Try again
-                      </button>
-                    </span>
-                  ) : (
-                    'No deliveries match these filters.'
-                  )}
-                </td>
-              </tr>
-            )}
-            {!loading &&
-              !error &&
-              items.map((item) => {
-                const isSelected = item.id === selectedId
-                const statusStyles = {
-                  yellow: 'bg-yellow-100 text-yellow-700',
-                  green: 'bg-lime-100 text-lime-700',
-                  red: 'bg-red-100 text-red-700',
-                  blue: 'bg-blue-100 text-blue-700',
-                  default: 'bg-neutral-100 text-neutral-700',
-                }[item.statusVariant]
-
-                return (
-                  <tr key={item.id} onClick={() => onSelect(item.id)} className={`border-b border-neutral-200 cursor-pointer transition-colors ${isSelected ? 'bg-yellow-50' : 'hover:bg-neutral-50'}`}>
-                    {/* CRITICAL FIX: The yellow bar is now an absolute div inside the first td, keeping the column count at 5 */}
-                    <td className="py-3 px-4 text-stone-900 text-sm font-sans relative">
-                      {isSelected && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-yellow-500" />}
-                      {item.id}
-                    </td>
-
-                    <td className="py-3 px-4 text-stone-900 text-sm font-sans">{item.requirement}</td>
-                    <td className="py-3 px-4 text-stone-900 text-sm font-sans">{item.deliveryDate}</td>
-                    <td className="py-3 px-4 text-stone-900 text-sm font-sans">{item.latestUpdate}</td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium font-sans ${statusStyles}`}>{item.status}</span>
-                    </td>
-                  </tr>
-                )
-              })}
+            {(loading || error || items.length === 0) && <tr><td colSpan={5} className="store-delivery-table-state type-text-sm-regular">
+              {loading ? <span role="status">Loading deliveries…</span> : error ? <div role="alert"><p>{error}</p><Button size="xs" onClick={onRetry}>Try again</Button></div> : 'No deliveries match these filters.'}
+            </td></tr>}
+            {!loading && !error && visible.map((item) => <tr key={item.id} onClick={() => onSelect(item.id)} className={item.id === selectedId ? 'store-delivery-row--selected' : ''}>
+              <td><button type="button" aria-label={`View delivery ${item.id}`} aria-pressed={item.id === selectedId} aria-controls="store-delivery-details" className="type-text-xs-regular">{item.id}</button></td>
+              <td>{item.requirement}</td><td>{item.deliveryDate}</td><td title={item.latestUpdate}>{item.latestUpdate}</td>
+              <td><StatusBadge tone={tones[item.statusVariant]}>{item.status}</StatusBadge></td>
+            </tr>)}
           </tbody>
         </table>
       </div>
-
-      {/* Footer */}
-      <div className="p-3 bg-neutral-50 border-t border-neutral-200 text-stone-500 text-sm font-sans flex justify-between items-center">
-        <span>
-          {meta?.total ?? 0} {meta?.total === 1 ? 'delivery' : 'deliveries'}
-        </span>
-        {meta && meta.totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <button type="button" aria-label="Previous page" disabled={meta.page <= 1} onClick={() => onPage(meta.page - 1)} className="p-1 rounded hover:bg-neutral-200 disabled:opacity-40">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span>
-              Page {meta.page} of {meta.totalPages}
-            </span>
-            <button type="button" aria-label="Next page" disabled={meta.page >= meta.totalPages} onClick={() => onPage(meta.page + 1)} className="p-1 rounded hover:bg-neutral-200 disabled:opacity-40">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+      <div className="store-delivery-history-footer type-text-sm-regular">
+        <span>{meta?.total ?? 0} {meta?.total === 1 ? 'delivery' : 'deliveries'}</span>
+        {meta && meta.totalPages > 1 && <div className="store-delivery-pagination">
+          <IconButton size="sm" aria-label="Previous page" disabled={meta.page <= 1} onClick={() => onPage(meta.page - 1)}><ChevronLeftRounded /></IconButton>
+          <span>Page {meta.page} of {meta.totalPages}</span>
+          <IconButton size="sm" aria-label="Next page" disabled={meta.page >= meta.totalPages} onClick={() => onPage(meta.page + 1)}><ChevronRightRounded /></IconButton>
+        </div>}
       </div>
-    </div>
+    </section>
   )
 }

@@ -142,14 +142,15 @@ export class OrdersService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     const outlet = await this.outletOfOrThrow(userId);
-    const [orders, total] = await this.ordersRepository.findForOutlet(
-      outlet.id,
-      query,
-    );
+    const [[orders, total], counts] = await Promise.all([
+      this.ordersRepository.findForOutlet(outlet.id, query),
+      this.ordersRepository.countMyOrderStatuses(outlet.id, query),
+    ]);
 
     return new ApiResponseDto(HttpStatus.OK, 'Orders retrieved successfully', {
       items: await this.toViews(orders),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      counts,
     });
   }
 

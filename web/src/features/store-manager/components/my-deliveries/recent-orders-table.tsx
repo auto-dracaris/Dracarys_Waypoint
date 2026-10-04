@@ -1,12 +1,15 @@
-import { Button } from '@/components/ui/shadcn/button'
-import { Input } from '@/components/ui/shadcn/input'
-import { Filter, ArrowUpDown, Search } from 'lucide-react'
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { StatusBadge, type StatusBadgeProps } from '@/components/ui/status-badge'
+import FilterListRounded from '@mui/icons-material/FilterListRounded'
+import SwapVertRounded from '@mui/icons-material/SwapVertRounded'
+import SearchRounded from '@mui/icons-material/SearchRounded'
+import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
 
 export type RecentOrdersTab = 'upcoming' | 'awaiting' | 'deferred'
-
-const tabLabels: Record<'all' | RecentOrdersTab, string> = { all: 'All', upcoming: 'Upcoming', awaiting: 'Awaiting confirmation', deferred: 'Deferred' }
-
+const tabLabels = { all: 'All', upcoming: 'Upcoming', awaiting: 'Awaiting confirmation', deferred: 'Deferred' } as const
 export interface OrderRow {
   key: number
   id: string
@@ -14,97 +17,57 @@ export interface OrderRow {
   requirement: string
   quantity: string
   status: string
-  statusColor: string
+  statusTone: StatusBadgeProps['tone']
+  sortDate: string
+  sortQuantity: number
   actionText: string
   onAction: () => void
-  // The tabs, besides All, that list this order.
   tabs: RecentOrdersTab[]
 }
-
-interface RecentOrdersTableProps {
-  orders: OrderRow[]
-  onViewAll?: () => void
-}
-
-export function RecentOrdersTable({ orders, onViewAll }: RecentOrdersTableProps) {
+type SortKey = 'id' | 'date' | 'requirement' | 'quantity' | 'status'
+const columns: { key: SortKey; label: string }[] = [
+  { key: 'id', label: 'Order ID' }, { key: 'date', label: 'Requested date' },
+  { key: 'requirement', label: 'Requirement' }, { key: 'quantity', label: 'Quantity' },
+  { key: 'status', label: 'Status' },
+]
+export function RecentOrdersTable({ orders, onViewAll }: { orders: OrderRow[]; onViewAll?: () => void }) {
   const [tab, setTab] = useState<'all' | RecentOrdersTab>('all')
   const [search, setSearch] = useState('')
-  const inTab = (order: OrderRow, key: 'all' | RecentOrdersTab) => key === 'all' || order.tabs.includes(key)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [requirement, setRequirement] = useState('')
+  const [sort, setSort] = useState<{ key: SortKey; descending: boolean } | null>(null)
+  const inTab = (order: OrderRow, key: keyof typeof tabLabels) => key === 'all' || order.tabs.includes(key)
   const term = search.trim().toLowerCase()
-  const visible = orders.filter((order) => inTab(order, tab) && order.id.toLowerCase().includes(term))
-
-  return (
-    <div className="flex-1 bg-white rounded-xl border border-gray-200 flex flex-col gap-4 overflow-hidden shadow-sm p-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-stone-900 text-4xl font-medium">Recent orders</h3>
-        <Button variant="ghost" onClick={onViewAll} className="text-neutral-700 font-semibold gap-2">
-          View all orders <span className="text-xl">→</span>
-        </Button>
+  const visible = orders.filter((order) => inTab(order, tab) && order.id.toLowerCase().includes(term) && (!requirement || order.requirement === requirement))
+  if (sort) visible.sort((a, b) => {
+    const value = sort.key === 'quantity' ? a.sortQuantity - b.sortQuantity : sort.key === 'date' ? a.sortDate.localeCompare(b.sortDate) : a[sort.key].localeCompare(b[sort.key], undefined, { numeric: true })
+    return sort.descending ? -value : value
+  })
+  return <section className="store-recent-orders">
+    <div className="store-recent-heading"><h2 className="type-display-md-medium">Recent orders</h2><Button variant="link" size="sm" trailingIcon={<ArrowForwardRounded />} onClick={onViewAll}>View all orders</Button></div>
+    <div className="store-recent-toolbar">
+      <div className="store-recent-tabs" role="group" aria-label="Order status">
+        {(Object.keys(tabLabels) as (keyof typeof tabLabels)[]).map((key) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => setTab(key)} className="type-text-sm-regular">{tabLabels[key]} <span>{orders.filter((order) => inTab(order, key)).length}</span></button>)}
       </div>
-
-      {/* Tabs and Search Filters */}
-      <div className="flex justify-between items-center px-2">
-        <div className="p-1 bg-neutral-100 rounded-[10px] flex gap-1">
-          {(Object.keys(tabLabels) as (keyof typeof tabLabels)[]).map((key) => (
-            <button
-              key={key}
-              type="button"
-              aria-pressed={tab === key}
-              onClick={() => setTab(key)}
-              className={`px-3 py-2 rounded-lg text-sm ${tab === key ? 'bg-white shadow-sm font-medium' : 'text-stone-600 font-normal cursor-pointer'}`}
-            >
-              {tabLabels[key]} ({orders.filter((order) => inTab(order, key)).length})
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="h-9 gap-2">
-            <Filter className="h-4 w-4" /> Filter
-          </Button>
-          <div className="relative w-72">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />
-            <Input placeholder="Search order ID" value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9 h-10" />
-          </div>
-        </div>
-      </div>
-
-      {/* Table Structure */}
-      <div className="border border-neutral-200 rounded-lg overflow-hidden">
-        <div className="grid grid-cols-5 bg-neutral-100 h-10 px-4 items-center text-sm font-medium text-stone-600 border-b border-neutral-200">
-          <div className="flex items-center gap-1">
-            Order ID <ArrowUpDown className="h-3 w-3" />
-          </div>
-          <div className="flex items-center gap-1">
-            Requested date <ArrowUpDown className="h-3 w-3" />
-          </div>
-          <div className="flex items-center gap-1">
-            Requirement <ArrowUpDown className="h-3 w-3" />
-          </div>
-          <div className="flex items-center gap-1">
-            Quantity <ArrowUpDown className="h-3 w-3" />
-          </div>
-          <div className="flex items-center gap-1">
-            Status & Action <ArrowUpDown className="h-3 w-3" />
-          </div>
-        </div>
-
-        {visible.length === 0 && <p className="h-12 px-4 flex items-center text-xs text-stone-500">No orders to show.</p>}
-        {visible.map((order) => (
-          <div key={order.key} className="grid grid-cols-5 h-12 px-4 items-center text-xs border-b border-neutral-200 hover:bg-neutral-50">
-            <span className="font-medium text-stone-900">{order.id}</span>
-            <span className="text-stone-600">{order.date}</span>
-            <span className="text-stone-600">{order.requirement}</span>
-            <span className="text-stone-600">{order.quantity}</span>
-            <div className="flex justify-between items-center">
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${order.statusColor}`}>{order.status}</span>
-              <button type="button" onClick={order.onAction} className="text-blue-600 font-medium cursor-pointer hover:underline">
-                {order.actionText}
-              </button>
-            </div>
-          </div>
-        ))}
+      <div className="store-recent-search-controls">
+        <Button size="xs" leadingIcon={<FilterListRounded />} aria-expanded={filtersOpen} aria-controls="overview-order-filters" onClick={() => setFiltersOpen(!filtersOpen)}>Filter{requirement ? ' (1)' : ''}</Button>
+        <div className="store-recent-search"><SearchRounded aria-hidden="true" /><Input controlSize="sm" aria-label="Search order ID" placeholder="Search order ID" value={search} onChange={(event) => setSearch(event.target.value)} /></div>
       </div>
     </div>
-  )
+    {filtersOpen && <div id="overview-order-filters" className="store-recent-filters">
+      <label className="type-text-sm-medium" htmlFor="overview-requirement">Requirement</label>
+      <Select id="overview-requirement" controlSize="sm" value={requirement} onChange={(event) => setRequirement(event.target.value)}>
+        <option value="">All requirements</option>{[...new Set(orders.map((order) => order.requirement))].sort().map((value) => <option key={value}>{value}</option>)}
+      </Select><Button size="xs" onClick={() => setRequirement('')}>Clear filter</Button>
+    </div>}
+    <div className="store-recent-table-scroll">
+      <table className="store-recent-table">
+        <caption className="sr-only">Recent orders for your outlet</caption>
+        <thead><tr>{columns.map(({ key, label }) => <th key={key} scope="col" aria-sort={sort?.key === key ? sort.descending ? 'descending' : 'ascending' : 'none'}><button type="button" className="type-text-sm-medium" onClick={() => setSort({ key, descending: sort?.key === key && !sort.descending })}>{label}<SwapVertRounded aria-hidden="true" /></button></th>)}<th scope="col" className="type-text-sm-medium">Action</th></tr></thead>
+        <tbody>{visible.length === 0 && <tr><td colSpan={6} className="store-overview-empty">No orders to show.</td></tr>}
+          {visible.map((order) => <tr key={order.key}><td>{order.id}</td><td>{order.date}</td><td>{order.requirement}</td><td>{order.quantity}</td><td><StatusBadge tone={order.statusTone}>{order.status}</StatusBadge></td><td><button type="button" onClick={order.onAction} aria-label={`${order.actionText} for ${order.id}`}>{order.actionText}</button></td></tr>)}
+        </tbody>
+      </table>
+    </div>
+  </section>
 }

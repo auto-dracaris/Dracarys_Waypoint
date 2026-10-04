@@ -16,6 +16,7 @@ import { RequireRole } from '@/features/auth/require-role'
 import { ProfilePage } from '@/pages/profile-page'
 import { KnowledgePage } from '@/pages/knowledge-page'
 import { FloatingChat } from '@/features/assistant/floating-chat'
+import { AppLoading } from '@/components/ui/app-loading'
 
 const LoginPage = lazy(() => import('@/pages/login-page'))
 const RegisterPage = lazy(() => import('@/pages/register-page'))
@@ -38,7 +39,7 @@ export default function App() {
     if (area === 'store-manager') document.title = `WayPoint — ${isAuthPage ? 'Sign In' : 'Store Manager'}`
   }, [area, isAuthPage])
   return (
-    <><Suspense fallback={<p role="status">Loading WayPoint…</p>}>
+    <><Suspense fallback={<AppLoading />}>
       <Routes>
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />

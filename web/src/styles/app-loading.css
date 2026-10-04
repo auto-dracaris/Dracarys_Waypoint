@@ -1,0 +1,59 @@
+/* Loaded from HTML too, so the first paint does not depend on JavaScript. */
+@import './tokens.css';
+@reference '../index.css';
+
+.app-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: var(--wp-warm-neutral-50);
+}
+.app-loading-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--wp-space-3xl);
+}
+.app-loading-logo {
+  display: block;
+  width: var(--wp-spacing-32);
+  height: auto;
+  animation: waypoint-logo-breathe 1800ms ease-in-out infinite;
+}
+.app-loading-track {
+  width: var(--wp-spacing-32);
+  height: var(--wp-space-xs);
+  overflow: hidden;
+  border-radius: var(--wp-radius-full);
+  background: var(--wp-warm-neutral-200);
+}
+.app-loading-track > span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--wp-yellow-400);
+  animation: waypoint-loading-sweep 1400ms ease-in-out infinite;
+}
+.app-loading-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@keyframes waypoint-logo-breathe {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(calc(-1 * var(--wp-space-xs))); opacity: 0.75; }
+}
+@keyframes waypoint-loading-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-loading-logo, .app-loading-track > span { animation: none; }
+}
