@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
@@ -11,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { SkipActivity } from '../../common/decorators/skip-activity.decorator';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -67,9 +70,13 @@ export class VehiclesController {
   }
 
   // The one route here for drivers: it overrides the class's dispatcher-only
-  // rule, and the service checks the vehicle is the caller's.
+  // rule, and the service checks the vehicle is the caller's. 202 because the
+  // fixes are only queued here; it is left out of the activity log, which
+  // would otherwise take a row every few seconds per driver.
   @Post(':id/locations')
   @Roles(UserRole.DRIVER)
+  @HttpCode(HttpStatus.ACCEPTED)
+  @SkipActivity()
   addLocations(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: LocationBatchDto,

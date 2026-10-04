@@ -6,7 +6,11 @@ import morgan from 'morgan';
 import { DataSource } from 'typeorm';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { buildSmsRmqConsumerOptions } from './common/sms/rmq.options';
+import {
+  buildRmqConsumerOptions,
+  locationQueue,
+  smsQueue,
+} from './common/rmq/rmq.options';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -35,8 +39,14 @@ async function bootstrap() {
 
   app.enableCors();
 
+  const configService = app.get(ConfigService);
   app.connectMicroservice<MicroserviceOptions>(
-    buildSmsRmqConsumerOptions(app.get(ConfigService)),
+    buildRmqConsumerOptions(configService, smsQueue(configService), 5),
+  );
+  // Its own queue: an SMS handler sleeps through its retries, which would hold
+  // up position fixes waiting behind it.
+  app.connectMicroservice<MicroserviceOptions>(
+    buildRmqConsumerOptions(configService, locationQueue(configService), 20),
   );
   await app.startAllMicroservices();
 

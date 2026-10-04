@@ -10,8 +10,9 @@ http:
     type: json
     data: |-
       {
-        "phone": "0711120401",
-        "password": "111111"
+        "phone": "94711120401",
+        "password": "Example@123"
+        
       }
 
 runtime:

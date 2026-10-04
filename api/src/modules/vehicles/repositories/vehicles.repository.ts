@@ -174,11 +174,27 @@ export class VehiclesRepository extends BaseRepository<Vehicle> {
     return this.repository.findOneBy({ driverId, isActive: true });
   }
 
-  /** The trip the vehicle is out on right now, if any. */
-  findTripOnRoad(vehicleId: number): Promise<Trip | null> {
+  /**
+   * The vehicle's live trips that were on the road at any moment between
+   * `from` and `to`, newest departure first.
+   */
+  findTripsRunningBetween(
+    vehicleId: number,
+    from: Date,
+    to: Date,
+  ): Promise<Trip[]> {
     return this.repository.manager
       .getRepository(Trip)
-      .findOneBy({ vehicleId, status: TripStatus.DISPATCHED });
+      .createQueryBuilder('trip')
+      .select(['trip.id', 'trip.actualDepartAt', 'trip.completedAt'])
+      .where('trip.vehicleId = :vehicleId', { vehicleId })
+      .andWhere(LIVE_TRIP, { cancelled })
+      .andWhere('trip.actualDepartAt <= :to', { to })
+      .andWhere('(trip.completedAt IS NULL OR trip.completedAt >= :from)', {
+        from,
+      })
+      .orderBy('trip.actualDepartAt', 'DESC')
+      .getMany();
   }
 
   /**
