@@ -59,13 +59,26 @@ Database, RabbitMQ and service addresses are set by Compose, so you don't need t
 The first start takes a few minutes. It downloads the Sri Lanka routing data, and the API creates its tables and runs the seed migrations.
 
 4. **Open http://localhost:8080**
+
 Alternatively, you can access the **live hosted system** at: **[https://way-point.site/](https://way-point.site/)**
-**Seeded Demo Accounts:**
-Use the following credentials to test the system across different roles:
+
+### Demo accounts
+
+**Hosted system ([way-point.site](https://way-point.site/)):** use these credentials to test each role:
+
 * **Dispatcher:** `0711120401` / `Waypoint@123`
 * **Store Manager:** `0764511038` / `Waypoint@123`
 * **Loader:** `0784562377` / `Waypoint@123`
 * **Driver:** `0760299855` / `Waypoint@123`
+
+**Local setup:** the seeded accounts use the phones and passwords from `api/.env`. If you kept the defaults from `api/.env.example`, they are:
+
+* **Dispatcher:** `0770000000` / `111111` (`SYSTEM_DISPATCHER_PHONE` / `SYSTEM_DISPATCHER_PASSWORD`)
+* **Store Manager:** `0770000001` / `111111` (`DEMO_STORE_MANAGER_PHONE` / `DEMO_STORE_MANAGER_PASSWORD`)
+* **Driver:** `0770000002` / `111111` (`DEMO_DRIVER_PHONE` / `DEMO_DRIVER_PASSWORD`)
+* **Loader:** `0770000003` / `111111` (`DEMO_LOADER_PHONE` / `DEMO_LOADER_PASSWORD`)
+
+If you changed these values in `api/.env`, log in with your own values instead.
 
 
 
