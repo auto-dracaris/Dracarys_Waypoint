@@ -433,6 +433,12 @@ Show an unknown `type` with its `title` and `body` and no action.
 Pushes are sent only once the server has a Firebase key; until then the list
 still fills, so keep refreshing it when the app opens and on pull-to-refresh.
 
+**In the app:** `HttpNotificationsRepository` reads the list (falling back to a
+list built from the saved trips with no connection), opening a card calls
+`/read`, and `push_registrar.dart` registers and removes the device token and
+routes taps by `type`. Firebase project `waypoint-f0a64`, Android only.
+See `README.md` ("Push notifications").
+
 ## 6. Live location & routing ✅
 
 | Method & path | Body | Notes |
@@ -462,11 +468,13 @@ The server side of the contract is in place:
 3. `GET /trips?updatedSince=<ISO>` returns only trips changed since then.
 4. `GET /trips/:id/records` is the source of truth for what has synced.
 
-Still needed in the app: a local database for the trip cache, a persistent
-outbox of pending actions with retry and backoff, and a real connectivity
-listener (the online pill is currently a long-press toggle).
+App status: all sections below are wired, including notifications and push
+(§5, Android only) and live location (§6). The app also has a **demo build**
+that uses none of this; see `README.md` ("Real build or demo build").
 
 ## 8. App changes to make
+
+> All of these are done; kept as the checklist the app was built from.
 
 - **Login by phone.** Change `AuthRepository.login` and the sign-in form from
   email to phone. Sign-up needs the OTP step (`/auth/register` then

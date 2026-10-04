@@ -2,11 +2,12 @@
 
 Flutter app for Waypoint delivery drivers. A driver signs in, sees the day's trips,
 starts a trip with the loader's code, navigates stop to stop, records what was
-delivered (code, signature or photo), reports problems, and can ask an AI
+delivered (the outlet's code or a photo), reports problems, and can ask an AI
 assistant questions. It is built to keep working **without a signal**: what the
 driver does is saved on the phone and sent when the connection returns.
 
-- [Quick start](#quick-start)
+- [Quick start](#quick-start) — **real vs demo build**, settings
+- [Stop rules](#stop-rules) — what a driver can do and when
 - [Features](#features)
 - [Offline mode](#offline-mode) — storage, the action queue, sync, **start code and delivery code (OTP) handling**, offline maps
 - [Architecture](#architecture)
@@ -22,29 +23,59 @@ driver does is saved on the phone and sent when the connection returns.
 
 ```bash
 flutter pub get
-flutter run                      # pick a device: Android emulator, iOS simulator...
-flutter test && flutter analyze  # ~530 tests
+flutter run                      # the real app, on the hosted API
+flutter test && flutter analyze  # ~540 tests
 ```
+
+### Real build or demo build
+
+One switch decides which app you get. **Real** is the normal app; **demo** runs on
+built-in data with no server and no "demo" wording on screen (good for a screen
+recording). The helper script wraps the commands (`tool/app.ps1`, Windows PowerShell):
+
+| Want | Command (from `mobile/driver_app`) |
+|---|---|
+| Real app on a connected phone | `./tool/app.ps1 -Mode real -Action install -Device <id>` |
+| Demo app on a connected phone | `./tool/app.ps1 -Mode demo -Action install -Device <id>` |
+| Run with hot reload | `./tool/app.ps1 -Mode real -Action run` (or `-Mode demo`) |
+| Release APK to share | `./tool/app.ps1 -Mode real -Action apk` |
+| Play the whole demo trip by itself | `./tool/app.ps1 -Mode demo -Action test -Device <id>` |
+
+Find device ids with `flutter devices`. Without the script, demo is the same thing as
+`flutter run --dart-define-from-file=config/demo.json`; leave the flag off for real.
+`install` replaces the other mode's copy on the phone (same app id), so you sign in again.
+A **release** build never contains demo mode, whatever the flags say.
 
 By default the app talks to the hosted API, `https://api.way-point.site/api`.
 
 | Setting (`--dart-define=NAME=value`) | Default | Use |
 |---|---|---|
 | `API_BASE_URL` | `https://api.way-point.site/api` | Point at your own backend, e.g. `http://10.0.2.2:5000/api` (Android emulator reaching a server on your machine; plain `http` works in debug builds only). |
-| `AI_BASE_URL` | *(empty)* | Where the AI assistant service runs, e.g. `http://10.0.2.2:8000`. It has no public address yet; empty means "assistant not set up" in the chat. |
+| `AI_BASE_URL` | `https://way-point.site/ai-api` | Where the AI assistant service runs. For your own: `http://10.0.2.2:8000`. Set it empty to turn the assistant off ("not set up" in the chat). |
 | `USE_MOCKS` | `false` | Start in **demo data** mode (see below). |
+| `DEMO_AREA` | *(empty)* | Which demo story: empty is the Gampaha trips the tests use, `colombo` is the short central-Colombo loop. |
+| `HIDE_DEMO_UI` | `false` | Hide the "Demo data" switch, for a recording. |
+| `DEMO_SPEED_KMH` | `30` | How fast the simulated van drives. |
+
+These demo settings are already in `config/demo.json`.
 
 ### Demo data (no server needed)
 
 A **Demo data** switch is on the sign-in screen and at the bottom of the Account tab
-(hidden in release builds). When on, every repository is swapped for built-in fake
-data: a trip with four stops, fake route changes, notifications, a scripted
-assistant. Sign in with any phone number and a password of 6+ characters.
+(debug builds only, and hidden by `HIDE_DEMO_UI`). When on, every repository is swapped
+for built-in fake data: trips, fake route changes, notifications, a scripted assistant.
+Sign in with any phone number and a password of 6+ characters.
+
+- **Colombo story** (`DEMO_AREA=colombo`): *Trip 1*, already loaded, four stops about
+  1 km apart through Pettah, Slave Island, Galle Face and the World Trade Centre (tall
+  buildings for the 3D view), and *Trip 2*, still loading. The demo depot is at the Fort.
+- **Delivery code in demo:** type **`482913`** on the proof screen; any other code is
+  refused, so a wrong-code moment can be shown too.
 
 - Switching sends you back to sign-in (demo data has its own session). Your real
   session is untouched and returns when you switch back.
 - The choice is remembered between launches.
-- Useful demo hooks: **long-press the yellow "Loading in progress" banner** on the trip
+- Useful demo hooks (debug builds): **long-press the yellow "Loading in progress" banner** on the trip
   overview to mark loading complete (stands in for the loader's app); **long-press the
   Online pill** to force the app offline until you long-press it again.
 - Demo mode exercises the screens, map and navigation. The offline queue, sync and
@@ -80,8 +111,10 @@ assistant. Sign in with any phone number and a password of 6+ characters.
 - **Stop info:** window, planned arrival, dock, contact, orders and handling notes.
 - **Get directions → navigation** (below).
 - **Arrived:** confirm the quantity handed over per order.
-- **Proof of delivery:** receiver's name, a signature or a photo, optional notes, and
-  the outlet's **delivery code**. Completing a stop sends arrival, proof and completion.
+- **Proof of delivery:** receiver's name, then an **OTP | Photo** choice. *OTP*: six boxes
+  for the outlet's delivery code and a **Verify** button (checked on the phone, see
+  [the two codes](#the-two-codes-otp)); *Photo*: a camera photo when the store cannot
+  give a code. Optional notes. Completing a stop sends arrival, proof/code and completion.
 - **Report an issue:** damaged goods, temperature breach, short delivery, wrong items,
   other; affected cases; note; camera photo. Sent to the dispatcher via `POST /issues`.
 - Every action carries a `planVersion`: if the dispatcher reordered the stops in the
@@ -103,8 +136,10 @@ assistant. Sign in with any phone number and a password of 6+ characters.
 
 ### Vehicle tracking
 - While a trip is **in progress**, the phone records the vehicle's GPS position about
-  every 5 seconds and sends it to the dispatcher (`POST /vehicles/:id/locations`), so
-  they can see where the vehicle is. It stops when no trip is under way.
+  every **second** and sends the list to the dispatcher about **once a minute**
+  (`POST /vehicles/:id/locations`), so they can see where the vehicle is. Both times are
+  minimums: a weak GPS, traffic or no signal only stretch them. It stops when no trip is
+  under way.
 - It keeps going with the screen off (on Android a "Trip in progress" notification shows
   that the phone is sharing its position), and with **no signal it keeps recording and
   sends the backlog later** (see [offline mode](#vehicle-location-points)).
@@ -113,8 +148,11 @@ assistant. Sign in with any phone number and a password of 6+ characters.
 - Nothing is recorded in Demo data mode or for a driver with no vehicle assigned.
 
 ### Updates and route changes
-- **Updates tab:** built from today's trips (assigned, loading, loaded, loading
-  shortfall) and unacknowledged route changes — the API has no notifications feed.
+- **Updates tab:** the server's notification list (`GET /notifications`): trip assigned,
+  trip ready, route changed, issue acknowledged/resolved. Opening a card marks it read
+  and goes to the trip or the route update. An unknown type shows its words with no
+  action. With no connection it falls back to a list worked out from the saved trips.
+- **Push (Android):** see [Push notifications](#push-notifications-android).
 - **Route update:** the dispatcher's reorder, with before/after sequence, the stop most
   affected and any tight-window warning; the driver acknowledges it
   (`GET /trips/:id/route-change`, `POST …/acknowledge`).
@@ -123,11 +161,58 @@ assistant. Sign in with any phone number and a password of 6+ characters.
 - A sparkle button beside the bell on My trips opens a chat: suggestion cards, typing
   indicator, formatted answers (bold, italics, lists), numbered collapsible sources,
   retry on failure, **New chat**. History is kept per driver and readable offline.
-- Talks to the separate `ai-service` (`POST /api/v1/chat`, workflow `business_qa`) with
-  the driver's access token. It is read-only: it can look at the driver's trips and
+- Talks to the separate `ai-service` (`POST /api/v1/chat`, workflow `business_qa`), live at
+  `https://way-point.site/ai-api`, with the driver's access token (not in demo mode). It is read-only: it can look at the driver's trips and
   route changes and search approved delivery/incident policy, never change anything.
 - The chat sends the current trip's id as context so "my next stop" has a meaning.
 - Offline, the box is disabled and the earlier chat stays readable.
+
+---
+
+## Stop rules
+
+One rule (`features/trips/domain/stop_gate.dart`) decides what a driver may do at a stop.
+The screens, the routes and the repositories all ask it, so something that would be
+refused is neither offered nor saved to the offline queue.
+
+- **Trip not on the road** (assigned, loading, ready): no directions, arriving, proof or
+  issue. The stop shows why ("Still being loaded", "Start the trip first"); only the trip
+  overview works, and **Ready to depart** needs the start code and a connection.
+- **Trip in progress:** only the **next** stop can be worked on; stops go in order. Later
+  stops are dimmed and read-only.
+- **Order inside a stop:** directions come before arriving; the delivery details, proof
+  and issue come after arriving. A stop that was not marked arrived cannot be opened there.
+- **Route changed by the dispatcher:** the stop is held until the driver has reviewed the
+  new route (the server would refuse actions against the old plan).
+- **Short delivery:** if any order is delivered below its planned cases, *Continue* turns
+  into *Report the shortfall*; completing the stop is held until an issue is reported for
+  each short order.
+- **Trip completed:** everything is view-only. Arriving twice does nothing; completing
+  needs the stop to be arrived first.
+- The offline "saved trip" screen follows the same rule (it explains instead of offering
+  actions before the trip starts).
+
+---
+
+## Push notifications (Android)
+
+The server stores a notification list and also pushes each one through Firebase Cloud
+Messaging (FCM); a push only nudges the app to refresh (`api/src/modules/notifications`).
+
+- **App side (done):** after sign-in the app asks for the notification permission, gets the
+  phone's FCM token and registers it (`POST /devices`), re-registers when Firebase changes
+  the token, and removes it before logout (`DELETE /devices/:token`). With the app open a
+  push refreshes the list; a tap opens the trip (`trip_assigned`, `trip_ready`) or the
+  route-update screen (`route_changed`), anything else the Updates tab. Code:
+  `features/notifications/application/push_registrar.dart`.
+- **Firebase project:** `waypoint-f0a64`, Android app `com.dracarys.driver_app`; the
+  client config is `android/app/google-services.json` and `lib/firebase_options.dart`
+  (generated by `flutterfire configure`). Without Firebase the app still runs, without push.
+- **Server side:** needs a Firebase service-account key from the same project in
+  `FIREBASE_SERVICE_ACCOUNT` (see the server's notifications README). Without it pushes
+  are only logged on the server; the in-app list still works.
+- **iOS is not set up** (needs an Apple push key and the Xcode capabilities).
+- Push does not work in demo mode (no real sign-in).
 
 ---
 
@@ -271,11 +356,14 @@ reason is in how the API issues them.
 - **Security note.** Holding the hash lets anyone with the phone test guesses without the
   server's attempt limit. The 150 000 PBKDF2 rounds are what make that slow, and the
   hash is dropped once the stop is completed. The server still has the final say on sync.
-- **Online, the phone does not second-guess the server** — it just sends the code, and the
-  server is the judge (the hash on the phone could be stale if the code was reissued).
-- **If the store cannot give a code**, leave the field empty: the signature or photo plus
-  receiver's name is recorded first and **completes the stop**; the dispatcher is told the
-  code was not used. This also works offline.
+- **Verify button.** On the proof screen the driver types the code into six boxes and
+  taps **Verify**. When the phone holds the hash it checks there and then, online or not;
+  a wrong code turns the boxes red and **Complete stop** stays blocked. The server checks
+  the code again when the stop is completed and has the final say.
+- **If the store cannot give a code**, use the **Photo** tab: the photo plus receiver's
+  name is recorded first and **completes the stop**; the dispatcher is told the code was
+  not used. This also works offline.
+- **Demo data** has no hash, so it accepts one fixed code, `482913`.
 - If a hash is unavailable (the trip came from a cache without one), the typed code is
   queued and the server decides when it syncs; a wrong one comes back as a rejected action
   with the server's message.
@@ -296,7 +384,7 @@ reason is in how the API issues them.
 The dispatcher sees the vehicle move because the phone sends its GPS points
 (`LocationTracker`, `features/tracking`). The API's rules for this endpoint shape the design:
 
-- **Recording:** every 5 s while a trip is in progress, the latest GPS reading becomes a
+- **Recording:** every 1 s while a trip is in progress, the latest GPS reading becomes a
   point with its own `clientId` (a UUID made once and stored with it) and the phone's
   time (`recordedAt`). Readings older than 15 s, or vaguer than 200 m, are skipped;
   heading and speed the phone cannot give are left out.
@@ -304,8 +392,10 @@ The dispatcher sees the vehicle move because the phone sends its GPS points
   only the newest chunk however long the backlog (a day is ~17,000 points). It survives an
   app restart, is wiped with the rest when a different driver signs in, and is capped at
   100,000 points (the oldest are dropped first).
-- **Sending:** about every 5 s when online, and at once when the network returns, in
-  batches of **up to 500, oldest first**, until the backlog is empty. A retried point is
+- **Sending:** about once a minute when online (the first batch goes at once, so the
+  dispatcher sees the vehicle as soon as the trip starts), and at once when the network
+  returns or the trip ends, in batches of **up to 500, oldest first**, until the backlog
+  is empty. A retried point is
   stored once by the server because it keeps its `clientId`.
 - **A point is deleted only after the server answers `202`.** Everything else keeps it:
 
@@ -456,8 +546,9 @@ flutter analyze
 - **`test/support/offline_harness.dart`** builds the whole offline stack (API client, local
   store, cache, queue, submitter) over a fake network with an on/off switch, so tests can
   say "go offline, do this, come back, check what was sent and in what order".
-- **Widget tests** pump the real routes with instant mock repositories, fake photo picker,
-  fake signature encoder and a stand-in delivery-code verifier.
+- **Widget tests** pump the real routes with instant mock repositories, a fake photo picker
+  and a stand-in delivery-code verifier. The shared test trip starts on the road; tests
+  that need it still loading ask for that explicitly.
 - Areas covered include: storage and cache wipe on driver change, queue persistence and
   ordering, submit/sync rules (transient vs refused, dependent steps), the offline overlay,
   PBKDF2 against Node's output, the offline code check in the UI, road-line cache, trips
@@ -466,8 +557,13 @@ flutter analyze
 - Widget tests run on fake time: a drive in progress needs `tester.pump(duration)`, not
   `pumpAndSettle`.
 
-Not covered by automated tests: the real map and its tile download, the camera, and how
-smooth the driving looks on a device — check those on a phone/emulator.
+- **`integration_test/demo_trip_test.dart`** plays the Colombo demo trip on a device by
+  itself, at a pace for a screen recording (`./tool/app.ps1 -Mode demo -Action test`).
+  Run it on an emulator with the GPU on (an emulator with its GPU off draws a black
+  screen) and internet for the map.
+
+Not covered by automated tests: the real map and its tile download, the camera, push, and
+how smooth the driving looks on a device — check those on a phone/emulator.
 
 ---
 
@@ -491,10 +587,10 @@ smooth the driving looks on a device — check those on a phone/emulator.
 - **Street names:** the routing API gives geometry only, so turn banners say the turn and
   the destination stop, not a street.
 - **Start code offline:** by design it needs the server (see above).
-- **Notifications:** no push; the Updates feed is derived and refreshed when the app loads
-  or syncs.
-- **AI assistant:** needs a deployed `ai-service` and `AI_BASE_URL`; answer quality depends
-  on that service.
+- **Push** is built but not yet tried end to end: it needs the server's Firebase key and a
+  real driver login. iOS push is not set up.
+- **AI assistant:** now live at `https://way-point.site/ai-api`; answer quality depends on
+  that service, and it has not been tried here with a real login.
 - **Smoothness** of the simulated drive and the offline tile download have been checked on
   an emulator only.
 
