@@ -15,14 +15,6 @@ interface DeliveryRouteMapProps {
 
 export function DeliveryRouteMap({ data }: DeliveryRouteMapProps) {
   const isClient = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot)
-  const depotCoordinates: [number, number] = [6.9583, 79.8881]
-  const currentVehicleCoords: [number, number] = [6.995, 79.895]
-  const pathCoordinates: [number, number][] = [
-    [6.9583, 79.8881],
-    [6.972, 79.891],
-    [6.995, 79.895],
-    [7.0532, 79.8903],
-  ]
 
   return (
     <div className="self-stretch rounded-lg border border-neutral-300 flex flex-col bg-white overflow-hidden">
@@ -36,7 +28,14 @@ export function DeliveryRouteMap({ data }: DeliveryRouteMapProps) {
         <div className="flex-2 relative z-0 bg-slate-100">
           <Suspense fallback={<p role="status">Loading delivery map…</p>}>
             {isClient ? (
-              <DeliveryMap depotPosition={depotCoordinates} vehiclePosition={currentVehicleCoords} routeCoordinates={pathCoordinates} vehicleId={data.vehicleId} />
+              <DeliveryMap
+                depot={data.depot}
+                outletPosition={data.outletPosition}
+                vehiclePosition={data.vehiclePosition}
+                routeCoordinates={data.route}
+                vehicleId={data.vehicleId}
+                statusLabel={data.status}
+              />
             ) : (
               <p role="status">Loading delivery map…</p>
             )}
@@ -47,7 +46,7 @@ export function DeliveryRouteMap({ data }: DeliveryRouteMapProps) {
         <div className="flex-1 shrink-0 bg-neutral-50 border-l border-zinc-200 flex flex-col justify-between z-10">
           <div>
             <div className="h-[150px] shrink-0 border-b border-neutral-200 w-full">
-              <VehicleBanner vehicleId={data.vehicleId} vehicleType={data.vehicleType} statusLabel={data.status} statusVariant="green" />
+              <VehicleBanner vehicleId={data.vehicleId} vehicleType={data.vehicleType} statusLabel={data.status} statusVariant={data.statusVariant} />
             </div>
 
             <div className="p-4 flex flex-col gap-3">

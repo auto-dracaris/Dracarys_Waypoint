@@ -2,9 +2,12 @@ import { VehicleBanner } from '@/features/store-manager/components/vehicle-banne
 import { Link } from 'react-router-dom'
 
 export interface DeliveryItem {
-  id: string
+  // The order's id, which the tracking page is opened with.
+  id: number
+  vehicleId: string
   vehicleType: string
   statusLabel: string
+  statusVariant: 'green' | 'yellow' | 'blue' | 'red'
   orderCode: string
   receivingWindow: string
   plannedArrival: string
@@ -24,11 +27,12 @@ export function TodayDeliveries({ deliveries }: TodayDeliveriesSectionProps) {
 
       {/* Deliveries List */}
       <div className="flex flex-col flex-1">
-        {deliveries.map((item, index) => (
-          <Link to={`/store-manager/delivery/${item.id}`} key={index} className="flex flex-1 border-b border-neutral-200 last:border-none min-h-[160px]">
+        {deliveries.length === 0 && <p className="px-6 py-10 text-stone-500 text-sm font-sans">No deliveries are scheduled to your outlet today.</p>}
+        {deliveries.map((item) => (
+          <Link to={`/store-manager/delivery/${item.id}`} key={item.id} className="flex flex-1 border-b border-neutral-200 last:border-none min-h-[160px]">
             {/* Left: Vehicle Banner Component */}
             <div className="flex-[3] relative">
-              <VehicleBanner vehicleId={item.id} vehicleType={item.vehicleType} statusLabel={item.statusLabel} statusVariant="green" />
+              <VehicleBanner vehicleId={item.vehicleId} vehicleType={item.vehicleType} statusLabel={item.statusLabel} statusVariant={item.statusVariant} />
             </div>
 
             {/* Right: Delivery Details Sidebar info */}

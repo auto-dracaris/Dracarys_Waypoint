@@ -27,18 +27,28 @@ const statuses: Record<OrderStatus, { label: string; variant: Variant; headline:
   cancelled: { label: 'Cancelled', variant: 'gray', headline: 'Order cancelled' },
 }
 
-const capitalise = (value: string) => `${value[0].toUpperCase()}${value.slice(1)}`
+export const statusOf = (status: OrderStatus) => statuses[status]
+
+export const capitalise = (value: string) => `${value[0].toUpperCase()}${value.slice(1)}`
 
 /** `YYYY-MM-DD` (a calendar day) or a timestamp, as e.g. "Wed, 30 Sep". */
 export function formatDay(value: string, withYear = false): string {
   return new Date(value.length === 10 ? `${value}T00:00:00` : value).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', ...(withYear && { year: 'numeric' }) })
 }
 
+/** `YYYY-MM-DD` as e.g. "Tuesday, 29 September". */
+export const formatLongDay = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+
 /** A timestamp in Waypoint's own time zone, as e.g. "Tue, 29 Sep at 16:00". */
 export function formatMoment(value: string): string {
   const moment = new Date(value)
   const zone = { timeZone: 'Asia/Colombo' } as const
   return `${moment.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', ...zone })} at ${moment.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', ...zone })}`
+}
+
+/** A timestamp as e.g. "07:10" in Waypoint's own time zone. */
+export function formatTime(value: string): string {
+  return new Date(value).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Colombo' })
 }
 
 export const outletLabel = (outlet: StoreOutlet) => `${outlet.brand} · ${outlet.name ?? outlet.district ?? outlet.uniqueId}`

@@ -24,9 +24,13 @@ export const API_ENDPOINTS = {
   orders: {
     list: '/orders',
     mine: '/orders/my',
+    myOverview: '/orders/my/overview',
+    myDeliveries: '/orders/my/deliveries',
     placementOptions: '/orders/placement-options',
     summary: '/orders/summary',
     detail: (id: number) => `/orders/${id}`,
+    delivery: (id: number) => `/orders/${id}/delivery`,
+    receipt: (id: number) => `/orders/${id}/receipt`,
     cancel: (id: number) => `/orders/${id}/cancel`,
     defer: (id: number) => `/orders/${id}/defer`,
   },

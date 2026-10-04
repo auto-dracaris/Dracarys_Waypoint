@@ -5,15 +5,19 @@ import type { DeliveryDetailsData } from '@/features/store-manager/types'
 
 interface DeliveryDetailsPanelProps {
   data: DeliveryDetailsData | null
-  onConfirmReceipt: () => void
-  onReportIssue: () => void
+  // Left out when the delivery cannot be confirmed or reported on yet.
+  onConfirmReceipt?: () => void
+  onReportIssue?: () => void
+  confirming?: boolean
+  error?: string
+  message?: string
 }
 
-export function DeliveryDetailsPanel({ data, onConfirmReceipt, onReportIssue }: DeliveryDetailsPanelProps) {
+export function DeliveryDetailsPanel({ data, onConfirmReceipt, onReportIssue, confirming = false, error = '', message = '' }: DeliveryDetailsPanelProps) {
   // 1. Add local state to track the two-step confirmation
   const [isReviewing, setIsReviewing] = useState(false)
 
-  if (!data) return <div className="w-96 p-6 bg-white rounded-xl border border-neutral-200">Select a delivery...</div>
+  if (!data) return <div className="flex-1 shrink-0 p-6 bg-white rounded-xl border border-neutral-200 text-stone-500 text-sm font-sans">Select a delivery to see its details.</div>
 
   const statusStyles = {
     yellow: 'bg-yellow-100 text-yellow-700',
@@ -30,7 +34,7 @@ export function DeliveryDetailsPanel({ data, onConfirmReceipt, onReportIssue }: 
       setIsReviewing(true)
     } else {
       // Second click: execute the actual confirmation
-      onConfirmReceipt()
+      onConfirmReceipt?.()
       setIsReviewing(false)
     }
   }
@@ -103,23 +107,39 @@ export function DeliveryDetailsPanel({ data, onConfirmReceipt, onReportIssue }: 
       </div>
 
       {/* Actions */}
-      <div className="p-6 border-t border-neutral-200 flex flex-col gap-3 bg-white">
-        {/* Dynamic Confirmation Button */}
-        <Button onClick={handleConfirmClick} className="w-full bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold shadow-none transition-all">
-          {isReviewing ? `Confirm ${data.orderedQuantity} received` : 'Review & confirm receipt'}
-        </Button>
+      {(onConfirmReceipt || onReportIssue || error || message) && (
+        <div className="p-6 border-t border-neutral-200 flex flex-col gap-3 bg-white">
+          {message && (
+            <p role="status" className="px-3 py-2 rounded-md bg-lime-50 border border-lime-200 text-lime-800 text-sm font-medium font-sans">
+              {message}
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="px-3 py-2 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm font-medium font-sans">
+              {error}
+            </p>
+          )}
+          {/* Dynamic Confirmation Button */}
+          {onConfirmReceipt && (
+            <Button onClick={handleConfirmClick} disabled={confirming} className="w-full bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold shadow-none transition-all">
+              {confirming ? 'Confirming…' : isReviewing ? `Confirm ${data.deliveredUnits ?? 0} ${data.deliveredUnits === 1 ? 'case' : 'cases'} received` : 'Review & confirm receipt'}
+            </Button>
+          )}
 
-        {/* Toggle secondary actions based on state */}
-        {!isReviewing ? (
-          <Button variant="outline" onClick={onReportIssue} className="w-full text-stone-800 font-semibold shadow-none border-neutral-300">
-            Report an issue
-          </Button>
-        ) : (
-          <Button variant="outline" onClick={() => setIsReviewing(false)} className="w-full text-stone-800 font-semibold shadow-none border-neutral-300">
-            Cancel
-          </Button>
-        )}
-      </div>
+          {/* Toggle secondary actions based on state */}
+          {!isReviewing ? (
+            onReportIssue && (
+              <Button variant="outline" onClick={onReportIssue} className="w-full text-stone-800 font-semibold shadow-none border-neutral-300">
+                Report an issue
+              </Button>
+            )
+          ) : (
+            <Button variant="outline" onClick={() => setIsReviewing(false)} className="w-full text-stone-800 font-semibold shadow-none border-neutral-300">
+              Cancel
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

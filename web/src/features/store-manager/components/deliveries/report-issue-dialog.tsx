@@ -17,13 +17,18 @@ import '@/features/assistant/draft-notes.css'
 interface ReportIssueDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  deliveryId: string // e.g., "DEMO-099"
-  totalOrdered: number // e.g., 36
-  onSubmitIssue: (data: ReportIssueFormValues) => void
+  deliveryId: string // e.g., "ORD0000012"
+  outletLabel: string // e.g., "Fresh · Ja-Ela"
+  totalOrdered: number
+  // What the driver recorded handing over.
+  deliveredUnits: number
+  // Rejects with the reason the report was not taken.
+  onSubmitIssue: (data: ReportIssueFormValues) => Promise<void>
 }
 
-export function ReportIssueDialog({ open, onOpenChange, deliveryId, totalOrdered, onSubmitIssue }: ReportIssueDialogProps) {
+export function ReportIssueDialog({ open, onOpenChange, deliveryId, outletLabel, totalOrdered, deliveredUnits, onSubmitIssue }: ReportIssueDialogProps) {
   const { accessToken } = useUser()
+  const [submitError, setSubmitError] = useState('')
   const draftRequest = useRef<AbortController | null>(null)
   const notesInput = useRef<HTMLTextAreaElement | null>(null)
   const [drafting, setDrafting] = useState(false)
@@ -34,8 +39,8 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, totalOrdered
     resolver: zodResolver(reportIssueSchema),
     defaultValues: {
       issueType: 'Damaged goods',
-      acceptedCases: 32,
-      damagedCases: 4,
+      acceptedCases: deliveredUnits,
+      damagedCases: 0,
       notes: '',
     },
     mode: 'onChange',
@@ -46,17 +51,19 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, totalOrdered
     if (open) {
       form.reset({
         issueType: 'Damaged goods',
-        acceptedCases: totalOrdered,
+        acceptedCases: deliveredUnits,
         damagedCases: 0,
         notes: '',
       })
     }
-  }, [open, totalOrdered, form])
+  }, [open, deliveredUnits, form])
   useEffect(() => () => { draftRequest.current?.abort() }, [open, deliveryId, totalOrdered, accessToken])
 
   function changeOpen(next: boolean) {
     draftRequest.current?.abort(); draftRequest.current = null
     setDrafting(false); setDraftMessage(''); setDraftError('')
+    // A closed dialog forgets the last failed attempt.
+    if (!next) setSubmitError('')
     onOpenChange(next)
   }
 
@@ -112,9 +119,14 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, totalOrdered
   const damaged = form.watch('damagedCases') || 0
   const totalCalculated = accepted + damaged
 
-  const handleSubmit = (data: ReportIssueFormValues) => {
-    onSubmitIssue(data)
-    changeOpen(false)
+  const handleSubmit = async (data: ReportIssueFormValues) => {
+    setSubmitError('')
+    try {
+      await onSubmitIssue(data)
+      changeOpen(false)
+    } catch (reason) {
+      setSubmitError((reason as Error).message)
+    }
   }
 
   return (
@@ -126,7 +138,7 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, totalOrdered
             <DialogHeader className="space-y-0 text-left">
               <DialogTitle className="text-stone-900 text-2xl font-medium font-sans">Report a delivery issue</DialogTitle>
               <p className="text-stone-900 text-sm font-normal font-sans pt-1">
-                {deliveryId} · Fresh · Ja-Ela
+                {deliveryId} · {outletLabel}
                 <br />
                 Check the quantities before sending your report.
               </p>
@@ -140,7 +152,7 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, totalOrdered
               </div>
               <div className="flex bg-neutral-50 h-11 items-center">
                 <div className="w-48 md:w-72 px-4 bg-neutral-100 border-r border-neutral-200 h-full flex items-center text-stone-500 text-sm font-medium font-sans">Driver recorded</div>
-                <div className="flex-1 px-4 text-stone-900 text-sm font-sans">{totalOrdered} cases delivered</div>
+                <div className="flex-1 px-4 text-stone-900 text-sm font-sans">{deliveredUnits} cases delivered</div>
               </div>
             </div>
 
@@ -225,7 +237,7 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, totalOrdered
                     <textarea
                       {...field}
                       ref={(element) => { field.ref(element); notesInput.current = element }}
-                      maxLength={2000}
+                      maxLength={450}
                       aria-label="What happened? (optional)"
                       aria-describedby="issue-draft-feedback"
                       className="w-full h-28 px-3 py-2 bg-neutral-50 rounded-lg outline outline-1 outline-offset-[-1px] outline-neutral-300 text-stone-900 text-sm font-sans resize-none focus:outline-yellow-400"
@@ -246,10 +258,11 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, totalOrdered
 
           {/* Add Photos Section */}
           <div className="px-6 py-4 bg-neutral-100 flex flex-col gap-2">
-            <Button type="button" variant="outline" className="w-full h-10 bg-white border-neutral-200 text-stone-800 font-semibold font-sans shadow-none">
+            {/* ponytail: photos are optional; wire this to POST /images (purpose issue_photo) and send photoImageId with the issue. */}
+            <Button type="button" variant="outline" disabled className="w-full h-10 bg-white border-neutral-200 text-stone-800 font-semibold font-sans shadow-none">
               Add photos
             </Button>
-            <p className="text-stone-900 text-sm font-normal font-sans">Optional · No photos attached</p>
+            <p className="text-stone-900 text-sm font-normal font-sans">Optional · Photo upload is not available yet</p>
           </div>
 
           {/* Info Box */}
@@ -257,18 +270,24 @@ export function ReportIssueDialog({ open, onOpenChange, deliveryId, totalOrdered
             <div className="w-full p-4 bg-blue-50 rounded-md flex flex-col gap-1">
               <h4 className="text-stone-900 text-sm font-semibold font-sans">Your delivery will remain open</h4>
               <p className="text-stone-900 text-sm font-normal font-sans">
-                Submitting records {accepted} accepted cases and sends the {damaged} damaged cases to the depot for review.
+                Submitting records {accepted} accepted cases and sends the {damaged} damaged cases to the depot for review. Confirm the receipt once it is settled.
               </p>
             </div>
           </div>
+
+          {submitError && (
+            <p role="alert" className="mx-6 mb-4 px-3 py-2 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm font-medium font-sans">
+              {submitError}
+            </p>
+          )}
 
           {/* Footer Actions */}
           <div className="px-6 pb-6 flex gap-4">
             <Button type="button" variant="outline" onClick={() => changeOpen(false)} className="w-44 h-10 bg-white border-neutral-200 text-stone-800 font-semibold font-sans shadow-none">
               Cancel
             </Button>
-            <Button type="submit" disabled={drafting} className="flex-1 h-10 bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold font-sans shadow-none">
-              Submit issue
+            <Button type="submit" disabled={drafting || form.formState.isSubmitting} className="flex-1 h-10 bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold font-sans shadow-none">
+              {form.formState.isSubmitting ? 'Submitting…' : 'Submit issue'}
             </Button>
           </div>
         </form>

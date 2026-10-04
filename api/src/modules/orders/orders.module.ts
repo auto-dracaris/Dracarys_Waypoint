@@ -4,6 +4,7 @@ import { Order } from '../../database/entities/order.entity';
 import { AuthModule } from '../auth/auth.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { OutletsModule } from '../outlets/outlets.module';
+import { RoutingModule } from '../routing/routing.module';
 import { UsersModule } from '../users/users.module';
 import { OrdersController } from './orders.controller';
 import { OrdersRepository } from './repositories/orders.repository';
@@ -14,6 +15,7 @@ import { OrdersService } from './orders.service';
     TypeOrmModule.forFeature([Order]),
     AuthModule,
     OutletsModule,
+    RoutingModule,
     UsersModule,
     NotificationsModule,
   ],
