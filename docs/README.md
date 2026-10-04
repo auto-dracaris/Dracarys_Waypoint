@@ -10,13 +10,9 @@ This folder contains diagram files provided in both standard `.png` format and e
 
 **Available Diagrams:**
 
-* **`architecture.png` / `architecture.drawio**`: The core system architecture diagram.
+* `architecture.png` / `architecture.drawio`: The core system architecture diagram.
 
-
-* **`proposed_mlops_pipeline.drawio`**: Diagram outlining the proposed MLOps pipeline structure.
-
-
-* **`architecture_with_proposed_mlops_pi...`**: A combined PNG image showing the architecture and the proposed MLOps pipeline.
+* **`architecture_with_proposed_mlops_pipeline.png/ proposed_mlops_pipeline.drawio`**: A combined diagram showing the architecture and the proposed MLOps pipeline.
 
 
 * **`ER-diagram.png`**: The Entity-Relationship diagram.
