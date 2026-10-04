@@ -99,6 +99,9 @@ IconData _iconFor(NotificationKind kind) => switch (kind) {
       NotificationKind.loadingStarted => Icons.inventory_2,
       NotificationKind.tripAssigned => Icons.calendar_month,
       NotificationKind.savedOffline => Icons.cloud_done,
+      NotificationKind.tripReady => Icons.check_circle,
+      NotificationKind.issueUpdate => Icons.report_problem,
+      NotificationKind.general => Icons.notifications,
     };
 
 class _Header extends StatelessWidget {

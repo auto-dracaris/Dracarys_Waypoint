@@ -1,9 +1,8 @@
 import { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap } from 'react-leaflet'
 import { Loader2 } from 'lucide-react'
 import L from 'leaflet'
-import { renderToString } from 'react-dom/server'
-import { VehicleMarker } from '../vehicle-marker'
+import { createVehicleIcon } from '@/features/overview/vehicle-icon'
 
 import icon from 'leaflet/dist/images/marker-icon.png'
 import iconShadow from 'leaflet/dist/images/marker-shadow.png'
@@ -19,18 +18,6 @@ const DefaultIcon = L.icon({
 
 // Where the map opens when nothing on it has a known position: Colombo.
 const FALLBACK_CENTER: [number, number] = [6.9271, 79.8612]
-
-// Helper to convert the React component into a Leaflet divIcon
-const createVehicleIcon = (vehicleId: string, isActive: boolean, progress?: number) => {
-  const markerHtml = renderToString(<VehicleMarker vehicleId={vehicleId} isActive={isActive} progress={progress} />)
-
-  return L.divIcon({
-    html: markerHtml,
-    className: 'bg-transparent border-none outline-none', // Clears default Leaflet styles
-    iconAnchor: [56, 44], // Centers the point of the pin over the GPS coordinate
-    popupAnchor: [0, -48],
-  })
-}
 
 function MapBoundsUpdater({ points }: { points: [number, number][] }) {
   const map = useMap()
@@ -48,6 +35,7 @@ interface MapProps {
   vehiclePosition: [number, number] | null
   routeCoordinates: [number, number][]
   vehicleId: string
+  vehicleKind?: 'truck' | 'van'
   statusLabel: string
   isRouteLoading?: boolean
 }
@@ -58,6 +46,7 @@ export function DeliveryMap({
   vehiclePosition,
   routeCoordinates,
   vehicleId,
+  vehicleKind = 'truck',
   statusLabel,
   isRouteLoading = false,
 }: MapProps) {
@@ -115,12 +104,12 @@ export function DeliveryMap({
 
         {/* Current Vehicle Position Marker using the Custom Icon - covers outlet, sits side-by-side if close to depot */}
         {effectiveVehiclePos && (
-          <Marker position={effectiveVehiclePos} icon={createVehicleIcon(vehicleId, true)} zIndexOffset={600}>
-            <Popup>
-              <div className="font-sans font-semibold text-stone-900">
+          <Marker position={effectiveVehiclePos} icon={createVehicleIcon({ vehicleId, type: vehicleKind, isSelected: true })} zIndexOffset={600}>
+            <Tooltip direction="top" offset={[0, -18]} className="wp-vehicle-tooltip">
+              <span>
                 {vehicleId} · {statusLabel}
-              </div>
-            </Popup>
+              </span>
+            </Tooltip>
           </Marker>
         )}
       </MapContainer>

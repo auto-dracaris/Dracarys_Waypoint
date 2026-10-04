@@ -6,6 +6,7 @@ import '../../../core/demo_mode.dart';
 import '../../../core/format.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
+import '../../tracking/application/location_tracker.dart';
 import '../application/sync_service.dart';
 import '../domain/pending_action.dart';
 
@@ -15,11 +16,18 @@ import '../domain/pending_action.dart';
 class SyncStatusBar extends ConsumerWidget {
   const SyncStatusBar({super.key});
 
+  /// More location points than this waiting is shown even when online.
+  static const pointsWorthShowing = 25;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sync = ref.watch(syncServiceProvider);
     final online = ref.watch(onlineProvider);
-    if (sync.isEmpty || ref.watch(demoModeProvider)) {
+    final points = ref.watch(locationTrackerProvider.select((s) => s.pending));
+    // Location points flow out every few seconds, so one or two waiting is normal
+    // and not worth a bar. Offline, or a real pile, is.
+    final showPoints = points > 0 && (!online || points > pointsWorthShowing);
+    if ((sync.isEmpty && !showPoints) || ref.watch(demoModeProvider)) {
       return const SizedBox.shrink();
     }
 
@@ -31,6 +39,8 @@ class SyncStatusBar extends ConsumerWidget {
       if (waiting > 0)
         '$waiting ${waiting == 1 ? 'change' : 'changes'} waiting to sync',
       if (refused > 0) '$refused not accepted by the server',
+      if (showPoints)
+        '$points location ${points == 1 ? 'point' : 'points'} waiting',
     ].join(' · ');
 
     return Material(
@@ -100,6 +110,7 @@ class _SyncSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sync = ref.watch(syncServiceProvider);
     final online = ref.watch(onlineProvider);
+    final points = ref.watch(locationTrackerProvider.select((s) => s.pending));
     return SafeArea(
       child: ConstrainedBox(
         constraints: BoxConstraints(
@@ -121,14 +132,47 @@ class _SyncSheet extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 12),
+            if (points > 0)
+              Container(
+                key: const Key('location-backlog'),
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.my_location_rounded,
+                      size: 20,
+                      color: AppColors.inkSecondary,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '$points vehicle location ${points == 1 ? 'point' : 'points'} '
+                        'waiting to be sent to the dispatcher',
+                        style: AppText.textSmSemibold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             for (final a in sync.rejected) _Row(action: a, refused: true),
             for (final a in sync.pending) _Row(action: a, refused: false),
             const SizedBox(height: 8),
             FilledButton.icon(
               key: const Key('sync-now'),
-              onPressed: sync.syncing || sync.pending.isEmpty
+              onPressed: sync.syncing || (sync.pending.isEmpty && points == 0)
                   ? null
-                  : () => ref.read(syncServiceProvider.notifier).kick(),
+                  : () {
+                      ref.read(syncServiceProvider.notifier).kick();
+                      ref
+                          .read(locationTrackerProvider.notifier)
+                          .flush(force: true);
+                    },
               icon: const Icon(Icons.sync_rounded),
               label: Text(sync.syncing ? 'Syncing…' : 'Sync now'),
             ),

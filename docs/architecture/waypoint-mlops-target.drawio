@@ -1,0 +1,247 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="WayPoint target architecture" id="waypoint-mlops-target">
+    <mxGraphModel grid="1" gridSize="10" page="1" pageScale="1" pageWidth="2100" pageHeight="1700" dx="2100" dy="1700">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" vertex="1" value="WAYPOINT — APPLICATION + PREDICTION + MLOPS&#xA;Finalized target design • 4 October 2026 • Proposed additions are not deployed" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#ffffff;strokeColor=#ffffff;">
+          <mxGeometry x="40" y="20" width="2020" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-label" parent="1" vertex="1" value="APPLICATION AND LIVE PREDICTIONS" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;">
+          <mxGeometry x="40" y="110" width="2020" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="web" parent="1" vertex="1" value="Web app | Dispatcher + Store manager" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;">
+          <mxGeometry x="60" y="190" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile" parent="1" vertex="1" value="Flutter driver app | Outcomes + offline sync" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;">
+          <mxGeometry x="60" y="300" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="nginx" parent="1" vertex="1" value="Nginx | TLS + reverse proxy + web build" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#d5e8d4;strokeColor=#82b366;">
+          <mxGeometry x="350" y="220" width="210" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="api" parent="1" vertex="1" value="NestJS business API&#xA;Auth + planning + trips + prediction audit" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#fff2cc;strokeColor=#d6b656;">
+          <mxGeometry x="650" y="190" width="250" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="pg" parent="1" vertex="1" value="Business PostgreSQL&#xA;Orders / trips / outcomes / prediction logs" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#f5f5f5;strokeColor=#666666;">
+          <mxGeometry x="1010" y="180" width="250" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="rmq" parent="1" vertex="1" value="RabbitMQ | SMS / location / notification queues" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#ffe6cc;strokeColor=#d79b00;">
+          <mxGeometry x="1010" y="340" width="250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers" parent="1" vertex="1" value="NestJS queue consumers | Retry + dead-letter handling" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#fff2cc;strokeColor=#d6b656;">
+          <mxGeometry x="1390" y="340" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="osrm" parent="1" vertex="1" value="OSRM | Route baseline" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#f5f5f5;strokeColor=#666666;">
+          <mxGeometry x="1390" y="180" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="cloud" parent="1" vertex="1" value="Cloudinary | Media" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#f5f5f5;strokeColor=#666666;">
+          <mxGeometry x="1760" y="180" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="messaging" parent="1" vertex="1" value="smsapi.lk + FCM | SMS and push notifications" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#ffe6cc;strokeColor=#d79b00;">
+          <mxGeometry x="1760" y="340" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="predict" parent="1" vertex="1" value="NEW: Prediction service | FastAPI&#xA;Travel + service-time estimates&#xA;Pinned model + shared preprocessing" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="650" y="360" width="250" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="chat" parent="1" vertex="1" value="Existing AI chatbot | FastAPI&#xA;Read-only authorized business tools" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="650" y="560" width="250" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="qdrant" parent="1" vertex="1" value="Qdrant | Document retrieval" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#f5f5f5;strokeColor=#666666;">
+          <mxGeometry x="1010" y="530" width="250" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="aipg" parent="1" vertex="1" value="AI PostgreSQL | Memory + document jobs" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#f5f5f5;strokeColor=#666666;">
+          <mxGeometry x="1010" y="650" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="gemini" parent="1" vertex="1" value="Gemini | LLM + embeddings" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#f5f5f5;strokeColor=#666666;">
+          <mxGeometry x="1390" y="570" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="fallback" parent="1" vertex="1" value="Baseline fallback | OSRM + current service allowances" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#ffffff;strokeColor=#9673a6;">
+          <mxGeometry x="350" y="400" width="210" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="mlops-label" parent="1" vertex="1" value="NEW: DATA PIPELINES AND CONTINUOUS TRAINING" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="40" y="780" width="2020" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="airflow" parent="1" vertex="1" value="Apache Airflow&#xA;Schedules / dependencies / retries / run limits" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="60" y="860" width="220" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="extract" parent="1" vertex="1" value="Incremental extraction&#xA;Read-only access + late-sync reconciliation" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="350" y="860" width="250" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="analytics" parent="1" vertex="1" value="Analytical PostgreSQL + dbt Core&#xA;Features / labels / data tests" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="680" y="860" width="270" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="data" parent="1" vertex="1" value="S3-compatible object storage&#xA;Immutable datasets / models / manifests / reports" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="1030" y="860" width="270" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="train" parent="1" vertex="1" value="Isolated training containers&#xA;One workflow per model&#xA;Shared feature package" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="680" y="1050" width="270" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="evaluate" parent="1" vertex="1" value="Evaluation gate&#xA;Temporal holdout / segment error / latency / coverage" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="1030" y="1050" width="270" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="mlflow" parent="1" vertex="1" value="MLflow tracking + model registry&#xA;Code / data / metrics / model versions and aliases" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="1390" y="860" width="280" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="release" parent="1" vertex="1" value="Release controller&#xA;Exact version → staging → shadow/canary → promote or rollback" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="1760" y="860" width="270" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="batch" parent="1" vertex="1" value="Optional batch forecast job&#xA;Approved demand model + fresh inputs" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="1390" y="1050" width="280" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="results" parent="1" vertex="1" value="Forecast results | Model version + generation time + horizon" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="1760" y="1060" width="270" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="monitor" parent="1" vertex="1" value="Evidently quality monitoring&#xA;Predictions joined to actuals / drift / freshness" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#e1d5e7;strokeColor=#9673a6;">
+          <mxGeometry x="350" y="1050" width="250" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="metadata" parent="1" vertex="1" value="Separate PostgreSQL metadata databases | Airflow + MLflow" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#f5f5f5;strokeColor=#666666;">
+          <mxGeometry x="1390" y="1220" width="280" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="platform-label" parent="1" vertex="1" value="DELIVERY, OBSERVABILITY AND OPERATIONS" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#d5e8d4;strokeColor=#82b366;">
+          <mxGeometry x="40" y="1370" width="2020" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ci" parent="1" vertex="1" value="GitHub Actions + image registry | Code tests / immutable builds / environment deployment" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#d5e8d4;strokeColor=#82b366;">
+          <mxGeometry x="60" y="1450" width="460" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="obs" parent="1" vertex="1" value="Prometheus + Grafana + alerts | Service metrics; OpenTelemetry + Tempo | Traces; structured logs" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#d5e8d4;strokeColor=#82b366;">
+          <mxGeometry x="580" y="1450" width="470" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ops" parent="1" vertex="1" value="Private networking / service identities / secrets / audit / backups / resource isolation" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#d5e8d4;strokeColor=#82b366;">
+          <mxGeometry x="1110" y="1450" width="440" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="scale" parent="1" vertex="1" value="Growth options | Kubernetes/KServe, Feast, CDC, warehouse — driven by measured needs" style="rounded=1;whiteSpace=wrap;html=0;fontSize=15;spacing=10;fillColor=#ffffff;strokeColor=#666666;">
+          <mxGeometry x="1610" y="1450" width="430" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" parent="1" edge="1" source="web" target="nginx" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" parent="1" edge="1" source="mobile" target="nginx" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" parent="1" edge="1" source="nginx" target="api" value="/api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" parent="1" edge="1" source="nginx" target="chat" value="/ai-api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" parent="1" edge="1" source="api" target="pg" value="Business data + audit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" parent="1" edge="1" source="api" target="predict" value="Internal batch prediction request" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" parent="1" edge="1" source="predict" target="api" value="Estimates + version" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" parent="1" edge="1" source="api" target="osrm" value="Route lookup" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" parent="1" edge="1" source="api" target="cloud" value="Media upload" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" parent="1" edge="1" source="api" target="rmq" value="Publish" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" parent="1" edge="1" source="rmq" target="consumers" value="Consume" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" parent="1" edge="1" source="consumers" target="messaging" value="SMS / push" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" parent="1" edge="1" source="messaging" target="mobile" value="Push notification" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" parent="1" edge="1" source="api" target="fallback" value="On timeout / unavailable model" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" parent="1" edge="1" source="chat" target="api" value="Business tools / user authorization" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" parent="1" edge="1" source="chat" target="qdrant" value="Retrieval" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" parent="1" edge="1" source="chat" target="aipg" value="Memory / jobs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" parent="1" edge="1" source="chat" target="gemini" value="LLM / embeddings" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" parent="1" edge="1" source="pg" target="extract" value="Operational records + prediction logs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" parent="1" edge="1" source="airflow" target="extract" value="Daily data workflow" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" parent="1" edge="1" source="extract" target="analytics" value="Reconciled historical data" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" parent="1" edge="1" source="extract" target="data" value="Raw snapshots" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" parent="1" edge="1" source="analytics" target="data" value="Validated feature / label snapshot" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e24" parent="1" edge="1" source="data" target="train" value="Versioned training inputs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e25" parent="1" edge="1" source="airflow" target="train" value="Eligible training trigger" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e26" parent="1" edge="1" source="train" target="evaluate" value="Candidate evaluation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e27" parent="1" edge="1" source="train" target="mlflow" value="Track run + register candidate" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e28" parent="1" edge="1" source="train" target="data" value="Model artifacts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e29" parent="1" edge="1" source="evaluate" target="release" value="Passed release rules only" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e30" parent="1" edge="1" source="mlflow" target="release" value="Resolve exact version" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e31" parent="1" edge="1" source="release" target="predict" value="Controlled deployment / rollback" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e32" parent="1" edge="1" source="mlflow" target="data" value="Artifact references" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e33" parent="1" edge="1" source="mlflow" target="metadata" value="Registry metadata" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e34" parent="1" edge="1" source="airflow" target="metadata" value="Workflow metadata" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e35" parent="1" edge="1" source="analytics" target="monitor" value="Prediction-outcome join" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e36" parent="1" edge="1" source="monitor" target="airflow" value="Sustained signal + eligibility checks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e37" parent="1" edge="1" source="mlflow" target="batch" value="Approved version" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e38" parent="1" edge="1" source="analytics" target="batch" value="Fresh forecast inputs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e39" parent="1" edge="1" source="airflow" target="batch" value="Forecast schedule" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e40" parent="1" edge="1" source="batch" target="results" value="Persist forecast" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e41" parent="1" edge="1" source="results" target="api" value="Internal forecast read" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e42" parent="1" edge="1" source="ci" target="release" value="Tested serving/pipeline builds" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e43" parent="1" edge="1" source="monitor" target="obs" value="Model metrics + alerts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;endArrow=block;endFill=1;fontSize=12;labelBackgroundColor=#ffffff;dashed=1;strokeColor=#9673a6;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

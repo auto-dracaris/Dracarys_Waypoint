@@ -7,6 +7,11 @@ enum NotificationKind {
   loadingStarted,
   tripAssigned,
   savedOffline,
+  tripReady,
+  issueUpdate,
+
+  /// A type this version does not know: shown with its words and no action.
+  general,
 }
 
 class AppNotification {
@@ -20,6 +25,8 @@ class AppNotification {
     this.tripId,
     this.actionLabel,
     this.footnote,
+    this.type,
+    this.read = true,
   });
 
   final String id;
@@ -31,4 +38,11 @@ class AppNotification {
   final String? tripId;
   final String? actionLabel;
   final String? footnote;
+
+  /// The server's notification type (`route_changed`, ...), when it came from
+  /// the server.
+  final String? type;
+
+  /// Notifications the server has not been told are read stay false.
+  final bool read;
 }

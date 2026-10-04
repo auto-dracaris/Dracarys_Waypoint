@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { OverviewHeader } from '@/features/store-manager/components/my-deliveries/overview-header'
 import { Button } from '@/components/ui/button'
+import { DemandForecastSection } from '@/features/store-manager/components/my-deliveries/demand-forecast'
+import { mockDemandForecast } from '@/features/store-manager/demand-forecast-mock'
 import '@/styles/store-manager/overview.css'
 import { TodayDeliveries, type DeliveryItem } from '@/features/store-manager/components/my-deliveries/today-deliveries'
 import { NextRunCard } from '@/features/store-manager/components/my-deliveries/next-run-card'
@@ -170,6 +172,7 @@ export function DashboardOverviewPage() {
         <div className="store-overview-recent">
           <RecentOrdersTable orders={recentOrders} onViewAll={openOrders} />
         </div>
+        <DemandForecastSection forecast={mockDemandForecast} />
       </div>
     </div>
   )

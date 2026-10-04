@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Phone from '@mui/icons-material/Phone'
@@ -110,6 +111,7 @@ export function ProfilePage({ onOpenNavigation }: { onOpenNavigation?: () => voi
   }
   return <section className="profile-page" aria-labelledby="profile-title">
     <header className="profile-header"><div><h1 id="profile-title" className="type-display-lg-medium">My Profile</h1><p className="type-text-sm-regular">{subtitle}</p></div>{onOpenNavigation && <IconButton className="mobile-menu" aria-label="Open navigation" onClick={onOpenNavigation}><MenuRounded /></IconButton>}</header>
+    {isDispatcher && <HubBreadcrumbs />}
     <div className="profile-overview">
       <div className="profile-cover"><img src={cover} alt="" width="1368" height="172" /></div>
       <div className="profile-identity"><div className="profile-name"><h2 className="type-display-xs-medium">{displayName}</h2><p className="type-text-md-medium">{roleName} · {depotName}</p><p className="type-text-sm-regular">{account.phone}</p></div><StatusBadge tone="success" className="profile-signed-in">● Signed in</StatusBadge></div>

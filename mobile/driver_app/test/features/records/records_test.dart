@@ -38,6 +38,7 @@ ProviderContainer container() {
       tripsRepositoryProvider.overrideWithValue(
         MockTripsRepository(
           latency: Duration.zero,
+          onTheRoad: true,
           today: DateTime(2026, 9, 29),
           now: () => _now,
         ),

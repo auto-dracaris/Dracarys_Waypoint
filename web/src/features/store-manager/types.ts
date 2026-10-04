@@ -20,6 +20,8 @@ export interface TimelineStep {
 
 export interface DeliveryDetails {
   vehicleId: string
+  // What the map pin shows; `vehicleType` is the label, e.g. "Refrigerated van".
+  vehicleKind: 'truck' | 'van'
   vehicleType: string
   status: string
   statusVariant: 'green' | 'yellow' | 'blue' | 'red'

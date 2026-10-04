@@ -19,6 +19,7 @@ import '../domain/order.dart';
 import '../domain/shortfall_report.dart';
 import '../domain/stop.dart';
 import '../domain/trip.dart';
+import '../domain/stop_gate.dart';
 import 'widgets/loading_banner.dart';
 import 'widgets/start_code_dialog.dart';
 import 'widgets/temperature_chip.dart';
@@ -46,9 +47,14 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
       // starts that each outlet is texted its delivery code and the phone is
       // given what it needs to check those codes without a signal.
       if (!ref.read(onlineProvider)) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("You need a connection to start the trip. Once it "
-                "has started, the rest works without one.")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "You need a connection to start the trip. Once it "
+              "has started, the rest works without one.",
+            ),
+          ),
+        );
         return;
       }
       otp = await askStartCode(context);
@@ -580,7 +586,13 @@ class _Sequence extends StatelessWidget {
         const SizedBox(height: 10),
         for (var i = 0; i < trip.stops.length; i++) ...[
           if (i > 0) const SizedBox(height: 10),
-          _StopCard(stop: trip.stops[i], onTap: () => onOpen(trip.stops[i])),
+          _StopCard(
+            stop: trip.stops[i],
+            locked:
+                stopGate(trip, trip.stops[i]).access != StopAccess.actionable &&
+                !stopGate(trip, trip.stops[i]).isDone,
+            onTap: () => onOpen(trip.stops[i]),
+          ),
         ],
       ],
     );
@@ -588,9 +600,14 @@ class _Sequence extends StatelessWidget {
 }
 
 class _StopCard extends StatelessWidget {
-  const _StopCard({required this.stop, required this.onTap});
+  const _StopCard({
+    required this.stop,
+    required this.onTap,
+    this.locked = false,
+  });
 
   final Stop stop;
+  final bool locked;
   final VoidCallback onTap;
 
   @override
@@ -602,94 +619,97 @@ class _StopCard extends StatelessWidget {
       }
     }
     final done = stop.status == StopStatus.completed;
-    return Material(
-      color: AppColors.card,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Container(
-                key: done ? Key('stop-done-${stop.sequence}') : null,
-                width: 28,
-                height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: done ? AppColors.lime100 : AppColors.background,
-                  shape: BoxShape.circle,
-                ),
-                child: done
-                    ? const Icon(
-                        Icons.check_rounded,
-                        size: 16,
-                        color: AppColors.lime700,
-                      )
-                    : Text(
-                        '${stop.sequence}',
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
+    return Opacity(
+      opacity: locked ? 0.55 : 1,
+      child: Material(
+        color: AppColors.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.border),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Container(
+                  key: done ? Key('stop-done-${stop.sequence}') : null,
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: done ? AppColors.lime100 : AppColors.background,
+                    shape: BoxShape.circle,
+                  ),
+                  child: done
+                      ? const Icon(
+                          Icons.check_rounded,
+                          size: 16,
+                          color: AppColors.lime700,
+                        )
+                      : Text(
+                          '${stop.sequence}',
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
+                          ),
                         ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(stop.name, style: AppText.textSmSemibold),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 12,
+                        children: [
+                          Text(
+                            'Window: ${stop.deliveryWindow.replaceAll('-', '–')}',
+                            style: _interLabel.copyWith(
+                              color: AppColors.inkMuted,
+                            ),
+                          ),
+                          Text(
+                            'Arrival: ${formatTime(stop.plannedArrival)}',
+                            style: _interLabel.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.lime700,
+                            ),
+                          ),
+                        ],
                       ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(stop.name, style: AppText.textSmSemibold),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 12,
-                      children: [
-                        Text(
-                          'Window: ${stop.deliveryWindow.replaceAll('-', '–')}',
-                          style: _interLabel.copyWith(
-                            color: AppColors.inkMuted,
-                          ),
-                        ),
-                        Text(
-                          'Arrival: ${formatTime(stop.plannedArrival)}',
-                          style: _interLabel.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.lime700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            for (final t in temperatures) ...[
-                              TemperatureChip(t),
-                              const SizedBox(width: 4),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              for (final t in temperatures) ...[
+                                TemperatureChip(t),
+                                const SizedBox(width: 4),
+                              ],
                             ],
-                          ],
-                        ),
-                        Text(
-                          '${stop.orders.length} ${stop.orders.length == 1 ? 'order' : 'orders'}',
-                          style: _interLabel.copyWith(
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.inkSecondary,
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          Text(
+                            '${stop.orders.length} ${stop.orders.length == 1 ? 'order' : 'orders'}',
+                            style: _interLabel.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.inkSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

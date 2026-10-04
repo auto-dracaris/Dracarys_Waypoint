@@ -82,6 +82,8 @@ export const deferralReasons: Record<DeferralReason, string> = {
 // Mirror api/src/common/enums/{depot,brand}.enum.ts.
 export const depots = ['Peliyagoda', 'Kandy']
 export const brands = ['Fresh', 'Style', 'Tech']
+// Figma 1493:14081: presentation-only example, independent of live allocation options.
+export const allocationPredictionPreview = { vehicleId: 'VEH012', trip: 'Trip 1', handlingMinutes: 22, lateArrivalRiskPercent: 12 }
 // The allocation notices and vehicle options below are Figma's preview data, kept until the planning step supplies real ones.
 export const allocationNotices: Record<string, { title: string; description: string }> = {
   'DEMO-102': { title: 'Dry order needs a van', description: 'No van with sufficient capacity was pre-assigned. Two vans are available for manual assignment; capacity limits apply.' },

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -40,10 +41,12 @@ final initialDemoModeProvider = Provider<bool>((_) => useMocks);
 /// when switching back).
 class DemoModeNotifier extends Notifier<bool> {
   @override
-  bool build() => ref.watch(initialDemoModeProvider);
+  // Release builds always use the real server: no demo data, whatever an
+  // earlier debug install saved.
+  bool build() => !kReleaseMode && ref.watch(initialDemoModeProvider);
 
   void set(bool on) {
-    if (state == on) return;
+    if (kReleaseMode || state == on) return;
     state = on;
     DemoModeStore().write(on);
     ref.invalidate(authControllerProvider);

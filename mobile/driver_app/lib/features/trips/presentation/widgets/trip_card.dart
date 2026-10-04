@@ -39,9 +39,12 @@ class TripCard extends StatelessWidget {
               children: [
                 Text(trip.name, style: AppText.displayXs),
                 const SizedBox(height: 2),
-                Text(trip.subtitle,
-                    style: AppText.textSmRegular
-                        .copyWith(color: AppColors.inkSecondary)),
+                Text(
+                  trip.subtitle,
+                  style: AppText.textSmRegular.copyWith(
+                    color: AppColors.inkSecondary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -60,7 +63,10 @@ class TripCard extends StatelessWidget {
                     ),
                   ),
                   const VerticalDivider(
-                      width: 1, thickness: 1, color: AppColors.divider),
+                    width: 1,
+                    thickness: 1,
+                    color: AppColors.divider,
+                  ),
                   Padding(
                     padding: const EdgeInsets.only(left: 12),
                     child: _Stat(
@@ -114,14 +120,13 @@ class _Stat extends StatelessWidget {
   }
 }
 
-/// Illustration per trip status. Every status uses the worker image for now;
-/// swap an entry here when the real artwork for that status arrives.
+/// Illustration per trip status (143 x 118 artwork, shown uncropped).
 const _statusImages = <TripStatus, String>{
-  TripStatus.assigned: 'assets/images/worker.png',
-  TripStatus.loading: 'assets/images/worker.png',
-  TripStatus.ready: 'assets/images/worker.png',
-  TripStatus.inProgress: 'assets/images/worker.png',
-  TripStatus.completed: 'assets/images/worker.png',
+  TripStatus.assigned: 'assets/images/trip_assigned.png',
+  TripStatus.loading: 'assets/images/trip_loading.png',
+  TripStatus.ready: 'assets/images/trip_ready.png',
+  TripStatus.inProgress: 'assets/images/trip_in_progress.png',
+  TripStatus.completed: 'assets/images/trip_completed.png',
 };
 
 class _Illustration extends StatelessWidget {
@@ -129,28 +134,13 @@ class _Illustration extends StatelessWidget {
 
   final TripStatus status;
 
-  // Crop of the source image; fractions come from Figma.
-  static const _w = 144.0, _h = 118.0;
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       key: const Key('trip-illustration'),
-      width: _w,
-      height: _h,
-      child: ClipRect(
-        child: Stack(
-          children: [
-            Positioned(
-              left: -0.115 * _w,
-              top: -0.0004 * _h,
-              width: 1.23 * _w,
-              height: 1.0008 * _h,
-              child: Image.asset(_statusImages[status]!, fit: BoxFit.fill),
-            ),
-          ],
-        ),
-      ),
+      width: 143,
+      height: 118,
+      child: Image.asset(_statusImages[status]!, fit: BoxFit.contain),
     );
   }
 }
@@ -204,8 +194,11 @@ class _OutlinedButton extends StatelessWidget {
             children: [
               Text(label, style: AppText.textSmSemibold),
               const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward_rounded,
-                  size: 18, color: AppColors.ink),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                size: 18,
+                color: AppColors.ink,
+              ),
             ],
           ),
         ),

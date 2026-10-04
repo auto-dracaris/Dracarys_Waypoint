@@ -13,7 +13,7 @@ import { DetailPanel } from '@/components/ui/detail-panel'
 import type { DetailPanelState } from '@/components/ui/use-detail-panel'
 import { VehicleOption } from './vehicle-option'
 import { formatDay } from '../api'
-import { allocationNotices, allocationOptions, optionBlocker, type ConfirmedOrder } from '../data'
+import { allocationNotices, allocationOptions, allocationPredictionPreview, optionBlocker, type ConfirmedOrder } from '../data'
 
 export function AllocationPanel({
   panel,
@@ -164,6 +164,12 @@ export function AllocationPanel({
             </div>
           </div>
         )}
+        <section className="order-prediction-preview" aria-label="Allocation suggestion and prediction preview">
+          <h3 className="type-text-md-semibold">Suggested: {allocationPredictionPreview.vehicleId} · {allocationPredictionPreview.trip}</h3>
+          <p className="type-text-sm-regular">Handling est. {allocationPredictionPreview.handlingMinutes} min · Late-arrival risk {allocationPredictionPreview.lateArrivalRiskPercent}%</p>
+          <p className="type-text-sm-regular">Example suggestion: fits capacity, temperature and outlet access. Confirm assignment after reviewing the plan.</p>
+          <p className="type-text-sm-regular">Prediction preview · Example values</p>
+        </section>
       </div>
       {order.status === 'Unallocated' && (
         <footer className="fleet-details-footer order-allocation-actions">

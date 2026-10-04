@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { IconButton } from '@/components/ui/icon-button'
 import { useEffect, useState } from 'react'
 import MenuRounded from '@mui/icons-material/MenuRounded'
@@ -30,7 +31,7 @@ function nextDeliveryDay(): string {
 const stateLabels = { none: 'Not planned', draft: 'Draft', published: 'Published' } as const
 const stateTones = { none: 'neutral', draft: 'warning', published: 'success' } as const
 
-export function FinalPlanReviewPage({ onNavigate, onOpenNavigation, navigationOpen }: { onNavigate: (page: string) => void; onOpenNavigation: () => void; navigationOpen: boolean }) {
+export function FinalPlanReviewPage({ onOpenNavigation, navigationOpen }: { onNavigate: (page: string) => void; onOpenNavigation: () => void; navigationOpen: boolean }) {
   const { accessToken } = useUser()
   const [date, setDate] = useState(nextDeliveryDay)
   const [depot, setDepot] = useState(depots[0])
@@ -138,21 +139,7 @@ export function FinalPlanReviewPage({ onNavigate, onOpenNavigation, navigationOp
           </Button>
         </div>
       </header>
-      <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">
-        <span>
-          <button onClick={() => onNavigate('Home')}>Home</button>
-          <span aria-hidden="true">/</span>
-        </span>
-        <span>
-          Planning<span aria-hidden="true">/</span>
-        </span>
-        <span>
-          Active Plan<span aria-hidden="true">/</span>
-        </span>
-        <strong aria-current="page" className="text-wp-text-primary type-text-sm-semibold">
-          Final Plan Review
-        </strong>
-      </nav>
+      <HubBreadcrumbs />
       {message && (
         <p role="status" className="fleet-update-message type-text-sm-medium">
           {message}

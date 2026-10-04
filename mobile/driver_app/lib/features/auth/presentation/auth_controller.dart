@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../notifications/application/push_registrar.dart';
 import '../data/auth_providers.dart';
 import '../data/auth_repository.dart';
 import '../domain/driver.dart';
@@ -51,6 +52,9 @@ class AuthController extends AsyncNotifier<Driver?> {
   void setDriver(Driver driver) => state = AsyncData(driver);
 
   Future<void> logout() async {
+    // While the access token still works: otherwise this phone would keep
+    // receiving the previous driver's pushes.
+    await ref.read(pushRegistrarProvider).unregister();
     await _repo.logout();
     state = const AsyncData(null);
   }

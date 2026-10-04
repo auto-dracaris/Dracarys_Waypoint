@@ -97,6 +97,7 @@ export function DeliveryRouteMap({ data }: DeliveryRouteMapProps) {
                 vehiclePosition={data.vehiclePosition}
                 routeCoordinates={routeCoordinates}
                 vehicleId={data.vehicleId}
+                vehicleKind={data.vehicleKind}
                 statusLabel={data.status}
                 isRouteLoading={isRouteLoading}
               />
