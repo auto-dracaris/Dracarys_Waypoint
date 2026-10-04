@@ -49,7 +49,7 @@ WayPoint plans and tracks deliveries from depots to retail outlets. Store manage
 
    Database, RabbitMQ and service addresses are set by Compose, so you don't need to change them.
 
-2. **Add the dataset.** The API seeds vehicles, outlets and the calendar from the dataset CSVs. Put them in `api/data/` (or `api/data/General Data/`). They are not in git, so ask the team for them, or you can [download the General Data from the original Tech-Triathlon dataset here](https://drive.google.com/drive/folders/1d-272bTFyx4QBpWSFe4_kE8-p5S_Zx8q?usp=sharing).
+2. **Add the dataset.** The API seeds vehicles, outlets and the calendar from the dataset CSVs. Put them in `api/data/General Data/`. They are not in git, download from here [download the General Data from the original Tech-Triathlon dataset here](https://drive.google.com/drive/folders/1d-272bTFyx4QBpWSFe4_kE8-p5S_Zx8q?usp=sharing).
 
 3. **Start everything:**
 
