@@ -61,7 +61,7 @@ export function TeamTable({
         </thead>
         <tbody>
           {members.map((member) => (
-            <tr key={member.id} onClick={() => onSelect(member.id)}>
+            <tr key={member.id} className={selectedId === member.id ? 'fleet-row-selected' : ''} onClick={() => onSelect(member.id)}>
               <td>
                 <button className="team-member" aria-pressed={selectedId === member.id} onClick={() => onSelect(member.id)}>
                   <span className="team-avatar type-text-md-medium" aria-hidden="true">

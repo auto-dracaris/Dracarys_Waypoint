@@ -117,7 +117,7 @@ void main() {
     testWidgets('a new chat greets and offers things to ask', (tester) async {
       await pumpChat(tester, MockAssistantRepository(latency: Duration.zero));
       expect(find.byKey(const Key('chat-welcome')), findsOneWidget);
-      expect(find.text('Waypoint Assistant'), findsOneWidget);
+      expect(find.text('Trip Copilot'), findsOneWidget);
       for (final (_, text) in chatSuggestions) {
         expect(find.text(text), findsOneWidget);
       }

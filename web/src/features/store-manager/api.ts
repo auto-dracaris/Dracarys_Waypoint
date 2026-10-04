@@ -175,8 +175,23 @@ export function fetchMyOverview(token: string): Promise<StoreOverview> {
 }
 
 /** One page of the outlet's orders, newest first. */
-export function fetchMyOrders(token: string, { page, status, search }: { page: number; status?: OrderStatus; search: string }): Promise<Paginated<StoreOrder>> {
-  return apiRequest<Paginated<StoreOrder>>(API_ENDPOINTS.orders.mine, { token, params: { page, limit: pageSize, status, search: search.trim() || undefined } })
+export type MyOrderSort = 'reference' | 'requestedDate' | 'tempRequirement' | 'orderUnits' | 'status'
+export interface MyOrders extends Paginated<StoreOrder> {
+  counts?: Record<'all' | 'confirmed' | 'deferred' | 'cancelled', number>
+}
+export interface MyOrderQuery {
+  page: number
+  limit?: number
+  status?: OrderStatus
+  search: string
+  dateFrom?: string
+  dateTo?: string
+  tempRequirement?: TempRequirement
+  sortBy?: MyOrderSort
+  sortDirection?: 'ASC' | 'DESC'
+}
+export function fetchMyOrders(token: string, { search, limit = pageSize, ...query }: MyOrderQuery): Promise<MyOrders> {
+  return apiRequest<MyOrders>(API_ENDPOINTS.orders.mine, { token, params: { ...query, limit, search: search.trim() || undefined } })
 }
 
 export function cancelOrder(token: string, orderId: number): Promise<StoreOrder> {

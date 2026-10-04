@@ -6,12 +6,18 @@
 	<string>Waypoint uses the camera to photograph delivery proof, damaged goods and your profile picture.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Waypoint lets you choose a profile picture from your photos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Waypoint shares your vehicle's position with the dispatcher while a trip is under way.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Driver App</string>
+	<string>Waypoint Driver</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

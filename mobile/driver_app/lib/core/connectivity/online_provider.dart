@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Whether the phone has a network at all, as the system reports it. A
@@ -45,6 +46,7 @@ class OnlineNotifier extends Notifier<bool> {
 
   /// Demo switch behind the status pill's long-press.
   void toggle() {
+    if (kReleaseMode) return; // a demo tool, not for real drivers
     _forcedOffline = !_forcedOffline;
     state = !_forcedOffline;
   }

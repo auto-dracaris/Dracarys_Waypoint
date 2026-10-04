@@ -11,7 +11,9 @@ import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../core/widgets/day_selector.dart';
 import '../../../core/widgets/online_status_pill.dart';
+import '../../assistant/presentation/widgets/copilot_mark.dart';
 import '../../sync/presentation/sync_status_bar.dart';
+import '../../tracking/presentation/location_notice.dart';
 import '../data/trips_providers.dart';
 import '../domain/trip.dart';
 import '../domain/vehicle.dart';
@@ -33,12 +35,12 @@ class MyTripsScreen extends ConsumerWidget {
     }
 
     return Scaffold(
+      // Bottom-right, just above the footer.
+      floatingActionButtonLocation: const _TightEndFloat(),
+      floatingActionButton: CopilotButton(onTap: () => context.push('/chat')),
       body: Column(
         children: [
-          AppHeader(
-            onBellTap: () => context.go('/updates'),
-            onChatTap: () => context.push('/chat'),
-          ),
+          AppHeader(onBellTap: () => context.go('/updates')),
           const _TitleRow(),
           DaySelector(
             day: day,
@@ -46,6 +48,7 @@ class MyTripsScreen extends ConsumerWidget {
             onChanged: ref.read(tripsDateProvider.notifier).set,
           ),
           const SyncStatusBar(),
+          const LocationNotice(),
           Expanded(
             child: AsyncValueView(
               value: trips,
@@ -126,7 +129,8 @@ class _Content extends ConsumerWidget {
       },
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
+        // Room under the last card for the floating Trip Copilot button.
+        padding: const EdgeInsets.only(bottom: 88),
         children: [
           VehicleBanner(vehicle: vehicle),
           Padding(
@@ -148,4 +152,22 @@ class _Content extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Bottom-right like the standard end-float spot, but with the same 8 px side
+/// margin the trip cards have (the default is 16), and a little closer to the
+/// footer, so the button lines up with the page content.
+class _TightEndFloat extends FloatingActionButtonLocation {
+  const _TightEndFloat();
+
+  static const side = 8.0;
+  static const bottom = 12.0;
+
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry geometry) => Offset(
+    geometry.scaffoldSize.width -
+        geometry.floatingActionButtonSize.width -
+        side,
+    geometry.contentBottom - geometry.floatingActionButtonSize.height - bottom,
+  );
 }

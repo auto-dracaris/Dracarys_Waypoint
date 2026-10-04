@@ -1,145 +1,61 @@
-import React, { useState } from 'react'
-import { Check } from 'lucide-react'
-import { Button } from '@/components/ui/shadcn/button'
+import { useState } from 'react'
+import CheckRounded from '@mui/icons-material/CheckRounded'
+import { Button } from '@/components/ui/button'
+import { StatusBadge, type StatusBadgeProps } from '@/components/ui/status-badge'
 import type { DeliveryDetailsData } from '@/features/store-manager/types'
 
 interface DeliveryDetailsPanelProps {
   data: DeliveryDetailsData | null
-  // Left out when the delivery cannot be confirmed or reported on yet.
   onConfirmReceipt?: () => void
   onReportIssue?: () => void
   confirming?: boolean
   error?: string
   message?: string
 }
+const tones: Record<DeliveryDetailsData['statusVariant'], StatusBadgeProps['tone']> = {
+  yellow: 'warning', green: 'success', red: 'error', blue: 'info', default: 'neutral',
+}
 
 export function DeliveryDetailsPanel({ data, onConfirmReceipt, onReportIssue, confirming = false, error = '', message = '' }: DeliveryDetailsPanelProps) {
-  // 1. Add local state to track the two-step confirmation
   const [isReviewing, setIsReviewing] = useState(false)
-
-  if (!data) return <div className="flex-1 shrink-0 p-6 bg-white rounded-xl border border-neutral-200 text-stone-500 text-sm font-sans">Select a delivery to see its details.</div>
-
-  const statusStyles = {
-    yellow: 'bg-yellow-100 text-yellow-700',
-    green: 'bg-lime-100 text-lime-700',
-    red: 'bg-red-100 text-red-700',
-    blue: 'bg-blue-100 text-blue-700',
-    default: 'bg-neutral-100 text-neutral-700',
-  }[data.statusVariant]
-
-  // 3. Handle the two-step click logic
-  const handleConfirmClick = () => {
-    if (!isReviewing) {
-      // First click: switch to review mode
-      setIsReviewing(true)
-    } else {
-      // Second click: execute the actual confirmation
-      onConfirmReceipt?.()
-      setIsReviewing(false)
-    }
+  if (!data) return <aside id="store-delivery-details" className="store-delivery-details-panel store-delivery-details-empty type-text-sm-regular" aria-label="Delivery details">Select a delivery to see its details.</aside>
+  const confirm = () => {
+    if (!isReviewing) setIsReviewing(true)
+    else { onConfirmReceipt?.(); setIsReviewing(false) }
   }
-
+  const fields = [
+    ['Delivery date', data.deliveryDate], ['Vehicle', data.vehicle],
+    ['Ordered quantity', data.orderedQuantity], ['Driver recorded', data.driverRecorded],
+  ]
   return (
-    <div className="flex-1 shrink-0 bg-white rounded-xl border border-neutral-200 shadow-sm flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="p-6 border-b border-neutral-200 flex justify-between items-start">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-stone-900 text-2xl font-medium font-sans">{data.id}</h2>
-          <p className="text-stone-500 text-sm font-sans">{data.subtitle}</p>
-        </div>
-        <div className={`px-2.5 py-1 rounded-full text-xs font-medium font-sans ${statusStyles}`}>{data.status}</div>
-      </div>
-
-      {/* Content Scroll Area */}
-      <div className="p-6 flex-1 overflow-y-auto flex flex-col gap-6">
-        {/* Delivery Details Table */}
-        <div className="flex flex-col gap-3">
-          <h3 className="text-stone-900 text-sm font-semibold font-sans">Delivery details</h3>
-          <div className="flex flex-col rounded-lg border border-neutral-200 overflow-hidden">
-            <div className="flex border-b border-neutral-200 bg-neutral-50 h-11 items-center">
-              <div className="w-40 px-4 text-stone-500 text-sm font-medium font-sans border-r border-neutral-200 h-full flex items-center bg-neutral-100">Delivery date</div>
-              <div className="flex-1 px-4 text-stone-900 text-sm font-sans">{data.deliveryDate}</div>
-            </div>
-            <div className="flex border-b border-neutral-200 bg-neutral-50 h-11 items-center">
-              <div className="w-40 px-4 text-stone-500 text-sm font-medium font-sans border-r border-neutral-200 h-full flex items-center bg-neutral-100">Vehicle</div>
-              <div className="flex-1 px-4 text-stone-900 text-sm font-sans">{data.vehicle}</div>
-            </div>
-            <div className="flex border-b border-neutral-200 bg-neutral-50 h-11 items-center">
-              <div className="w-40 px-4 text-stone-500 text-sm font-medium font-sans border-r border-neutral-200 h-full flex items-center bg-neutral-100">Ordered quantity</div>
-              <div className="flex-1 px-4 text-stone-900 text-sm font-sans">{data.orderedQuantity}</div>
-            </div>
-            <div className="flex bg-neutral-50 h-11 items-center">
-              <div className="w-40 px-4 text-stone-500 text-sm font-medium font-sans border-r border-neutral-200 h-full flex items-center bg-neutral-100">Driver recorded</div>
-              <div className="flex-1 px-4 text-stone-900 text-sm font-sans">{data.driverRecorded}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Timeline */}
-        <div className="flex flex-col gap-3">
-          <h3 className="text-stone-900 text-sm font-semibold font-sans">Delivery timeline</h3>
-          <div className="flex flex-col gap-1.5 pt-2">
-            {data.timeline.map((step, index) => {
-              const isCompleted = step.status === 'completed'
-              const isCurrent = step.status === 'current'
-
-              return (
-                <React.Fragment key={step.id}>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold font-sans z-10 ${
-                        isCompleted ? 'bg-lime-500 text-white' : isCurrent ? 'bg-neutral-50 border-2 border-lime-500 text-lime-600' : 'bg-neutral-50 border-2 border-neutral-200 text-stone-500'
-                      }`}
-                    >
-                      {isCompleted ? <Check className="h-4 w-4" /> : step.id}
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className={`text-sm font-medium font-sans ${isCurrent ? 'text-lime-700' : 'text-stone-600'}`}>{step.title}</span>
-                      <span className={`text-xs font-sans ${isCurrent ? 'text-lime-600' : 'text-stone-500'}`}>{step.timestamp}</span>
-                    </div>
-                  </div>
-                  {index < data.timeline.length - 1 && <div className={`ml-4 w-0.5 h-8 -my-2 ${isCompleted ? 'bg-lime-500' : 'bg-neutral-200'}`} />}
-                </React.Fragment>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Actions */}
-      {(onConfirmReceipt || onReportIssue || error || message) && (
-        <div className="p-6 border-t border-neutral-200 flex flex-col gap-3 bg-white">
-          {message && (
-            <p role="status" className="px-3 py-2 rounded-md bg-lime-50 border border-lime-200 text-lime-800 text-sm font-medium font-sans">
-              {message}
-            </p>
-          )}
-          {error && (
-            <p role="alert" className="px-3 py-2 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm font-medium font-sans">
-              {error}
-            </p>
-          )}
-          {/* Dynamic Confirmation Button */}
-          {onConfirmReceipt && (
-            <Button onClick={handleConfirmClick} disabled={confirming} className="w-full bg-yellow-400 hover:bg-yellow-500 text-stone-900 font-semibold shadow-none transition-all">
-              {confirming ? 'Confirming…' : isReviewing ? `Confirm ${data.deliveredUnits ?? 0} ${data.deliveredUnits === 1 ? 'case' : 'cases'} received` : 'Review & confirm receipt'}
-            </Button>
-          )}
-
-          {/* Toggle secondary actions based on state */}
-          {!isReviewing ? (
-            onReportIssue && (
-              <Button variant="outline" onClick={onReportIssue} className="w-full text-stone-800 font-semibold shadow-none border-neutral-300">
-                Report an issue
-              </Button>
-            )
-          ) : (
-            <Button variant="outline" onClick={() => setIsReviewing(false)} className="w-full text-stone-800 font-semibold shadow-none border-neutral-300">
-              Cancel
-            </Button>
-          )}
-        </div>
-      )}
-    </div>
+    <aside id="store-delivery-details" className="store-delivery-details-panel" aria-label={`Delivery details for ${data.id}`}>
+      <header className="store-delivery-details-heading">
+        <div><h2 className="type-display-xs-medium">{data.id}</h2><p className="type-text-sm-regular">{data.subtitle}</p></div>
+        <StatusBadge tone={tones[data.statusVariant]}>{data.status}</StatusBadge>
+      </header>
+      <section className="store-delivery-detail-section">
+        <h3 className="type-text-sm-semibold">Delivery details</h3>
+        <dl className="store-delivery-detail-fields">
+          {fields.map(([label, value]) => <div key={label}><dt className="type-text-sm-medium">{label}</dt><dd className="type-text-xs-regular">{value}</dd></div>)}
+        </dl>
+      </section>
+      <section className="store-delivery-detail-section">
+        <h3 className="type-text-sm-semibold">Delivery timeline</h3>
+        <ol className="store-delivery-timeline">
+          {data.timeline.map((step, index) => <li key={step.id} className={`store-delivery-step store-delivery-step--${step.status}`} aria-current={step.status === 'current' ? 'step' : undefined}>
+            <span className="store-delivery-step-icon type-text-sm-semibold" aria-hidden="true">{step.status === 'completed' ? <CheckRounded /> : index + 1}</span>
+            <div><p className="type-text-sm-medium">{step.title}<span className="sr-only"> · {step.status}</span></p><p className="type-text-xs-regular">{step.timestamp}</p></div>
+          </li>)}
+        </ol>
+      </section>
+      {(onConfirmReceipt || onReportIssue || error || message) && <div className="store-delivery-detail-actions">
+        {message && <p role="status" className="store-delivery-action-success type-text-sm-medium">{message}</p>}
+        {error && <p role="alert" className="store-delivery-action-error type-text-sm-medium">{error}</p>}
+        {onConfirmReceipt && <Button variant="primary" size="md" onClick={confirm} loading={confirming} loadingLabel="Confirming…">
+          {isReviewing ? `Confirm ${data.deliveredUnits ?? 0} ${data.deliveredUnits === 1 ? 'case' : 'cases'} received` : 'Review & confirm receipt'}
+        </Button>}
+        {isReviewing ? <Button size="md" disabled={confirming} onClick={() => setIsReviewing(false)}>Cancel</Button> : onReportIssue && <Button size="md" onClick={onReportIssue}>Report an issue</Button>}
+      </div>}
+    </aside>
   )
 }

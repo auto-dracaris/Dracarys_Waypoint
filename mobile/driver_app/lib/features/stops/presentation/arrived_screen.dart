@@ -52,7 +52,9 @@ class ArrivedScreen extends ConsumerWidget {
       body: Column(
         children: [
           TripHeaderBar(
-              plate: plate, onBack: () => context.go(AppRoutes.trips)),
+            plate: plate,
+            onBack: () => context.go(AppRoutes.trips),
+          ),
           Expanded(
             child: AsyncValueView(
               value: data,
@@ -66,7 +68,10 @@ class ArrivedScreen extends ConsumerWidget {
                     onAllStops: () => context.go(AppRoutes.trip(tripId)),
                   ),
                   const Divider(
-                      height: 1, thickness: 1, color: Color(0xFFE8E8E8)),
+                    height: 1,
+                    thickness: 1,
+                    color: Color(0xFFE8E8E8),
+                  ),
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(16),
@@ -77,9 +82,13 @@ class ArrivedScreen extends ConsumerWidget {
                             stop: d.stop,
                             total: d.trip.stops.length,
                             onContact: () => ScaffoldMessenger.of(context)
-                                .showSnackBar(SnackBar(
+                                .showSnackBar(
+                                  SnackBar(
                                     content: Text(
-                                        'Contact outlet: ${d.stop.contactPhone}'))),
+                                      'Contact outlet: ${d.stop.contactPhone}',
+                                    ),
+                                  ),
+                                ),
                           ),
                           const SizedBox(height: 16),
                           _OrdersSection(orders: d.stop.orders),
@@ -93,18 +102,19 @@ class ArrivedScreen extends ConsumerWidget {
                             child: Text(
                               'Verify quantities match before continuing to proof of delivery.',
                               textAlign: TextAlign.center,
-                              style: AppText.textXsRegular
-                                  .copyWith(color: AppColors.inkSecondary),
+                              style: AppText.textXsRegular.copyWith(
+                                color: AppColors.inkSecondary,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
-                          AppButton(
-                            label: 'Continue to proof of delivery',
-                            bold: true,
-                            padding: 14,
-                            trailingIcon: Icons.arrow_forward_rounded,
-                            onPressed: () =>
+                          _ContinueButton(
+                            stop: d.stop,
+                            onContinue: () =>
                                 context.go(AppRoutes.proof(tripId, stopId)),
+                            onReportShort: (orderId) => context.go(
+                              AppRoutes.issue(tripId, stopId, orderId),
+                            ),
                           ),
                           const SizedBox(height: 12),
                           AppButton(
@@ -124,6 +134,57 @@ class ArrivedScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Continue is held while any order is delivered short of plan without an
+/// issue report: the shortfall has to be explained before the stop can close.
+class _ContinueButton extends ConsumerWidget {
+  const _ContinueButton({
+    required this.stop,
+    required this.onContinue,
+    required this.onReportShort,
+  });
+
+  final Stop stop;
+  final VoidCallback onContinue;
+  final ValueChanged<String> onReportShort;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final short = unreportedShortOrders(
+      [for (final o in stop.orders) (id: o.id, cases: o.cases)],
+      ref.watch(deliveredQuantitiesProvider),
+      ref.watch(reportedOrdersProvider),
+    );
+    if (short.isEmpty) {
+      return AppButton(
+        label: 'Continue to proof of delivery',
+        bold: true,
+        padding: 14,
+        trailingIcon: Icons.arrow_forward_rounded,
+        onPressed: onContinue,
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Some orders are short of plan. Report an issue for them to '
+          'continue.',
+          key: const Key('short-delivery-hold'),
+          textAlign: TextAlign.center,
+          style: AppText.textXsRegular.copyWith(color: AppColors.errorPrimary),
+        ),
+        const SizedBox(height: 8),
+        AppButton(
+          label: 'Report the shortfall',
+          bold: true,
+          padding: 14,
+          onPressed: () => onReportShort(short.first),
+        ),
+      ],
     );
   }
 }
@@ -155,9 +216,10 @@ class _StopCard extends StatelessWidget {
           Text(
             'ARRIVED · STOP ${stop.sequence} OF $total',
             style: AppText.textXsRegular.copyWith(
-                fontWeight: FontWeight.w600,
-                fontVariations: const [FontVariation('wght', 600)],
-                color: AppColors.errorPrimary),
+              fontWeight: FontWeight.w600,
+              fontVariations: const [FontVariation('wght', 600)],
+              color: AppColors.errorPrimary,
+            ),
           ),
           const SizedBox(height: 4),
           Text(stop.name, style: AppText.displayXs),
@@ -192,8 +254,11 @@ class _StopCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.warehouse_rounded,
-                    size: 18, color: AppColors.inkSecondary),
+                const Icon(
+                  Icons.warehouse_rounded,
+                  size: 18,
+                  color: AppColors.inkSecondary,
+                ),
                 const SizedBox(width: 10),
                 Expanded(child: Text(stop.dock, style: AppText.textSmRegular)),
               ],
@@ -204,16 +269,25 @@ class _StopCard extends StatelessWidget {
             onTap: onContact,
             child: Row(
               children: [
-                const Icon(Icons.phone_rounded,
-                    size: 16, color: AppColors.lime700),
+                const Icon(
+                  Icons.phone_rounded,
+                  size: 16,
+                  color: AppColors.lime700,
+                ),
                 const SizedBox(width: 4),
-                Text('Contact outlet',
-                    style: AppText.textSmSemibold
-                        .copyWith(color: AppColors.lime700)),
+                Text(
+                  'Contact outlet',
+                  style: AppText.textSmSemibold.copyWith(
+                    color: AppColors.lime700,
+                  ),
+                ),
                 const SizedBox(width: 4),
-                Text('(when safely stopped)',
-                    style: AppText.textXsRegular
-                        .copyWith(color: AppColors.inkMuted)),
+                Text(
+                  '(when safely stopped)',
+                  style: AppText.textXsRegular.copyWith(
+                    color: AppColors.inkMuted,
+                  ),
+                ),
               ],
             ),
           ),
@@ -241,13 +315,17 @@ class _MiniTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style:
-                  AppText.textXsRegular.copyWith(color: AppColors.inkMuted)),
+          Text(
+            label,
+            style: AppText.textXsRegular.copyWith(color: AppColors.inkMuted),
+          ),
           const SizedBox(height: 4),
-          Text(value,
-              style: AppText.textSmBold
-                  .copyWith(color: valueColor ?? AppColors.ink)),
+          Text(
+            value,
+            style: AppText.textSmBold.copyWith(
+              color: valueColor ?? AppColors.ink,
+            ),
+          ),
         ],
       ),
     );
@@ -264,9 +342,10 @@ class _OrdersSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('${orders.length} ${orders.length == 1 ? 'order' : 'orders'}',
-            style: AppText.textSmSemibold
-                .copyWith(color: AppColors.inkSecondary)),
+        Text(
+          '${orders.length} ${orders.length == 1 ? 'order' : 'orders'}',
+          style: AppText.textSmSemibold.copyWith(color: AppColors.inkSecondary),
+        ),
         const SizedBox(height: 10),
         for (var i = 0; i < orders.length; i++) ...[
           if (i > 0) const SizedBox(height: 10),
@@ -302,14 +381,19 @@ class _OrderCard extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(order.id, style: AppText.textSmBold),
-              TemperatureChip(order.temperature,
-                  style: TemperatureChipStyle.delivery),
+              TemperatureChip(
+                order.temperature,
+                style: TemperatureChipStyle.delivery,
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          Text('${order.cases} cases',
-              style: AppText.textXsRegular
-                  .copyWith(color: AppColors.inkSecondary)),
+          Text(
+            '${order.cases} cases',
+            style: AppText.textXsRegular.copyWith(
+              color: AppColors.inkSecondary,
+            ),
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.only(top: 8),
@@ -322,18 +406,24 @@ class _OrderCard extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Planned qty',
-                        style: AppText.textXsRegular
-                            .copyWith(color: AppColors.inkMuted)),
+                    Text(
+                      'Planned qty',
+                      style: AppText.textXsRegular.copyWith(
+                        color: AppColors.inkMuted,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text('${order.cases}', style: AppText.textSmSemibold),
                   ],
                 ),
                 Row(
                   children: [
-                    Text('Delivered',
-                        style: AppText.textXsRegular
-                            .copyWith(color: AppColors.inkSecondary)),
+                    Text(
+                      'Delivered',
+                      style: AppText.textXsRegular.copyWith(
+                        color: AppColors.inkSecondary,
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     QuantityStepper(
                       value: delivered,
@@ -356,11 +446,14 @@ class _OrderCard extends ConsumerWidget {
                 color: AppColors.blue100,
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: Text('Handling: $handling',
-                  style: AppText.textXsRegular.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontVariations: const [FontVariation('wght', 600)],
-                      color: AppColors.blue800)),
+              child: Text(
+                'Handling: $handling',
+                style: AppText.textXsRegular.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontVariations: const [FontVariation('wght', 600)],
+                  color: AppColors.blue800,
+                ),
+              ),
             ),
           ],
         ],
@@ -393,8 +486,10 @@ class _OrderPicker extends StatelessWidget {
                   children: [
                     Text(o.id, style: AppText.textSmBold),
                     const SizedBox(width: 8),
-                    TemperatureChip(o.temperature,
-                        style: TemperatureChipStyle.delivery),
+                    TemperatureChip(
+                      o.temperature,
+                      style: TemperatureChipStyle.delivery,
+                    ),
                   ],
                 ),
                 subtitle: Text('${o.cases} cases'),

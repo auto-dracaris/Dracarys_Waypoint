@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { useEffect, useRef, useState } from 'react'
 import RefreshRounded from '@mui/icons-material/RefreshRounded'
 import LocalShippingRounded from '@mui/icons-material/LocalShippingRounded'
@@ -62,6 +63,7 @@ export function IssuesPage({ onOpenNavigation, navigationOpen }: { onOpenNavigat
       </div>
       <Button className="issues-refresh" size="md" leadingIcon={<RefreshRounded fontSize="inherit" />} loading={loading} loadingLabel="Refreshing…" disabled={!!selectedId} onClick={refresh}>Refresh issues</Button>
     </header>
+    <HubBreadcrumbs />
     <section className="issues-summary" aria-label="Issue summary">
       {stats.map(({ label, value, Icon, tone }) => <div key={label} className={`issue-stat issue-stat--${tone}`} title={label === 'Urgent' ? 'Urgency is not provided by the current API' : undefined}>
         <div><Icon aria-hidden="true" /><span className="type-text-md-medium">{label}</span></div>
@@ -79,7 +81,7 @@ export function IssuesPage({ onOpenNavigation, navigationOpen }: { onOpenNavigat
       <div className="issues-table-scroll"><table className="issues-table">
         <colgroup><col className="issue-col-subject" /><col className="issue-col-reporter" /><col /><col /><col className="issue-col-received" /><col className="issue-col-action" /></colgroup>
         <thead><tr>{([{ key: 'issue', label: 'Issue / affected delivery' }, { key: 'reporter', label: 'Reporter' }, { key: null, label: 'Priority' }, { key: 'status', label: 'Status' }, { key: 'received', label: 'Received' }, { key: null, label: 'Action' }] as const).map(({ key, label }) => <th key={label} scope="col" aria-sort={key && sort.key === key ? sort.descending ? 'descending' : 'ascending' : undefined}>{key ? <button className="type-text-sm-medium" onClick={() => sortBy(key)}>{label}<SwapVertRounded aria-hidden="true" fontSize="inherit" /></button> : <span className="type-text-sm-medium">{label}</span>}</th>)}</tr></thead>
-        <tbody>{rows.map((issue) => <tr key={issue.id}>
+        <tbody>{rows.map((issue) => <tr key={issue.id} className={selectedId === issue.id ? 'issue-row-selected' : ''}>
           <td><strong className="type-text-md-semibold" title={issue.id}>{issueReference(issue)} · {issue.title}</strong><p className="type-text-sm-regular text-wp-text-secondary">{issueSubject(issue)}</p></td>
           <td><div className="issue-reporter"><span className="issue-avatar type-text-md-medium" aria-hidden="true">{issue.reportedBy?.name.split(/\s+/).filter(Boolean).map((part) => part[0]).slice(0, 2).join('') ?? '?'}</span><div><strong className="type-text-md-semibold">{issue.reportedBy?.name ?? 'Unknown reporter'}</strong><p className="type-text-sm-regular text-wp-text-secondary">{reporterRole(issue.reportedBy?.role)}</p></div></div></td>
           <td className="type-text-xs-regular"><span title="Priority is not provided by the current API" aria-label="Priority unavailable">—</span></td>

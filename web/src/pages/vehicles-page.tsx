@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { NotificationsButton } from '@/features/notifications/components/notifications-button'
 import { IconButton } from '@/components/ui/icon-button'
 import { useEffect, useRef, useState } from 'react'
@@ -48,7 +49,6 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
   const [searchTerm, setSearchTerm] = useState(vehicleFromUrl)
   const [sort, setSort] = useState<VehicleSort>({ key: null, direction: 'ascending' })
   const [selectedId, setSelectedId] = useState(vehicleFromUrl)
-  const [checked, setChecked] = useState(new Set<string>())
   const panel = useDetailPanel(vehicleFromUrl() !== '')
   const [detail, setDetail] = useState<{ vehicleId: string; data: VehicleDetail | null; error: string } | null>(null)
   const [editing, setEditing] = useState<'availability' | 'driver' | 'create' | null>(null)
@@ -145,14 +145,6 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
     setFilter(next)
     setPage(1)
   }
-  function toggleChecked(id: string) {
-    setChecked((previous) => {
-      const next = new Set(previous)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
   async function saveAvailability(availability: VehicleAvailability) {
     if (!selected || !accessToken) return
     const affected = await setVehicleAvailability(accessToken, selected.dbId, availability)
@@ -193,17 +185,7 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
           <NotificationsButton />
         </div>
       </header>
-      <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">
-        {['Home', 'Dashboard', 'Management'].map((label) => (
-          <span key={label}>
-            <button onClick={() => onNavigate(label)}>{label}</button>
-            <span aria-hidden="true">/</span>
-          </span>
-        ))}
-        <strong aria-current="page" className="text-wp-text-primary type-text-sm-semibold">
-          Vehicles
-        </strong>
-      </nav>
+      <HubBreadcrumbs />
       <FleetSummary totals={totals} onReview={() => onNavigate('Vehicle change impact review')} />
       {message && (
         <p role="status" className="fleet-update-message type-text-sm-medium">
@@ -242,7 +224,6 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
           </div>
           <FleetTable
             vehicles={roster}
-            checked={checked}
             selectedId={selected?.id}
             sort={sort}
             loading={!vehicles && !error}
@@ -251,7 +232,6 @@ export function VehiclesPage({ onNavigate, onOpenNavigation, navigationOpen }: {
             meta={meta}
             onPage={setPage}
             onSort={onSort}
-            onCheck={toggleChecked}
             onSelect={(id) => {
               setSelectedId(id)
               panel.show()

@@ -16,6 +16,7 @@ import '../../../core/widgets/labeled_field.dart';
 import '../../../core/widgets/photo_tiles.dart';
 import '../../../core/widgets/quantity_stepper.dart';
 import '../../../core/widgets/trip_header_bar.dart';
+import 'delivered_quantities.dart';
 import '../../trips/application/trip_actions.dart';
 import '../../trips/data/trips_providers.dart';
 import '../../trips/domain/order.dart';
@@ -105,6 +106,7 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
               photoId: _photoId,
             ),
           );
+      ref.read(reportedOrdersProvider.notifier).add(order.id);
       if (!mounted) return;
       final online = ref.read(onlineProvider);
       ScaffoldMessenger.of(context).showSnackBar(

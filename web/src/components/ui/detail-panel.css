@@ -6,11 +6,11 @@
   border-bottom: 1px solid var(--wp-neutral-200);
   background: var(--wp-neutral-50);
 }
-.wp-detail-panel-toolbar [aria-pressed='true'] {
-  background: var(--wp-neutral-200);
-}
 .wp-detail-panel-close {
   margin-left: auto;
+}
+.wp-detail-panel-toolbar .icon-button-icon {
+  opacity: 0.5;
 }
 /* Two classes so the pop-up wins over each page's own single-class panel sizing. */
 .wp-detail-panel.wp-detail-panel--modal {

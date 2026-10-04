@@ -27,8 +27,11 @@ abstract interface class TripsRepository {
 
   /// Flags the active stop as arrived (recording the time). No-op if it has
   /// already arrived or the trip has no stops left.
-  /// Throws [StateError] if [tripId] is unknown.
-  Future<Trip> markArrived(String tripId);
+  /// Throws [StateError] if [tripId] is unknown, or (with words fit for the
+  /// driver) if the rules do not allow arriving there: the trip is not on the
+  /// road, or an earlier stop is not done. [stopId], when given, is the stop the
+  /// driver is looking at; it must be the one being worked on.
+  Future<Trip> markArrived(String tripId, {String? stopId});
 
   /// Completes an arrived stop, recording delivered quantities by order id.
   /// No-op unless the stop has arrived. The trip completes with its last stop.

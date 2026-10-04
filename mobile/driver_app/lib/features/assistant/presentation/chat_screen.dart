@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../application/chat_controller.dart';
 import '../domain/chat_message.dart';
+import 'widgets/copilot_mark.dart';
 import 'widgets/message_text.dart';
 
 /// What a driver is most likely to want to ask, one tap away.
@@ -137,25 +138,10 @@ class _BotAvatar extends StatelessWidget {
 
   final double size;
 
+  /// The Trip Copilot mark, held still (it moves in the header and the welcome).
   @override
-  Widget build(BuildContext context) => Container(
-    key: const Key('bot-avatar'),
-    width: size,
-    height: size,
-    decoration: const BoxDecoration(
-      shape: BoxShape.circle,
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [AppColors.brandYellow, AppColors.primary],
-      ),
-    ),
-    child: Icon(
-      Icons.auto_awesome_rounded,
-      size: size * 0.5,
-      color: AppColors.ink,
-    ),
-  );
+  Widget build(BuildContext context) =>
+      CopilotMark(key: const Key('bot-avatar'), size: size, animate: false);
 }
 
 class _TopBar extends StatelessWidget {
@@ -190,13 +176,17 @@ class _TopBar extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: onBack,
               ),
-              const _BotAvatar(size: 40),
+              CopilotMark(
+                size: 40,
+                animate: sending,
+                period: const Duration(milliseconds: 1200),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Waypoint Assistant', style: AppText.textMdSemibold),
+                    Text('Trip Copilot', style: AppText.textMdSemibold),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 200),
                       child: Row(
@@ -253,7 +243,7 @@ class _Welcome extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 32, 20, 16),
       child: Column(
         children: [
-          const _BotAvatar(size: 72),
+          const CopilotMark(size: 72),
           const SizedBox(height: 16),
           Text(
             'How can I help?',

@@ -21,6 +21,20 @@ export interface FleetVehicle {
   kmPerL: number
   weeklyFuelQuota: number
   temperature: string
+  lastLat?: number | null
+  lastLng?: number | null
+  lastLocationAt?: string | null
+  depotLat?: number | null
+  depotLng?: number | null
+}
+
+export interface TripTimelineStop {
+  seq: number
+  outletId: string
+  outletName: string | null
+  plannedArrivalAt: string
+  status: string
+  orderCount?: number
 }
 
 export interface DraftTrip {
@@ -31,6 +45,11 @@ export interface DraftTrip {
   orders: number
   window: string
   nextStop: string | null
+  brand?: string
+  plannedMinutes?: number
+  plannedKm?: number
+  plannedFuelL?: number
+  timeline?: TripTimelineStop[]
 }
 
 export interface VehicleDetail {

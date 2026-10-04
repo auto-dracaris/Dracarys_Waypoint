@@ -1,3 +1,4 @@
+import '../../../core/api/api_config.dart' show demoArea;
 import '../domain/driver.dart';
 import 'auth_repository.dart';
 
@@ -9,6 +10,17 @@ class MockAuthRepository implements AuthRepository {
     name: 'Nimal Silva',
     code: 'DRV021',
     depot: 'Peliyagoda depot',
+  );
+
+  /// The depot of the central-Colombo demo loop (`DEMO_AREA=colombo`), by the
+  /// World Trade Centre, so the first leg is short too.
+  static const colomboDriver = Driver(
+    id: 'drv-021',
+    name: 'Nimal Silva',
+    code: 'DRV021',
+    depot: 'Colombo Fort depot',
+    depotLat: 6.9319,
+    depotLng: 79.8441,
   );
 
   /// The code every mock OTP flow accepts.
@@ -42,7 +54,8 @@ class MockAuthRepository implements AuthRepository {
       throw const AuthException(
           'Please verify your phone number with the OTP first');
     }
-    return _current = _registered[key] ?? demoDriver;
+    return _current =
+        _registered[key] ?? (demoArea == 'colombo' ? colomboDriver : demoDriver);
   }
 
   @override

@@ -1,8 +1,10 @@
-import { VehicleBanner } from '@/features/store-manager/components/vehicle-banner'
 import { Link } from 'react-router-dom'
+import { StatusBadge } from '@/components/ui/status-badge'
+import layer from '@/assets/store-manager/layer.png'
+import truck from '@/assets/store-manager/truck.png'
+import van from '@/assets/store-manager/van.png'
 
 export interface DeliveryItem {
-  // The order's id, which the tracking page is opened with.
   id: number
   vehicleId: string
   vehicleType: string
@@ -12,48 +14,30 @@ export interface DeliveryItem {
   receivingWindow: string
   plannedArrival: string
 }
+const tones = { green: 'success', yellow: 'warning', blue: 'info', red: 'error' } as const
 
-interface TodayDeliveriesSectionProps {
-  deliveries: DeliveryItem[]
-}
-
-export function TodayDeliveries({ deliveries }: TodayDeliveriesSectionProps) {
-  return (
-    <div className="bg-white rounded-lg border border-neutral-300 flex flex-col overflow-hidden h-full">
-      {/* Section Title */}
-      <div className="px-6 py-5 border-b border-neutral-200">
-        <h3 className="text-stone-900 text-4xl font-medium font-sans">Today’s deliveries</h3>
-      </div>
-
-      {/* Deliveries List */}
-      <div className="flex flex-col flex-1">
-        {deliveries.length === 0 && <p className="px-6 py-10 text-stone-500 text-sm font-sans">No deliveries are scheduled to your outlet today.</p>}
-        {deliveries.map((item) => (
-          <Link to={`/store-manager/delivery/${item.id}`} key={item.id} className="flex flex-1 border-b border-neutral-200 last:border-none min-h-[160px]">
-            {/* Left: Vehicle Banner Component */}
-            <div className="flex-[3] relative">
-              <VehicleBanner vehicleId={item.vehicleId} vehicleType={item.vehicleType} statusLabel={item.statusLabel} statusVariant={item.statusVariant} />
+export function TodayDeliveries({ deliveries }: { deliveries: DeliveryItem[] }) {
+  return <section className="store-today-deliveries">
+    <div className="store-overview-section-heading"><h2 className="type-display-md-medium">Today’s deliveries</h2></div>
+    <div className="store-today-list">
+      {deliveries.length === 0 && <p className="store-overview-empty type-text-sm-regular">No deliveries are scheduled to your outlet today.</p>}
+      {deliveries.map((item) => {
+        const isTruck = item.vehicleType.toLowerCase().includes('truck')
+        return <Link to={`/store-manager/delivery/${item.id}`} key={item.id} className="store-today-delivery">
+          <div className={`store-overview-vehicle ${isTruck ? 'store-overview-vehicle--truck' : ''}`}>
+            <img className="store-overview-vehicle-texture" src={layer} alt="" />
+            <img className="store-overview-vehicle-image" src={isTruck ? truck : van} alt={item.vehicleType || 'Delivery vehicle'} />
+            <div className="store-overview-vehicle-copy">
+              <StatusBadge tone={tones[item.statusVariant]}>{item.statusLabel}</StatusBadge>
+              <div><p className="type-display-md-semibold">{item.vehicleId}</p><p className="type-text-xs-medium">{item.vehicleType}</p></div>
             </div>
-
-            {/* Right: Delivery Details Sidebar info */}
-            <div className="flex-[1] px-4 py-3.5 bg-white flex flex-col justify-between items-start border-l border-neutral-200 min-w-[200px]">
-              <div className="pt-1 flex flex-col gap-1 w-full">
-                <span className="text-stone-900 text-base font-medium font-sans block truncate">{item.orderCode}</span>
-                <p className="text-stone-500 text-xs font-normal leading-4 font-sans mt-1">
-                  Receiving window
-                  <br />
-                  {item.receivingWindow}
-                </p>
-              </div>
-
-              <div className="flex flex-col items-start w-full">
-                <span className="text-stone-500 text-sm font-medium font-sans">Planned arrival</span>
-                <span className="text-stone-900 text-5xl font-normal font-sans -ml-1">{item.plannedArrival}</span>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+          </div>
+          <div className="store-today-details">
+            <div><h3 className="type-text-md-medium">{item.orderCode}</h3><p className="type-text-xs-regular">Receiving window<br />{item.receivingWindow}</p></div>
+            <div className="store-today-arrival"><p className="type-text-sm-medium">Planned arrival</p><p className="type-display-lg-regular">{item.plannedArrival}</p></div>
+          </div>
+        </Link>
+      })}
     </div>
-  )
+  </section>
 }

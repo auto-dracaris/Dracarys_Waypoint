@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Header } from '@/components/layout/store-manager-header'
-import { SummaryCard } from '@/features/store-manager/components/my-deliveries/summary-card'
+import { Button } from '@/components/ui/button'
+import { DeliveryDateFilter } from '@/features/store-manager/components/deliveries/delivery-date-filter'
+import ShoppingCartRounded from '@mui/icons-material/ShoppingCartRounded'
+import '@/styles/store-manager/deliveries.css'
 import { DeliveryHistoryTable, type DeliveryTab } from '@/features/store-manager/components/deliveries/delivery-history-table'
 import { DeliveryDetailsPanel } from '@/features/store-manager/components/deliveries/delivery-details-panel'
 import { ReportIssueDialog } from '@/features/store-manager/components/deliveries/report-issue-dialog'
@@ -122,19 +124,30 @@ export function DeliveriesPage() {
   const metrics = deliveries?.metrics
 
   return (
-    <div className="flex-1 pr-2 py-2 flex flex-col justify-start items-start h-full">
-      <div className="w-full bg-white rounded-2xl outline outline-1 outline-offset-[-1px] outline-stone-200 flex flex-col p-8 gap-6 h-full overflow-hidden">
-        <Header title="Deliveries" deliveryCode="" dateLabel={`${formatLongDay(today())} · Your outlet at a glance`} breadcrumbs={[]} onPlaceOrder={() => navigate('/store-manager/orders/create')} />
+    <div className="store-deliveries-page">
+      <div className="store-deliveries-surface">
+        <header className="store-deliveries-header">
+          <div><h1 className="type-display-lg-medium">Deliveries</h1><p className="type-text-sm-regular">{formatLongDay(today())} · Your outlet at a glance</p></div>
+          <div className="store-deliveries-header-actions">
+            <DeliveryDateFilter header date={date} onDate={filtered(setDate)} />
+            <Button variant="primary" size="md" trailingIcon={<ShoppingCartRounded />} onClick={() => navigate('/store-manager/orders/create')}>Place Order</Button>
+          </div>
+        </header>
 
-        <div className="self-stretch flex justify-start items-start gap-4">
-          <SummaryCard icon={<LocalShippingIcon fontSize="large" />} title="Expected today" value={metrics?.expectedToday ?? '–'} />
-          <SummaryCard icon={<Schedule fontSize="large" />} title="Awaiting confirmation" value={metrics?.awaitingConfirmation ?? '–'} />
-          <SummaryCard icon={<MoveDown fontSize="large" />} title="Issues open" value={metrics?.issuesOpen ?? '–'} />
+        <div className="store-deliveries-metrics">
+          {[
+            { label: 'Expected today', icon: <LocalShippingIcon />, value: metrics?.expectedToday },
+            { label: 'Awaiting confirmation', icon: <Schedule />, value: metrics?.awaitingConfirmation },
+            { label: 'Issues open', icon: <MoveDown />, value: metrics?.issuesOpen },
+          ].map(({ label, icon, value }) => <div className="store-delivery-metric" key={label}>
+            <div><span aria-hidden="true">{icon}</span><span className="type-text-md-medium">{label}</span></div>
+            <p className="type-display-xl-semibold">{value ?? '–'}</p>
+          </div>)}
         </div>
 
-        <div className="flex flex-1 gap-4 overflow-hidden pt-2">
+        <div className="store-deliveries-workspace">
           <DeliveryHistoryTable
-            items={orders.map(toHistoryItem)}
+            items={orders.map((order) => ({ ...toHistoryItem(order), sortDate: order.assignment?.serviceDate }))}
             selectedId={selected?.reference ?? null}
             onSelect={(id) => {
               setSelectedId(id)

@@ -20,6 +20,14 @@ final routeChangesRepositoryProvider = Provider<RouteChangesRepository>((ref) {
   );
 });
 
+/// True while the dispatcher has changed this trip's plan and the driver has
+/// not yet reviewed it: stops are held until they have, since the server would
+/// refuse actions against the old plan.
+final routeUpdatePendingProvider = Provider.family<bool, String>(
+  (ref, tripId) =>
+      ref.watch(routeChangeProvider(tripId)).value?.acknowledged == false,
+);
+
 /// The trip's route change, or null when there is none.
 final routeChangeProvider = FutureProvider.family<RouteChange?, String>((
   ref,

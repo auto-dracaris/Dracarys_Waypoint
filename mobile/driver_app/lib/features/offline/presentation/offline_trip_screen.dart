@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/connectivity/online_provider.dart';
 import '../../../core/format.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/router/trip_destination.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/app_button.dart';
@@ -19,6 +20,7 @@ import '../../route_update/data/route_changes_providers.dart';
 import '../../sync/presentation/sync_status_bar.dart';
 import '../../trips/data/trips_providers.dart';
 import '../../trips/domain/stop.dart';
+import '../../trips/domain/stop_gate.dart';
 import '../../trips/domain/trip.dart';
 
 /// The trip as saved on the device (Figma "driver-offline-records-sync"):
@@ -60,12 +62,10 @@ class OfflineTripScreen extends ConsumerWidget {
                     AppButton(
                       label: 'View saved trip',
                       dense: true,
-                      onPressed: () {
-                        final stop = trip.activeStop;
-                        context.go(stop == null
-                            ? AppRoutes.trip(tripId)
-                            : AppRoutes.stop(tripId, stop.id));
-                      },
+                      // A trip that has not started opens its overview, never a
+                      // stop it cannot work on yet.
+                      onPressed: () =>
+                          context.go(tripDestination(trip, online: true)),
                     ),
                     const SizedBox(height: 12),
                     _RouteUpdateNotice(tripId: tripId),
@@ -106,18 +106,26 @@ class _Header extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SvgPicture.asset('assets/images/arrow_left.svg',
-                        width: 23, height: 23),
+                    SvgPicture.asset(
+                      'assets/images/arrow_left.svg',
+                      width: 23,
+                      height: 23,
+                    ),
                     const SizedBox(width: 11),
-                    Text('My trips',
-                        style: AppText.outfit(15.5, AppColors.ink)),
+                    Text(
+                      'My trips',
+                      style: AppText.outfit(15.5, AppColors.ink),
+                    ),
                   ],
                 ),
               ),
               Row(
                 children: [
-                  const Icon(Icons.local_shipping_rounded,
-                      size: 28, color: AppColors.inkSecondary),
+                  const Icon(
+                    Icons.local_shipping_rounded,
+                    size: 28,
+                    color: AppColors.inkSecondary,
+                  ),
                   const SizedBox(width: 4),
                   Text(plate, style: AppText.textSmSemibold),
                   const SizedBox(width: 8),
@@ -149,8 +157,11 @@ class _Banner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_rounded,
-              size: 28, color: AppColors.inkSecondary),
+          const Icon(
+            Icons.error_rounded,
+            size: 28,
+            color: AppColors.inkSecondary,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -160,8 +171,9 @@ class _Banner extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${trip.name} route and stop details were downloaded and are available on this device.',
-                  style: AppText.textXsRegular
-                      .copyWith(color: AppColors.inkSecondary),
+                  style: AppText.textXsRegular.copyWith(
+                    color: AppColors.inkSecondary,
+                  ),
                 ),
               ],
             ),
@@ -180,6 +192,10 @@ class _NextStopCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stop = trip.activeStop;
+    // Before the trip is on the road no stop is workable: say why instead of
+    // promising offline arrivals and proof.
+    final gate = stop == null ? null : stopGate(trip, stop);
+    final waiting = gate != null && !gate.canAct;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -188,15 +204,33 @@ class _NextStopCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: stop == null
-          ? Text('All stops on this trip are complete.',
-              style: AppText.textSmRegular)
+          ? Text(
+              'All stops on this trip are complete.',
+              style: AppText.textSmRegular,
+            )
+          : waiting
+          ? Column(
+              key: const Key('offline-trip-waiting'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(gate.title, style: AppText.displayXs),
+                const SizedBox(height: 4),
+                Text(
+                  gate.message,
+                  style: AppText.textSmRegular.copyWith(
+                    color: AppColors.inkSecondary,
+                  ),
+                ),
+              ],
+            )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
                   '${stop.status == StopStatus.pending ? 'NEXT STOP · ' : 'STOP '}${stop.sequence} OF ${trip.stops.length}',
-                  style: AppText.textXsRegular
-                      .copyWith(color: AppColors.inkSecondary),
+                  style: AppText.textXsRegular.copyWith(
+                    color: AppColors.inkSecondary,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(stop.name, style: AppText.displayXs),
@@ -231,14 +265,18 @@ class _NextStopCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline_rounded,
-                          size: 18, color: AppColors.inkSecondary),
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        size: 18,
+                        color: AppColors.inkSecondary,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'You can continue recording arrivals, issues, and proof of delivery while offline.',
-                          style: AppText.textXsRegular
-                              .copyWith(color: AppColors.inkSecondary),
+                          style: AppText.textXsRegular.copyWith(
+                            color: AppColors.inkSecondary,
+                          ),
                         ),
                       ),
                     ],
@@ -296,10 +334,10 @@ class _RecordRow extends StatelessWidget {
   final SavedRecord record;
 
   IconData get _icon => switch (record.kind) {
-        RecordKind.arrival => Icons.check_circle_rounded,
-        RecordKind.issue => Icons.error_rounded,
-        RecordKind.proof => Icons.photo_camera_rounded,
-      };
+    RecordKind.arrival => Icons.check_circle_rounded,
+    RecordKind.issue => Icons.error_rounded,
+    RecordKind.proof => Icons.photo_camera_rounded,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -320,9 +358,12 @@ class _RecordRow extends StatelessWidget {
               children: [
                 Text(record.title, style: AppText.textSmSemibold),
                 const SizedBox(height: 2),
-                Text('Saved ${formatTime(record.savedAt)}',
-                    style: AppText.textXsRegular
-                        .copyWith(color: AppColors.inkMuted)),
+                Text(
+                  'Saved ${formatTime(record.savedAt)}',
+                  style: AppText.textXsRegular.copyWith(
+                    color: AppColors.inkMuted,
+                  ),
+                ),
               ],
             ),
           ),
@@ -360,8 +401,11 @@ class _RouteUpdateNotice extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_rounded,
-                  size: 24, color: AppColors.yellow600),
+              const Icon(
+                Icons.warning_rounded,
+                size: 24,
+                color: AppColors.yellow600,
+              ),
               const SizedBox(width: 8),
               Text('Route update available', style: AppText.textSmBold),
             ],
@@ -370,7 +414,9 @@ class _RouteUpdateNotice extends ConsumerWidget {
           Text(
             'The dispatcher updated the stop sequence for Trip 1 while you were offline. '
             'Review the changes before accepting — your completed stop records will not be overwritten.',
-            style: AppText.textXsRegular.copyWith(color: AppColors.inkSecondary),
+            style: AppText.textXsRegular.copyWith(
+              color: AppColors.inkSecondary,
+            ),
           ),
           const SizedBox(height: 12),
           AppButton(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/api/error_message.dart';
 import '../../../core/format.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
@@ -15,9 +16,11 @@ import '../../../core/widgets/map_sheet_layout.dart';
 import '../../../core/widgets/map_view.dart';
 import '../../../core/widgets/stop_progress.dart';
 import '../../../core/widgets/vehicle_row.dart';
+import '../../route_update/data/route_changes_providers.dart';
 import '../../trips/application/trip_actions.dart';
 import '../../trips/data/trips_providers.dart';
 import '../../trips/domain/stop.dart';
+import '../../trips/domain/stop_gate.dart';
 import '../../trips/domain/trip.dart';
 import 'widgets/orders_panel.dart';
 
@@ -42,10 +45,14 @@ class _StopInfoScreenState extends ConsumerState<StopInfoScreen> {
   Future<void> _markArrived() async {
     setState(() => _busy = true);
     try {
-      await ref.read(tripActionsProvider).markArrived(widget.tripId);
+      await ref
+          .read(tripActionsProvider)
+          .markArrived(widget.tripId, stopId: widget.stopId);
       if (mounted) {
         context.go(AppRoutes.arrived(widget.tripId, widget.stopId));
       }
+    } catch (e) {
+      if (mounted) showErrorSnack(context, e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -70,7 +77,10 @@ class _StopInfoScreenState extends ConsumerState<StopInfoScreen> {
                   children: [
                     VehicleRow(plate: plate),
                     const Divider(
-                        height: 1, thickness: 1, color: Color(0xFFE8E8E8)),
+                      height: 1,
+                      thickness: 1,
+                      color: Color(0xFFE8E8E8),
+                    ),
                     StopProgress(
                       completed: d.trip.completedStops,
                       total: d.trip.stops.length,
@@ -84,8 +94,11 @@ class _StopInfoScreenState extends ConsumerState<StopInfoScreen> {
                         markers: [
                           MapMarker(
                             point: LatLng(d.stop.lat, d.stop.lng),
-                            child: const Icon(Icons.location_on,
-                                size: 40, color: AppColors.red700),
+                            child: const Icon(
+                              Icons.location_on,
+                              size: 40,
+                              color: AppColors.red700,
+                            ),
                           ),
                         ],
                       ),
@@ -93,14 +106,21 @@ class _StopInfoScreenState extends ConsumerState<StopInfoScreen> {
                         trip: d.trip,
                         stop: d.stop,
                         ordersExpanded: _ordersExpanded,
-                        onToggleOrders: () => setState(
-                            () => _ordersExpanded = !_ordersExpanded),
+                        onToggleOrders: () =>
+                            setState(() => _ordersExpanded = !_ordersExpanded),
                         busy: _busy,
+                        routeUpdatePending: ref.watch(
+                          routeUpdatePendingProvider(widget.tripId),
+                        ),
+                        onReviewRoute: () =>
+                            context.go(AppRoutes.routeUpdate(widget.tripId)),
                         onDirections: () => context.go(
-                            AppRoutes.navigate(widget.tripId, widget.stopId)),
+                          AppRoutes.navigate(widget.tripId, widget.stopId),
+                        ),
                         onMarkArrived: _markArrived,
                         onContinue: () => context.go(
-                            AppRoutes.arrived(widget.tripId, widget.stopId)),
+                          AppRoutes.arrived(widget.tripId, widget.stopId),
+                        ),
                       ),
                     ),
                   ],
@@ -121,6 +141,8 @@ class _Sheet extends StatelessWidget {
     required this.ordersExpanded,
     required this.onToggleOrders,
     required this.busy,
+    required this.routeUpdatePending,
+    required this.onReviewRoute,
     required this.onDirections,
     required this.onMarkArrived,
     required this.onContinue,
@@ -131,21 +153,27 @@ class _Sheet extends StatelessWidget {
   final bool ordersExpanded;
   final VoidCallback onToggleOrders;
   final bool busy;
+  final bool routeUpdatePending;
+  final VoidCallback onReviewRoute;
   final VoidCallback onDirections;
   final VoidCallback onMarkArrived;
   final VoidCallback onContinue;
 
   @override
   Widget build(BuildContext context) {
+    final gate = stopGate(trip, stop);
     final prefix = stop.status == StopStatus.pending ? 'NEXT STOP · ' : 'STOP ';
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$prefix${stop.sequence} OF ${trip.stops.length}',
-              style: AppText.textXsRegular
-                  .copyWith(color: AppColors.inkSecondary)),
+          Text(
+            '$prefix${stop.sequence} OF ${trip.stops.length}',
+            style: AppText.textXsRegular.copyWith(
+              color: AppColors.inkSecondary,
+            ),
+          ),
           Text(stop.name, style: AppText.displayXs),
           const SizedBox(height: 24),
           Row(
@@ -177,8 +205,11 @@ class _Sheet extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.warehouse_rounded,
-                    size: 18, color: AppColors.inkSecondary),
+                const Icon(
+                  Icons.warehouse_rounded,
+                  size: 18,
+                  color: AppColors.inkSecondary,
+                ),
                 const SizedBox(width: 10),
                 Expanded(child: Text(stop.dock, style: AppText.textSmRegular)),
               ],
@@ -191,25 +222,71 @@ class _Sheet extends StatelessWidget {
             onToggle: onToggleOrders,
           ),
           const SizedBox(height: 12),
-          AppButton(
-            label: 'Get Directions',
-            variant: AppButtonVariant.outlined,
-            leadingIcon: Icons.send_rounded,
-            onPressed: onDirections,
-          ),
-          const SizedBox(height: 6),
-          switch (stop.status) {
-            StopStatus.pending => AppButton(
+          if (!gate.canAct && !gate.isDone) ...[
+            Container(
+              key: const Key('stop-gate-notice'),
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.yellow100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(gate.title, style: AppText.textSmSemibold),
+                  const SizedBox(height: 2),
+                  Text(
+                    gate.message,
+                    style: AppText.textXsRegular.copyWith(
+                      color: AppColors.inkSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (gate.canAct && routeUpdatePending) ...[
+            Container(
+              key: const Key('route-update-hold'),
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.yellow100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'The dispatcher changed this trip. Review the new route before '
+                'continuing.',
+                style: AppText.textXsRegular.copyWith(
+                  color: AppColors.inkSecondary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            AppButton(label: 'Review route update', onPressed: onReviewRoute),
+          ] else if (gate.canAct) ...[
+            AppButton(
+              label: 'Get Directions',
+              variant: AppButtonVariant.outlined,
+              leadingIcon: Icons.send_rounded,
+              onPressed: onDirections,
+            ),
+            const SizedBox(height: 6),
+            switch (stop.status) {
+              StopStatus.pending => AppButton(
                 label: 'Mark arrived',
                 isLoading: busy,
                 onPressed: onMarkArrived,
               ),
-            StopStatus.arrived => AppButton(
+              StopStatus.arrived => AppButton(
                 label: 'Continue delivery',
                 onPressed: onContinue,
               ),
-            StopStatus.completed => const SizedBox.shrink(),
-          },
+              StopStatus.completed => const SizedBox.shrink(),
+            },
+          ],
         ],
       ),
     );

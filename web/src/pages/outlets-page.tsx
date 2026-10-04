@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { NotificationsButton } from '@/features/notifications/components/notifications-button'
 import { IconButton } from '@/components/ui/icon-button'
 import { useEffect, useRef, useState } from 'react'
@@ -63,7 +64,6 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
   const [sort, setSort] = useState<OutletSort>({ key: null, direction: 'ascending' })
   const [selectedId, setSelectedId] = useState('')
   const panel = useDetailPanel()
-  const [checked, setChecked] = useState(new Set<string>())
   const [editing, setEditing] = useState<{
     id?: string
     mode: 'create' | 'requirements' | 'availability'
@@ -149,14 +149,6 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
       direction: sort.key === key && sort.direction === 'ascending' ? 'descending' : 'ascending',
     })
   }
-  function toggleChecked(id: string) {
-    setChecked((previous) => {
-      const next = new Set(previous)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
   async function save(requirements: DeliveryRequirements, availability: OutletAvailability) {
     if (!editing || !editingOutlet || !accessToken) return
     const saved =
@@ -197,17 +189,7 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
           <NotificationsButton />
         </div>
       </header>
-      <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">
-        {['Home', 'Dashboard', 'Management'].map((label) => (
-          <span key={label}>
-            <button onClick={() => onNavigate(label)}>{label}</button>
-            <span aria-hidden="true">/</span>
-          </span>
-        ))}
-        <strong aria-current="page" className="text-wp-text-primary type-text-sm-semibold">
-          Outlets
-        </strong>
-      </nav>
+      <HubBreadcrumbs />
       <section className="outlet-metrics" aria-label="Outlet summary">
         {metrics.map(({ label, value, Icon }) => (
           <div className="outlet-metric" key={label}>
@@ -254,7 +236,6 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
           </div>
           <OutletTable
             outlets={roster}
-            checked={checked}
             selectedId={selected?.id}
             sort={sort}
             loading={!outlets && !error}
@@ -263,7 +244,6 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
             meta={meta}
             onPage={setPage}
             onSort={onSort}
-            onCheck={toggleChecked}
             onSelect={(id) => {
               setSelectedId(id)
               panel.show()

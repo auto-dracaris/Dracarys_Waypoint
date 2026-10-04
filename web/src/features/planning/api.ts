@@ -26,6 +26,7 @@ interface ApiPlan {
     plannedDepartAt: string
     plannedMinutes: number
     plannedKm: number
+    plannedFuelL: number
     totalWeightKg: number
     totalVolumeM3: number
     stops: (ApiPlanOrder & { seq: number; plannedArrivalAt: string; plannedWaitMin: number })[]
@@ -44,7 +45,8 @@ function toRoute(trip: ApiPlan['trips'][number]): PlanRoute {
     vehicleId: vehicle.uniqueId,
     vehicleType: vehicle.isRefrigerated ? `Refrigerated ${vehicle.type}` : `${vehicle.type[0].toUpperCase()}${vehicle.type.slice(1)}`,
     trip: `Trip ${trip.tripNo}`,
-    summary: `${trip.brand} · ${trip.district ?? 'Unknown district'} · departs ${clock(trip.plannedDepartAt)} · ${trip.plannedMinutes} min · ${trip.plannedKm} km · ${trip.totalWeightKg} kg / ${trip.totalVolumeM3} m³`,
+    plannedFuelL: trip.plannedFuelL,
+    summary: `${trip.brand} · ${trip.district ?? 'Unknown district'} · departs ${clock(trip.plannedDepartAt)} · ${trip.plannedMinutes} min · ${trip.plannedKm} km · ${trip.plannedFuelL} L · ${trip.totalWeightKg} kg / ${trip.totalVolumeM3} m³`,
     stops: trip.stops.map((stop) => ({
       sequence: stop.seq,
       outlet: outletName(stop.outlet),

@@ -356,12 +356,12 @@ void main() {
       expect(container.read(deliveredQuantitiesProvider)['ORD-4522'], 0);
     });
 
-    testWidgets('a stop that has not been marked arrived shows a dash', (
+    testWidgets('a stop that has not been marked arrived is not shown', (
       tester,
     ) async {
       await pumpTripRoutes(tester, location: '$stop3/arrived');
-      expect(find.text('Arrived at'), findsOneWidget);
-      expect(find.text('—'), findsOneWidget);
+      expect(find.text('Mark arrived first'), findsOneWidget);
+      expect(find.text('Back to stop'), findsOneWidget);
     });
 
     testWidgets('the back link returns to My trips', (tester) async {

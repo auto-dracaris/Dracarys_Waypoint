@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import MenuRounded from '@mui/icons-material/MenuRounded'
@@ -75,6 +76,7 @@ export function KnowledgePage({ onOpenNavigation }: { onOpenNavigation: () => vo
   }
   return <section className="profile-page" aria-labelledby="knowledge-title">
     <header className="profile-header"><div><h1 id="knowledge-title" className="type-display-lg-medium">Knowledge base</h1><p className="type-text-sm-regular">Add shared guidance for your team.</p></div><IconButton className="mobile-menu" aria-label="Open navigation" onClick={onOpenNavigation}><MenuRounded /></IconButton></header>
+    <HubBreadcrumbs />
     <Link className="type-text-sm-medium" to="/profile">← Back to my profile</Link>
     <div className="knowledge-upload"><div className="profile-card profile-form"><h2 className="type-display-xs-medium">Knowledge contribution</h2><StatusBadge>Contributor</StatusBadge><p className="type-text-sm-regular">Upload operating procedures, outlet guidance and handling instructions. Contribution is available to dispatchers only.</p><p className="type-text-sm-regular">New documents are restricted to your assigned depot. Select which roles can use them. Review each document before approving it.</p></div>
       <form className="profile-card profile-form" onSubmit={upload}>

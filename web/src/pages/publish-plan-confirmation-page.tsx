@@ -1,3 +1,4 @@
+import { HubBreadcrumbs } from '@/components/layout/hub-breadcrumbs'
 import { IconButton } from '@/components/ui/icon-button'
 import { useRef, useState } from 'react'
 import MenuRounded from '@mui/icons-material/MenuRounded'
@@ -20,7 +21,6 @@ import '@/styles/publication.css'
 export function PublishPlanConfirmationPage({
   publication,
   onResend,
-  onNavigate,
   onOpenNavigation,
   navigationOpen,
 }: {
@@ -84,23 +84,7 @@ export function PublishPlanConfirmationPage({
           Print Plan Manifest
         </Button>
       </header>
-      <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium publication-screen">
-        <span>
-          <button onClick={() => onNavigate('Home')}>Home</button>
-          <span aria-hidden="true">/</span>
-        </span>
-        <span>
-          <button onClick={() => onNavigate('Planning')}>Planning</button>
-          <span aria-hidden="true">/</span>
-        </span>
-        <span>
-          <button onClick={() => onNavigate('Planning')}>Final Review</button>
-          <span aria-hidden="true">/</span>
-        </span>
-        <strong aria-current="page" className="text-wp-text-primary type-text-sm-semibold">
-          Plan Published
-        </strong>
-      </nav>
+      <HubBreadcrumbs className="publication-screen" />
       <section className="publication-success publication-screen" aria-labelledby="publication-success-title">
         <span className="publication-success-icon">
           <CheckCircleOutlineRounded fontSize="inherit" />

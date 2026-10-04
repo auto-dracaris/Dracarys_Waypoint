@@ -29,6 +29,7 @@
 .issues-table th button { display: flex; align-items: center; gap: var(--wp-space-xs); cursor: pointer; }
 .issues-table th svg { width: var(--wp-space-2xl); height: var(--wp-space-2xl); }
 .issues-table td { height: var(--wp-space-8xl); }
+.issues-table .issue-row-selected td { background: var(--wp-yellow-50); }
 .issues-table td strong { display: block; }
 .issues-table td p { margin-top: var(--wp-space-xs); }
 .issues-table td:last-child { text-align: center; }

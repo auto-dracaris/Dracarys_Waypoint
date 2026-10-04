@@ -36,6 +36,11 @@ html[data-area='hub'] :is(button, input, select, textarea, summary, a):focus-vis
   outline-offset: var(--wp-space-xxs);
 }
 
+/* Search fields show focus on their enclosing bar. */
+html[data-area='hub'] .route-search input:focus-visible {
+  outline: none;
+}
+
 @layer base {
   html {
     @apply font-sans;
@@ -45,6 +50,10 @@ html[data-area='hub'] :is(button, input, select, textarea, summary, a):focus-vis
     margin: 0;
 
     min-height: 100svh;
+  }
+
+  html[data-area='hub'] {
+    scroll-behavior: smooth;
   }
 
   html[data-area='hub'] body {

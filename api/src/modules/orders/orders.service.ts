@@ -6,7 +6,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { DataSource, QueryFailedError } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { Brand } from '../../common/enums/brand.enum';
@@ -34,9 +34,6 @@ import { QueryMyDeliveryDto } from './dto/query-my-delivery.dto';
 import { QueryMyOrderDto } from './dto/query-my-order.dto';
 import { QueryOrderDto } from './dto/query-order.dto';
 import { OrdersRepository } from './repositories/orders.repository';
-
-// Postgres's unique-violation code; see `uq_orders_outlet_date_temp`.
-const UNIQUE_VIOLATION = '23505';
 
 // How many open delivery days the order form offers.
 const DELIVERY_DAYS_OFFERED = 6;
@@ -95,30 +92,17 @@ export class OrdersService {
     }
 
     const placedAt = new Date();
-    let order: Order;
-    try {
-      order = await this.ordersRepository.save(
-        this.ordersRepository.create({
-          ...dto,
-          outletId: outlet.id,
-          placedById: userId,
-          status: OrderStatus.ORDERED,
-          placedAt,
-          createdById: userId,
-          updatedById: userId,
-        }),
-      );
-    } catch (error) {
-      if (
-        error instanceof QueryFailedError &&
-        (error.driverError as { code?: string }).code === UNIQUE_VIOLATION
-      ) {
-        throw new ConflictException(
-          `This outlet already has ${dto.tempRequirement === TempRequirement.CHILLED ? 'a chilled' : 'an ambient'} order for ${dto.requestedDate}`,
-        );
-      }
-      throw error;
-    }
+    const order = await this.ordersRepository.save(
+      this.ordersRepository.create({
+        ...dto,
+        outletId: outlet.id,
+        placedById: userId,
+        status: OrderStatus.ORDERED,
+        placedAt,
+        createdById: userId,
+        updatedById: userId,
+      }),
+    );
 
     if (await this.checkAvailability(order)) {
       order.status = OrderStatus.CONFIRMED;
@@ -142,14 +126,15 @@ export class OrdersService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     const outlet = await this.outletOfOrThrow(userId);
-    const [orders, total] = await this.ordersRepository.findForOutlet(
-      outlet.id,
-      query,
-    );
+    const [[orders, total], counts] = await Promise.all([
+      this.ordersRepository.findForOutlet(outlet.id, query),
+      this.ordersRepository.countMyOrderStatuses(outlet.id, query),
+    ]);
 
     return new ApiResponseDto(HttpStatus.OK, 'Orders retrieved successfully', {
       items: await this.toViews(orders),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      counts,
     });
   }
 
