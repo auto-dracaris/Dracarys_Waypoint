@@ -1,7 +1,3 @@
-## AI Assistance Disclosure
-
-Please note that artificial intelligence (AI) tools and bots were utilized to assist in the development of this project, as well as in designing the core system workflows.
-
 ## Viewing Diagrams
 
 This folder contains diagram files provided in both standard `.png` format and editable `.drawio` format. For quick viewing, you can open the `.png` files directly in your repository viewer. **If you want to zoom in for better detail without losing quality, or if you need to edit the files, use the `.drawio` versions.**
