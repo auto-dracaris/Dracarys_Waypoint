@@ -12,6 +12,9 @@ import { PublishPlanConfirmationPage } from '@/pages/publish-plan-confirmation-p
 import { LoadingExceptionReviewPage } from '@/pages/loading-exception-review-page'
 import { NotFoundPage } from '@/pages/not-found-page'
 import { RequireRole } from '@/features/auth/require-role'
+import { ProfilePage } from '@/pages/profile-page'
+import { KnowledgePage } from '@/pages/knowledge-page'
+import { FloatingChat } from '@/features/assistant/floating-chat'
 
 const LoginPage = lazy(() => import('@/pages/login-page'))
 const RegisterPage = lazy(() => import('@/pages/register-page'))
@@ -34,13 +37,15 @@ export default function App() {
     if (area === 'store-manager') document.title = `WayPoint — ${isAuthPage ? 'Sign In' : 'Store Manager'}`
   }, [area, isAuthPage])
   return (
-    <Suspense fallback={<p role="status">Loading WayPoint…</p>}>
+    <><Suspense fallback={<p role="status">Loading WayPoint…</p>}>
       <Routes>
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route element={<RequireRole role="dispatcher" />}>
           <Route element={<HubLayout />}>
+            <Route path="profile" element={<HubPage>{(hub) => <ProfilePage onOpenNavigation={hub.pageProps.onOpenNavigation} />}</HubPage>} />
+            <Route path="knowledge" element={<HubPage>{(hub) => <KnowledgePage onOpenNavigation={hub.pageProps.onOpenNavigation} />}</HubPage>} />
             <Route index element={<HubPage>{(hub) => <OverviewPage {...hub.pageProps} />}</HubPage>} />
             <Route path="vehicles" element={<HubPage>{(hub) => <VehiclesPage {...hub.pageProps} />}</HubPage>} />
             <Route path="outlets" element={<HubPage>{(hub) => <OutletsPage {...hub.pageProps} />}</HubPage>} />
@@ -63,6 +68,7 @@ export default function App() {
         </Route>
         <Route element={<RequireRole role="store_manager" />}>
           <Route path="store-manager" element={<StoreManagerLayout />}>
+            <Route path="profile" element={<ProfilePage />} />
             <Route index element={<DashboardOverviewPage />} />
             <Route path="orders" element={<StoreOrdersPage />} />
             <Route path="orders/create" element={<PlaceOrderPage />} />
@@ -72,6 +78,6 @@ export default function App() {
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </Suspense>
+    </Suspense><FloatingChat /></>
   )
 }

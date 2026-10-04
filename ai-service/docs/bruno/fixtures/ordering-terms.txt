@@ -1,0 +1,11 @@
+SYNTHETIC TEST DOCUMENT - NOT AN OFFICIAL WAYPOINT POLICY
+Store ordering terms, test version 1
+
+A store manager should check the requested delivery date, required temperature,
+order units, total weight and total volume before placing an order.
+If an item is deferred, read the recorded reason and updated date in the order.
+A policy document alone cannot establish why a specific real order was deferred.
+Drivers should confirm the delivery address before leaving.
+Loaders should verify the load details before loading.
+Dispatchers should review a document before approving it for assistant use.
+

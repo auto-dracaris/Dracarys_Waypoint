@@ -8,6 +8,7 @@ interface UserContextValue {
   accessToken: string | null
   login: (credentials: LoginPayload, remember: boolean) => Promise<void>
   logout: () => Promise<void>
+  updateProfile: (changes: authApi.ProfileChanges) => Promise<User>
 }
 
 const sessionKey = 'waypoint:session'
@@ -61,7 +62,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setSession(null)
   }
 
-  return <UserContext.Provider value={{ user: session?.user ?? null, accessToken: session?.accessToken ?? null, login, logout }}>{children}</UserContext.Provider>
+  async function updateProfile(changes: authApi.ProfileChanges) {
+    if (!session) throw new Error('Sign in to update your profile.')
+    const updated = await authApi.updateMe(session.accessToken, changes)
+    let remember = false
+    try { remember = window.localStorage.getItem(sessionKey) !== null } catch { /* In-memory session. */ }
+    setSession((current) => {
+      if (!current || current.accessToken !== session.accessToken) return current
+      const next = { ...current, user: updated }
+      saveSession(next, remember)
+      return next
+    })
+    return updated
+  }
+
+  return <UserContext.Provider value={{ user: session?.user ?? null, accessToken: session?.accessToken ?? null, login, logout, updateProfile }}>{children}</UserContext.Provider>
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

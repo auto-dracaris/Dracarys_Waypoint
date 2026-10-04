@@ -1,0 +1,16 @@
+meta {
+  name: Document: List sources
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/api/v1/documents?page=1&limit=20
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
