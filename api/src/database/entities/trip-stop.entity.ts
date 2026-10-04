@@ -65,6 +65,10 @@ export class TripStop extends UuidBaseEntity {
   @Column({ name: 'delivered_units', type: 'int', nullable: true })
   deliveredUnits: number | null;
 
+  // Dispatcher-approved loading quantity; null preserves the original order.
+  @Column({ name: 'expected_units', type: 'int', nullable: true })
+  expectedUnits: number | null;
+
   @Column({ name: 'failure_reason', type: 'text', nullable: true })
   failureReason: string | null;
 

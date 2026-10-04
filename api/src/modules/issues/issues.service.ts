@@ -15,6 +15,7 @@ import { AuthenticatedUser } from '../../common/decorators/current-user.decorato
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { ImagePurpose } from '../../common/enums/image-purpose.enum';
 import { IssueStatus } from '../../common/enums/issue-status.enum';
+import { IssueType } from '../../common/enums/issue-type.enum';
 import { OrderStatus } from '../../common/enums/order-status.enum';
 import { TripStatus } from '../../common/enums/trip-status.enum';
 import { UserRole } from '../../common/enums/user-role.enum';
@@ -227,13 +228,7 @@ export class IssuesService {
     if (issue.status === IssueStatus.RESOLVED) {
       throw new ConflictException('Issue is already resolved');
     }
-    await this.issuesRepository.patch(issueId, {
-      status: IssueStatus.RESOLVED,
-      resolvedById: user.userId,
-      resolvedAt: new Date(),
-      resolutionNote: dto.resolutionNote.trim(),
-      updatedById: user.userId,
-    });
+    await this.issuesRepository.resolve(issueId, dto, user.userId);
     void this.notificationsService.notify([
       {
         to: { userIds: [issue.reportedById] },
@@ -344,6 +339,15 @@ export class IssuesService {
       }[issue.status],
       description: issue.description,
       affectedCases: issue.affectedUnits,
+      expectedCases: issue.tripStop?.expectedUnits ?? order?.orderUnits ?? null,
+      approvedExpectedCases: issue.approvedExpectedUnits ?? null,
+      planVersion: trip?.planVersion ?? null,
+      quantityApprovalAllowed:
+        [IssueType.LOAD_SHORTFALL, IssueType.LOAD_DAMAGE].includes(
+          issue.type,
+        ) &&
+        !!trip &&
+        [TripStatus.PLANNED, TripStatus.LOADING].includes(trip.status),
       recordedAt: issue.recordedAt,
       createdAt: issue.createdAt,
       reportedBy: reportedBy && {

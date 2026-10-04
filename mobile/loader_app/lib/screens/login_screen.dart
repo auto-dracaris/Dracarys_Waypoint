@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'trips_screen.dart';
+import 'register_screen.dart';
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,23 +12,81 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _auth = AuthService();
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSession();
+  }
+
+  Future<void> _restoreSession() async {
+    try {
+      final valid = await _auth.hasValidToken();
+      if (mounted && valid) _openTrips();
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
+    _auth.dispose();
     super.dispose();
   }
 
-  void _login() {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _login() async {
+    if (_isLoading || !_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+    try {
+      await _auth.login(
+        phone: _phoneController.text,
+        password: _passwordController.text,
+      );
+      if (mounted) _openTrips();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error is StateError
+                  ? error.message.toString()
+                  : 'Cannot sign in. Check your connection and try again.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
-    // Navigate directly without checking the backend
+  void _openTrips() {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const TripsScreen()),
+    );
+  }
+
+  Future<void> _register() async {
+    final phone = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const RegisterScreen()),
+    );
+    if (!mounted || phone == null) return;
+    _phoneController.text = phone;
+    _passwordController.clear();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Phone verified. You can log in once a dispatcher assigns your loader role.',
+        ),
+      ),
     );
   }
 
@@ -48,7 +108,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Display the logo image here
                     Image.asset(
                       'assets/images/logo.png',
-                      height: 60, // Adjust this value to make your logo bigger/smaller
+                      height:
+                          60, // Adjust this value to make your logo bigger/smaller
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -61,18 +122,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 40),
                     TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
-                        labelText: 'Email',
+                        labelText: 'Phone number',
                         border: OutlineInputBorder(),
                         filled: true,
                         fillColor: Colors.white,
                       ),
                       validator: (value) {
-                        final email = value?.trim() ?? '';
-                        if (email.isEmpty) return 'Enter your email';
+                        final phone = value?.trim() ?? '';
+                        if (phone.isEmpty) return 'Enter your phone number';
                         return null;
                       },
                     ),
@@ -96,16 +157,32 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: _login,
+                        onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFACC15),
                           foregroundColor: Colors.black,
                         ),
-                        child: const Text(
-                          'Log in',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Log in',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: _isLoading ? null : _register,
+                      child: const Text('Don’t have an account? Register'),
                     ),
                   ],
                 ),

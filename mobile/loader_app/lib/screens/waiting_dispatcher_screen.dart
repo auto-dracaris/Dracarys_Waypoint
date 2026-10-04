@@ -1,8 +1,104 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../models/issue.dart';
+import '../services/issue_service.dart';
 import '../widgets/app_header.dart';
 
-class WaitingDispatcherScreen extends StatelessWidget {
-  const WaitingDispatcherScreen({super.key});
+class WaitingDispatcherScreen extends StatefulWidget {
+  final String tripId, issueId, vehicleNumber, tripNumber, outletIdentifier;
+  final int expectedCases, stopSequence;
+  final Issue initialIssue;
+  const WaitingDispatcherScreen({
+    super.key,
+    required this.tripId,
+    required this.issueId,
+    required this.initialIssue,
+    required this.expectedCases,
+    this.vehicleNumber = '',
+    this.tripNumber = '',
+    this.outletIdentifier = '',
+    this.stopSequence = 0,
+  });
+
+  @override
+  State<WaitingDispatcherScreen> createState() =>
+      _WaitingDispatcherScreenState();
+}
+
+class _WaitingDispatcherScreenState extends State<WaitingDispatcherScreen>
+    with WidgetsBindingObserver {
+  final IssueService _service = IssueService();
+  Timer? _timer;
+  late Issue _issue;
+  bool _checking = false;
+  bool _active = true;
+  String? _error;
+  int get _goodCases =>
+      (_issue.expectedCases ?? _issue.plannedCases ?? widget.expectedCases)
+          .clamp(0, _issue.plannedCases ?? widget.expectedCases)
+          .toInt();
+  String get _banner => _issue.requiresRecount
+      ? 'Dispatcher requests a re-check'
+      : _issue.approved
+      ? 'Resolved by Dispatcher'
+      : _issue.status == 'acknowledged'
+      ? 'Issue under review'
+      : 'Issue sent · Decision pending';
+  @override
+  void initState() {
+    super.initState();
+    _issue = widget.initialIssue;
+    WidgetsBinding.instance.addObserver(this);
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (_active &&
+          (ModalRoute.of(context)?.isCurrent ?? false) &&
+          !_issue.approved &&
+          !_issue.requiresRecount) {
+        _poll();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _active = state == AppLifecycleState.resumed;
+    if (_active && !_issue.approved && !_issue.requiresRecount) _poll();
+  }
+
+  Future<void> _poll({bool manual = false}) async {
+    if (_checking) return;
+    setState(() => _checking = true);
+    try {
+      final issue = await _service.getIssue(widget.issueId);
+      if (!mounted) return;
+      setState(() {
+        _issue = issue;
+        _error = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(
+        () => _error = error is StateError
+            ? error.message.toString()
+            : 'Could not check for updates. Please try again.',
+      );
+      if (manual) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_error!)));
+      }
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _service.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,13 +128,13 @@ class WaitingDispatcherScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'VEH014 · Trip 1',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    Text(
+                      '${widget.vehicleNumber} · ${widget.tripNumber}',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
-                    const Text(
-                      'OUT045 · Stop 5',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    Text(
+                      '${widget.outletIdentifier} · Stop ${widget.stopSequence}',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                     const SizedBox(height: 8),
                     const Text(
@@ -57,20 +153,28 @@ class WaitingDispatcherScreen extends StatelessWidget {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF08A), // Light yellow
+                        color: _issue.requiresRecount
+                            ? const Color(0xFFFEE2E2)
+                            : _issue.approved
+                            ? const Color(0xFFDCFCE7)
+                            : const Color(0xFFFEF08A),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
                           Icon(
-                            Icons.access_time,
+                            _issue.approved
+                                ? Icons.check_circle
+                                : _issue.requiresRecount
+                                ? Icons.warning_amber
+                                : Icons.access_time,
                             size: 20,
                             color: Color(0xFF92400E),
                           ),
                           SizedBox(width: 8),
                           Text(
-                            'Issue sent · Decision pending',
-                            style: TextStyle(
+                            _banner,
+                            style: const TextStyle(
                               color: Color(0xFF92400E),
                               fontWeight: FontWeight.bold,
                             ),
@@ -101,19 +205,19 @@ class WaitingDispatcherScreen extends StatelessWidget {
                                 color: const Color(0xFFFCA5A5),
                               ),
                             ),
-                            child: const Column(
+                            child: Column(
                               children: [
                                 Text(
-                                  'of 4 cases missing',
-                                  style: TextStyle(
+                                  'of ${widget.expectedCases} cases ${_issue.type == IssueType.load_shortfall ? 'missing' : 'damaged'}',
+                                  style: const TextStyle(
                                     color: Colors.grey,
                                     fontSize: 12,
                                   ),
                                 ),
                                 SizedBox(height: 4),
                                 Text(
-                                  '1',
-                                  style: TextStyle(
+                                  '${_issue.affectedCases}',
+                                  style: const TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -131,10 +235,12 @@ class WaitingDispatcherScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: Colors.grey.shade300),
                             ),
-                            child: const Column(
+                            child: Column(
                               children: [
                                 Text(
-                                  'cases available to load',
+                                  _issue.approved
+                                      ? 'cases expected in current plan'
+                                      : 'cases not reported affected',
                                   style: TextStyle(
                                     color: Colors.grey,
                                     fontSize: 12,
@@ -142,8 +248,8 @@ class WaitingDispatcherScreen extends StatelessWidget {
                                 ),
                                 SizedBox(height: 4),
                                 Text(
-                                  '3',
-                                  style: TextStyle(
+                                  '$_goodCases',
+                                  style: const TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -157,15 +263,20 @@ class WaitingDispatcherScreen extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     // Info Icon and Note
-                    const Row(
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Icon(Icons.info, size: 20, color: Colors.black),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Reported 06:48\nThis screen updates when dispatch responds.',
-                            style: TextStyle(color: Colors.grey, fontSize: 13),
+                            _error ??
+                                _issue.resolutionNote ??
+                                'Reported ${_issue.recordedAt == null ? '' : TimeOfDay.fromDateTime(_issue.recordedAt!.toLocal()).format(context)}\nThis screen updates when dispatch responds.',
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
@@ -195,18 +306,45 @@ class WaitingDispatcherScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed:
-                      () {}, // This will link to the next screen (Dispatcher decision)
+                  onPressed: _checking
+                      ? null
+                      : () {
+                          if (_issue.approved) {
+                            Navigator.pop(context, _goodCases);
+                          } else if (_issue.requiresRecount) {
+                            Navigator.pop(context);
+                          } else {
+                            _poll(manual: true);
+                          }
+                        },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: const Color(0xFFFACC15),
                     foregroundColor: Colors.black,
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Check for update',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
+                  child: _checking
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.black,
+                          ),
+                        )
+                      : Text(
+                          _checking
+                              ? 'Checking…'
+                              : _issue.approved
+                              ? 'Continue loading with $_goodCases cases'
+                              : _issue.requiresRecount
+                              ? 'Re-check count / edit issue'
+                              : 'Check for update',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -228,15 +366,21 @@ class WaitingDispatcherScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Plan v3',
+                _issue.planVersion == null
+                    ? 'Plan pending'
+                    : 'Plan v${_issue.planVersion}',
                 style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
               Text(
-                'Sync: Up to date',
+                _checking
+                    ? 'Checking…'
+                    : _error != null
+                    ? 'Update failed'
+                    : 'Last decision received',
                 style: TextStyle(color: Colors.green, fontSize: 12),
               ),
             ],

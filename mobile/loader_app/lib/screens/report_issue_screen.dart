@@ -1,18 +1,186 @@
 import 'package:flutter/material.dart';
 import '../widgets/app_header.dart';
+import '../models/issue.dart';
+import '../services/issue_service.dart';
 import 'waiting_dispatcher_screen.dart';
 
 class ReportIssueScreen extends StatefulWidget {
-  const ReportIssueScreen({super.key});
+  final String? tripId, stopId, orderId;
+  final int expectedCases;
+  final List<String> orderIds;
+  final Map<String, int> orderCases;
+  final IssueService? service;
+  final String vehicleNumber, tripNumber, outletIdentifier, client, brand;
+  final int stopSequence, loadingStep, totalSteps;
+  const ReportIssueScreen({
+    super.key,
+    this.tripId,
+    this.stopId,
+    this.orderId,
+    this.orderIds = const [],
+    this.orderCases = const {},
+    this.service,
+    this.expectedCases = 0,
+    this.vehicleNumber = '',
+    this.tripNumber = '',
+    this.outletIdentifier = '',
+    this.client = '',
+    this.brand = '',
+    this.stopSequence = 0,
+    this.loadingStep = 1,
+    this.totalSteps = 1,
+  });
 
   @override
   State<ReportIssueScreen> createState() => _ReportIssueScreenState();
 }
 
 class _ReportIssueScreenState extends State<ReportIssueScreen> {
+  late final IssueService _issueService;
+  final TextEditingController _noteController = TextEditingController();
+  bool _sending = false;
+  bool _restoreFailed = false;
+  String? _selectedOrder;
+  Issue? _reportedIssue;
+  String? get _orderId => _selectedOrder ?? widget.orderId;
   int affectedCases = 1;
-  final int totalExpected = 4;
+
+  Future<void> _submit() async {
+    if (_sending || totalExpected < 1) return;
+    if (_restoreFailed) {
+      await _restoreIssue();
+      return;
+    }
+    if (widget.tripId == null || _orderId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Select a trip and order before reporting an issue.'),
+        ),
+      );
+      return;
+    }
+    if (_noteController.text.trim().length > 500) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Keep the note within 500 characters.')),
+      );
+      return;
+    }
+    setState(() => _sending = true);
+    try {
+      final previous = _reportedIssue;
+      final Issue issue;
+      if (previous != null) {
+        final latest = await _issueService.getIssue(previous.id);
+        issue = latest.requiresRecount
+            ? await _issueService.resubmit(
+                latest.id,
+                affectedCases,
+                _noteController.text,
+              )
+            : latest;
+      } else {
+        issue = await _issueService.reportIssue(
+          tripId: widget.tripId!,
+          orderId: _orderId!,
+          type: isMissingSelected
+              ? IssueType.load_shortfall
+              : IssueType.load_damage,
+          affectedCases: affectedCases,
+          note: _noteController.text.trim(),
+        );
+      }
+      _reportedIssue = issue;
+      if (!mounted) return;
+      final cases = await Navigator.push<int>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WaitingDispatcherScreen(
+            tripId: widget.tripId!,
+            issueId: issue.id,
+            initialIssue: issue,
+            expectedCases: totalExpected,
+            vehicleNumber: widget.vehicleNumber,
+            tripNumber: widget.tripNumber,
+            outletIdentifier: widget.outletIdentifier,
+            stopSequence: widget.stopSequence,
+          ),
+        ),
+      );
+      if (!mounted) return;
+      if (cases != null) Navigator.pop(context, cases);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error is StateError
+                ? error.message.toString()
+                : 'Could not send issue. Please try again.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    if (widget.service == null) _issueService.dispose();
+    super.dispose();
+  }
+
+  int get totalExpected =>
+      widget.orderCases[_orderId] ??
+      (widget.expectedCases < 0 ? 0 : widget.expectedCases);
   bool isMissingSelected = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _issueService = widget.service ?? IssueService();
+    _selectedOrder =
+        widget.orderId ??
+        (widget.orderIds.isEmpty ? null : widget.orderIds.first);
+    affectedCases = totalExpected > 0 ? 1 : 0;
+    _restoreIssue();
+  }
+
+  Future<void> _restoreIssue() async {
+    final selected = _orderId;
+    if (widget.tripId == null || selected == null) return;
+    setState(() => _sending = true);
+    try {
+      final issues = await _issueService.getIssues(widget.tripId!);
+      if (!mounted || _orderId != selected) return;
+      final pending = issues.where(
+        (issue) => issue.orderId == selected && !issue.approved,
+      );
+      setState(() {
+        _restoreFailed = false;
+        _reportedIssue = pending.isEmpty ? null : pending.first;
+        if (_reportedIssue != null) {
+          affectedCases = _reportedIssue!.affectedCases;
+          isMissingSelected = _reportedIssue!.type == IssueType.load_shortfall;
+          _noteController.text = _reportedIssue!.note ?? '';
+        }
+      });
+    } catch (_) {
+      _restoreFailed = true;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not check existing issues. Retry before reporting.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +197,41 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: ListView(
                   children: [
+                    if (widget.orderIds.length > 1)
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedOrder,
+                        decoration: const InputDecoration(labelText: 'Order'),
+                        items: widget.orderIds
+                            .map(
+                              (id) => DropdownMenuItem(
+                                value: id,
+                                child: Text(
+                                  '$id · ${widget.orderCases[id] ?? 0} cases',
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: _sending
+                            ? null
+                            : (id) {
+                                setState(() {
+                                  _selectedOrder = id;
+                                  _reportedIssue = null;
+                                  _noteController.clear();
+                                  affectedCases = totalExpected > 0 ? 1 : 0;
+                                });
+                                _restoreIssue();
+                              },
+                      ),
                     const SizedBox(height: 24),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: OutlinedButton.icon(
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.arrow_back, size: 18),
-                        label: const Text('Load 1 of 5'),
+                        label: Text(
+                          'Load ${widget.loadingStep} of ${widget.totalSteps}',
+                        ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.black,
                           side: BorderSide(color: Colors.grey.shade300),
@@ -44,13 +240,13 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'VEH014 · Trip 1',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    Text(
+                      '${widget.vehicleNumber} · ${widget.tripNumber}',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
-                    const Text(
-                      'OUT045 · Stop 5 · 4 cases expected',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    Text(
+                      '${widget.outletIdentifier} · Stop ${widget.stopSequence} · $totalExpected cases expected',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                     const SizedBox(height: 8),
                     const Text(
@@ -70,8 +266,10 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       children: [
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () =>
-                                setState(() => isMissingSelected = true),
+                            onPressed: _sending || _reportedIssue != null
+                                ? null
+                                : () =>
+                                      setState(() => isMissingSelected = true),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isMissingSelected
                                   ? const Color(0xFFFACC15)
@@ -94,8 +292,10 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () =>
-                                setState(() => isMissingSelected = false),
+                            onPressed: _sending || _reportedIssue != null
+                                ? null
+                                : () =>
+                                      setState(() => isMissingSelected = false),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: !isMissingSelected
                                   ? const Color(0xFFFACC15)
@@ -193,6 +393,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     ),
                     const SizedBox(height: 8),
                     TextField(
+                      controller: _noteController,
                       maxLines: 3,
                       decoration: InputDecoration(
                         hintText:
@@ -236,23 +437,19 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
               Expanded(
                 flex: 3,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const WaitingDispatcherScreen(),
-                      ),
-                    );
-                  },
+                  onPressed: _sending || totalExpected < 1 ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: const Color(0xFFFACC15),
                     foregroundColor: Colors.black,
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Send issue to dispatcher',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  child: Text(
+                    _sending ? 'Sending issue…' : 'Send issue to dispatcher',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ),
@@ -281,9 +478,9 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
             children: [
               Row(
                 children: [
-                  const Text(
-                    '1 of 5 loading steps',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  Text(
+                    '${widget.loadingStep} of ${widget.totalSteps} loading steps',
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                   const SizedBox(width: 8),
                   Container(
@@ -295,7 +492,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                 ],
               ),
               const Text(
-                'Sync: Up to date',
+                'Submit online',
                 style: TextStyle(color: Colors.green, fontSize: 12),
               ),
             ],
