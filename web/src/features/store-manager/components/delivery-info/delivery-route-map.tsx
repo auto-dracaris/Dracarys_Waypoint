@@ -1,7 +1,8 @@
-import React, { lazy, Suspense, useSyncExternalStore } from 'react'
+import React, { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react'
 import { Check, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/shadcn/button'
 import type { DeliveryDetails } from '@/features/store-manager/types'
+import { fetchRoadRoute } from '@/lib/routing'
 import { VehicleBanner } from '../vehicle-banner'
 
 const DeliveryMap = lazy(() => import('./delivery-map').then((module) => ({ default: module.DeliveryMap })))
@@ -15,6 +16,38 @@ interface DeliveryRouteMapProps {
 
 export function DeliveryRouteMap({ data }: DeliveryRouteMapProps) {
   const isClient = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot)
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>(data.route ?? [])
+
+  useEffect(() => {
+    let cancelled = false
+    // If route already contains detailed road curves (> 10 points), use directly
+    if (data.route && data.route.length > 10) {
+      setRouteCoordinates(data.route)
+      return
+    }
+
+    const waypoints: [number, number][] =
+      data.route && data.route.length >= 2
+        ? data.route
+        : [data.depot?.position, data.vehiclePosition, data.outletPosition].filter(
+            (p): p is [number, number] => p !== null,
+          )
+
+    if (waypoints.length >= 2) {
+      const profile = data.vehicleType?.toLowerCase().includes('van') ? 'van' : 'truck'
+      fetchRoadRoute(waypoints, { profile }).then((res) => {
+        if (!cancelled && res.geometry && res.geometry.length > 1) {
+          setRouteCoordinates(res.geometry)
+        }
+      })
+    } else {
+      setRouteCoordinates(data.route ?? [])
+    }
+
+    return () => {
+      cancelled = true
+    }
+  }, [data.route, data.depot?.position, data.vehiclePosition, data.outletPosition, data.vehicleType])
 
   return (
     <div className="self-stretch rounded-lg border border-neutral-300 flex flex-col bg-white overflow-hidden">
@@ -32,7 +65,7 @@ export function DeliveryRouteMap({ data }: DeliveryRouteMapProps) {
                 depot={data.depot}
                 outletPosition={data.outletPosition}
                 vehiclePosition={data.vehiclePosition}
-                routeCoordinates={data.route}
+                routeCoordinates={routeCoordinates}
                 vehicleId={data.vehicleId}
                 statusLabel={data.status}
               />

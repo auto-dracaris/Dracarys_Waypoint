@@ -324,14 +324,49 @@ export class VehiclesService {
         const openOutlets = new Set(open.map((stop) => stop.order?.outletId));
         const outlets = new Set(stops.map((stop) => stop.order?.outletId));
         const nextOutlet = open[0]?.order?.outlet;
+        // Build unique outlet timeline in reach order
+        const timeline: {
+          seq: number;
+          outletId: string;
+          outletName: string | null;
+          plannedArrivalAt: Date;
+          status: string;
+          orderCount: number;
+        }[] = [];
+        const seenOutlets = new Set<string>();
+        for (const stop of stops) {
+          const outlet = stop.order?.outlet;
+          const outletId = outlet?.uniqueId ?? `OUT${stop.order?.outletId ?? ''}`;
+          if (!seenOutlets.has(outletId)) {
+            seenOutlets.add(outletId);
+            timeline.push({
+              seq: timeline.length + 1,
+              outletId,
+              outletName: outlet?.name ?? null,
+              plannedArrivalAt: stop.plannedArrivalAt,
+              status: stop.status,
+              orderCount: 1,
+            });
+          } else {
+            const existing = timeline.find((t) => t.outletId === outletId);
+            if (existing) {
+              existing.orderCount += 1;
+            }
+          }
+        }
+
         return {
           id: trip.id,
           tripNo: trip.tripNo,
           status: trip.status,
+          brand: trip.brand,
           plannedDepartAt: trip.plannedDepartAt,
           plannedEndAt: new Date(
             trip.plannedDepartAt.getTime() + trip.plannedMinutes * 60_000,
           ),
+          plannedMinutes: trip.plannedMinutes,
+          plannedKm: trip.plannedKm,
+          plannedFuelL: trip.plannedFuelL,
           // Each order is its own stop row; a "stop" on the page is an outlet.
           stops: outlets.size,
           // An outlet counts once every order for it has an outcome.
@@ -340,6 +375,7 @@ export class VehiclesService {
             ? (nextOutlet.name ?? nextOutlet.uniqueId)
             : null,
           orders: stops.length,
+          timeline,
         };
       }),
     };

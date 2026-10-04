@@ -10,8 +10,9 @@ export interface PlanRoute {
   vehicleId: string
   vehicleType: string
   trip: string
-  // Where the trip goes and what it costs, e.g. "Fresh · Colombo · departs 03:30 · 101 min".
+  // Where the trip goes and what it costs, e.g. "Fresh · Colombo · departs 03:30 · 101 min · 45 km · 7.2 L · 735 kg / 5.9 m³".
   summary?: string
+  plannedFuelL?: number
   stops: PlanStop[]
 }
 export type PlanState = 'none' | 'draft' | 'published'
@@ -57,6 +58,8 @@ export const reviewedPlan = {
       vehicleId: 'VEH021',
       vehicleType: 'Refrigerated Van',
       trip: 'Trip 1',
+      plannedFuelL: 7.2,
+      summary: 'Fresh · Colombo · departs 07:00 · 190 min · 42 km · 7.2 L · 735 kg / 5.9 m³',
       stops: [
         { sequence: 1, outlet: 'Keells - Colombo 04', orderId: 'DEMO-101', arrival: '07:30 AM', window: '07:00–09:00', load: '340 kg / 2.4 m³' },
         { sequence: 2, outlet: 'Cargills - Negombo', orderId: 'DEMO-103', arrival: '08:45 AM', window: '08:00–10:00', load: '180 kg / 1.6 m³' },
@@ -68,6 +71,8 @@ export const reviewedPlan = {
       vehicleId: 'VEH032',
       vehicleType: 'Dry Van',
       trip: 'Trip 2',
+      plannedFuelL: 5.8,
+      summary: 'Dry · Colombo · departs 08:00 · 165 min · 35 km · 5.8 L · 670 kg / 4.5 m³',
       stops: [
         { sequence: 1, outlet: 'Keells - Colpetty', orderId: 'DEMO-102', arrival: '08:15 AM', window: '08:00–10:00', load: '210 kg / 1.4 m³' },
         { sequence: 2, outlet: 'Sathosa - Piliyandala', orderId: 'DEMO-105', arrival: '09:30 AM', window: '09:00–11:00', load: '310 kg / 2.1 m³' },
@@ -78,6 +83,8 @@ export const reviewedPlan = {
       vehicleId: 'VEH015',
       vehicleType: 'Chilled Truck',
       trip: 'Trip 1',
+      plannedFuelL: 4.7,
+      summary: 'Fresh · Gampaha · departs 07:15 · 120 min · 28 km · 4.7 L · 610 kg / 4.5 m³',
       stops: [
         { sequence: 1, outlet: 'Arpico - Kandy Road', orderId: 'DEMO-104', arrival: '07:45 AM', window: '07:00–09:00', load: '420 kg / 3.0 m³' },
         { sequence: 2, outlet: 'Laugfs - Maharagama', orderId: 'DEMO-110', arrival: '09:15 AM', window: '08:30–10:30', load: '190 kg / 1.5 m³' },

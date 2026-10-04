@@ -18,15 +18,27 @@ interface Waypoint {
   lng: number;
 }
 
+interface OsrmStep {
+  geometry: { coordinates: [number, number][] };
+}
+
+interface OsrmLeg {
+  distance: number;
+  duration: number;
+  steps?: OsrmStep[];
+}
+
+interface OsrmRoute {
+  distance: number;
+  duration: number;
+  geometry: { coordinates: [number, number][] };
+  legs: OsrmLeg[];
+}
+
 interface OsrmResponse {
   code: string;
   message?: string;
-  routes?: {
-    distance: number;
-    duration: number;
-    geometry: { coordinates: [number, number][] };
-    legs: { distance: number; duration: number }[];
-  }[];
+  routes?: OsrmRoute[];
 }
 
 /**
@@ -40,11 +52,13 @@ export class RoutingService {
     private readonly vehiclesRepository: VehiclesRepository,
   ) {}
 
-  async route(dto: RouteRequestDto, userId: number): Promise<ApiResponseDto> {
+  async route(dto: RouteRequestDto, userId?: number): Promise<ApiResponseDto> {
     const profile =
       dto.profile ??
-      (await this.vehiclesRepository.findByDriver(userId))?.type ??
-      VehicleType.TRUCK;
+      (userId
+        ? (await this.vehiclesRepository.findByDriver(userId))?.type
+        : undefined) ??
+      VehicleType.VAN;
     const route = await this.calculate(dto.waypoints, profile);
 
     return new ApiResponseDto(HttpStatus.OK, 'Route calculated', {
@@ -53,10 +67,27 @@ export class RoutingService {
       geometry: route.geometry.coordinates,
       distanceMeters: route.distance,
       durationSeconds: route.duration,
-      legs: route.legs.map((leg) => ({
-        distanceMeters: leg.distance,
-        durationSeconds: leg.duration,
-      })),
+      legs: route.legs.map((leg) => {
+        const legCoords: [number, number][] = [];
+        if (leg.steps) {
+          for (const step of leg.steps) {
+            for (const coord of step.geometry.coordinates) {
+              if (
+                legCoords.length === 0 ||
+                legCoords[legCoords.length - 1][0] !== coord[0] ||
+                legCoords[legCoords.length - 1][1] !== coord[1]
+              ) {
+                legCoords.push(coord);
+              }
+            }
+          }
+        }
+        return {
+          distanceMeters: leg.distance,
+          durationSeconds: leg.duration,
+          geometry: legCoords.length > 0 ? legCoords : undefined,
+        };
+      }),
     });
   }
 
@@ -69,22 +100,40 @@ export class RoutingService {
     return route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
   }
 
-  private async calculate(waypoints: Waypoint[], profile: VehicleType) {
+  private async calculate(
+    waypoints: Waypoint[],
+    profile: VehicleType,
+  ): Promise<OsrmRoute> {
     // OSRM takes longitude first.
     const path = waypoints
       .map((point) => `${point.lng},${point.lat}`)
       .join(';');
-    const base = this.configService.get<string>(
-      'OSRM_URL',
-      'http://localhost:8081',
-    );
+    const base = this.configService
+      .get<string>('OSRM_URL', 'http://localhost:8081')
+      .replace(/\/+$/, '');
 
     let body: OsrmResponse;
     try {
-      const response = await fetch(
-        `${base}/route/v1/${profile}/${path}?overview=full&geometries=geojson`,
+      let response = await fetch(
+        `${base}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true`,
         { signal: AbortSignal.timeout(TIMEOUT_MS) },
       );
+
+      // If the primary profile (e.g. truck) fails or returns bad gateway, try van profile
+      if (!response.ok && profile !== VehicleType.VAN) {
+        try {
+          const fallbackRes = await fetch(
+            `${base}/route/v1/${VehicleType.VAN}/${path}?overview=full&geometries=geojson&steps=true`,
+            { signal: AbortSignal.timeout(TIMEOUT_MS) },
+          );
+          if (fallbackRes.ok) {
+            response = fallbackRes;
+          }
+        } catch {
+          // Keep original response for error handling
+        }
+      }
+
       body = (await response.json()) as OsrmResponse;
     } catch {
       throw new BadGatewayException('The routing service is not reachable');

@@ -13,6 +13,7 @@ export function RouteSchedule({ route }: { route: PlanRoute }) {
           <span className="type-text-xs-regular text-wp-text-secondary">
             {route.vehicleType}
             {route.summary && ` · ${route.summary}`}
+            {route.plannedFuelL !== undefined && !route.summary?.includes(' L') && ` · ${route.plannedFuelL} L`}
           </span>
         </div>
         <StatusBadge tone="info">{route.trip}</StatusBadge>

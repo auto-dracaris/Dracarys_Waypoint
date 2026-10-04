@@ -41,6 +41,8 @@
   border-radius: var(--wp-radius-md);
   overflow: hidden;
 }
+.planning-summary {
+}
 .routes-header {
   display: flex;
   justify-content: space-between;
@@ -132,6 +134,8 @@
 .route-content {
   display: flex;
   min-height: 574px;
+  overflow: hidden;
+  position: relative;
 }
 .overview-map {
   position: relative;
@@ -150,83 +154,482 @@
   text-align: center;
   color: var(--wp-text-tertiary);
 }
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 .vehicle-panel {
-  width: 420px;
+  width: 400px;
   flex-shrink: 0;
-  background: var(--wp-neutral-50);
+  background: #ffffff;
   border-left: 1px solid var(--wp-neutral-200);
   display: flex;
   flex-direction: column;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  z-index: 100;
 }
-.vehicle-banner {
-  position: relative;
-  min-height: 112px;
-  height: 112px;
-  overflow: hidden;
-  background: var(--wp-yellow-400);
+
+/* --- Vehicle Panel (Clean White Redesign matching Screenshot) --- */
+.vehicle-panel-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
   border-bottom: 1px solid var(--wp-neutral-200);
 }
-.vehicle-texture {
-  position: absolute;
-  width: 462px;
-  height: 156px;
-  max-width: none;
-  object-fit: cover;
-  left: -6px;
-  top: -1px;
-  mix-blend-mode: soft-light;
+
+.vehicle-panel-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--wp-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.12s ease;
 }
-.truck-crop {
-  position: absolute;
-  width: 180px;
-  height: 94px;
-  left: -60px;
-  top: 13px;
-  overflow: hidden;
-  transform: scaleX(-1);
+
+.vehicle-panel-close-btn:hover {
+  background: var(--wp-neutral-100);
+  color: var(--wp-text-primary);
 }
-.truck-crop img {
-  position: absolute;
-  width: 100%;
-  max-width: none;
-  height: 191.16%;
-  top: -48.63%;
-  object-fit: fill;
-}
-.vehicle-heading {
-  position: relative;
-  height: 100%;
+
+.vehicle-panel-main {
+  padding: 20px;
   display: flex;
   flex-direction: column;
+  gap: 18px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.vehicle-title-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.vehicle-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.vehicle-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #15803d;
+}
+
+.vehicle-status-badge--errors {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.vehicle-status-badge--errors .vehicle-status-dot {
+  background: #b91c1c;
+}
+
+.vehicle-status-badge--info {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.vehicle-status-badge--info .vehicle-status-dot {
+  background: #0369a1;
+}
+
+.vehicle-status-badge--unallocated {
+  background: #f1f5f9;
+  color: #475569;
+}
+.vehicle-status-badge--unallocated .vehicle-status-dot {
+  background: #64748b;
+}
+
+.vehicle-unallocated-card {
+  padding: 12px 14px;
+  background: var(--wp-neutral-50);
+  border-radius: 8px;
+  border: 1px solid var(--wp-neutral-200);
+}
+
+.vehicle-progress-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.vehicle-progress-track {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.vehicle-progress-fill {
+  height: 100%;
+  background: #365314; /* dark forest green as shown in screenshot */
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.vehicle-next-stop-section {
+  padding: 10px 12px;
+  background: var(--wp-neutral-50);
+  border-radius: 8px;
+  border: 1px solid var(--wp-neutral-200);
+}
+
+.vehicle-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.vehicle-details-row {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-end;
-  padding: var(--wp-space-lg) var(--wp-space-xl);
 }
-.vehicle-status {
-  border-radius: var(--wp-radius-xl);
-  padding: var(--wp-space-xs) var(--wp-space-md);
-  background: var(--wp-lime-100);
-  color: var(--wp-lime-700);
+
+.vehicle-view-route-button {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 0;
+  background: #facc15;
+  color: #111827;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  box-sizing: border-box;
 }
-.vehicle-status--errors {
-  background: var(--wp-red-100);
-  color: var(--wp-red-700);
+
+.vehicle-view-route-button:hover {
+  background: #eab308;
 }
-.vehicle-status--info {
-  background: var(--wp-blue-100);
-  color: var(--wp-blue-700);
+
+.vehicle-view-route-button:active {
+  transform: scale(0.99);
 }
-.vehicle-heading h3,
-.vehicle-heading p {
-  text-align: right;
+
+.vehicle-view-route-button--disabled {
+  background: var(--wp-neutral-200) !important;
+  color: var(--wp-text-tertiary) !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
 }
-.vehicle-body {
+
+.vehicle-info-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--wp-neutral-200);
+  border-radius: 8px;
+  background: var(--wp-neutral-50);
+}
+
+/* ==========================================================================
+   Route Timeline Floating Card (Left side of map)
+   ========================================================================== */
+
+.route-timeline-card {
+  position: absolute;
+  top: var(--wp-space-lg);
+  left: var(--wp-space-lg);
+  bottom: var(--wp-space-lg);
+  width: 320px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid var(--wp-neutral-200);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideInLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.route-timeline-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--wp-neutral-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+}
+
+.route-timeline-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.route-timeline-close-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--wp-text-secondary);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.route-timeline-close-btn:hover {
+  background: var(--wp-neutral-100);
+  color: #111827;
+}
+
+.route-timeline-body {
+  padding: 16px;
+  overflow-y: auto;
   flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 4px;
+}
+
+/* Timeline vertical rail and nodes */
+.timeline-node {
+  display: flex;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.timeline-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.timeline-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.timeline-icon--pickup {
+  background: #374151;
+  color: #ffffff;
+}
+
+.timeline-icon--expand {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+}
+
+.timeline-icon--number {
+  background: #2e7d32;
+  color: #ffffff;
+}
+
+.timeline-icon--next {
+  background: #2e7d32;
+  color: #ffffff;
+}
+
+.timeline-line {
+  width: 2px;
+  flex: 1;
+  margin: 4px 0;
+}
+
+.timeline-line--solid {
+  background: #9ca3af;
+}
+
+.timeline-line--dashed {
+  border-left: 2px dashed #9ca3af;
+  background: transparent;
+}
+
+.timeline-content {
+  flex: 1;
+  padding-bottom: 12px;
+}
+
+.timeline-heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.timeline-address {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.timeline-time {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.timeline-accordion-trigger {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #4b5563;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.timeline-accordion-trigger:hover {
+  color: #111827;
+}
+
+.timeline-expanded-item {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: var(--wp-neutral-50);
+  border-radius: 6px;
+}
+
+.timeline-subheading {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Next Stop Card */
+.next-stop-card {
+  background: #ffffff;
+  border: 1.5px solid #84cc16;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 2px 8px rgba(132, 204, 22, 0.12);
+}
+
+.next-stop-badges {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: var(--wp-space-xl);
-  gap: var(--wp-space-4xl);
+  margin-bottom: 6px;
+}
+
+.badge-next-stop {
+  font-size: 10px;
+  font-weight: 800;
+  color: #4d7c0f;
+  background: #ecfccb;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  letter-spacing: 0.03em;
+}
+
+.badge-status {
+  font-size: 10px;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.next-stop-address {
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+
+.next-stop-details {
+  border-top: 1px solid #f3f4f6;
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.next-stop-detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Remaining stops footer */
+.timeline-footer {
+  border-top: 1px solid var(--wp-neutral-200);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.timeline-footer-trigger {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.remaining-badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.timeline-remaining-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: #4b5563;
+  padding-left: 4px;
 }
 .trip-progress {
   padding-bottom: var(--wp-space-xl);
@@ -543,11 +946,22 @@ html[data-area='hub'] body:has(dialog[open]) {
     flex: none;
     min-height: var(--wp-spacing-96);
   }
-  .vehicle-panel,
-  .route-empty {
+  @keyframes slideInBottom {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .vehicle-panel {
     width: 100%;
     border-left: 0;
     border-top: 1px solid var(--wp-neutral-200);
+    animation: slideInBottom 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
   .vehicle-body {
     min-height: 430px;

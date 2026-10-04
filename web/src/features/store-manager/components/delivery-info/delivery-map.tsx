@@ -40,8 +40,21 @@ interface MapProps {
 }
 
 export function DeliveryMap({ depot, outletPosition, vehiclePosition, routeCoordinates, vehicleId, statusLabel }: MapProps) {
+  // If warehouse and vehicle markers are too close, position them side by side
+  const isTooClose =
+    depot.position &&
+    vehiclePosition &&
+    Math.hypot(vehiclePosition[0] - depot.position[0], vehiclePosition[1] - depot.position[1]) < 0.001
+  const effectiveVehiclePos: [number, number] | null =
+    isTooClose && depot.position && vehiclePosition
+      ? [depot.position[0], depot.position[1] + 0.003]
+      : vehiclePosition
+
   // Frame the whole route, or whichever points are known.
-  const points = [...routeCoordinates, ...[depot.position, outletPosition, vehiclePosition].filter((point) => point !== null)]
+  const points = [
+    ...routeCoordinates,
+    ...([depot.position, outletPosition, effectiveVehiclePos].filter((point): point is [number, number] => point !== null)),
+  ]
   const view = points.length > 1 ? { bounds: L.latLngBounds(points), boundsOptions: { padding: [48, 48] as [number, number] } } : { center: points[0] ?? FALLBACK_CENTER, zoom: 13 }
 
   return (
@@ -54,7 +67,7 @@ export function DeliveryMap({ depot, outletPosition, vehiclePosition, routeCoord
         {routeCoordinates.length > 1 && <Polyline positions={routeCoordinates} color="#15803d" weight={5} />}
 
         {depot.position && (
-          <Marker position={depot.position} icon={DefaultIcon}>
+          <Marker position={depot.position} icon={DefaultIcon} zIndexOffset={1000}>
             <Popup>
               <div className="font-sans font-semibold text-stone-900">{depot.name} depot</div>
             </Popup>
@@ -62,16 +75,16 @@ export function DeliveryMap({ depot, outletPosition, vehiclePosition, routeCoord
         )}
 
         {outletPosition && (
-          <Marker position={outletPosition} icon={DefaultIcon}>
+          <Marker position={outletPosition} icon={DefaultIcon} zIndexOffset={100}>
             <Popup>
               <div className="font-sans font-semibold text-stone-900">Your outlet</div>
             </Popup>
           </Marker>
         )}
 
-        {/* Current Vehicle Position Marker using the Custom Icon */}
-        {vehiclePosition && (
-          <Marker position={vehiclePosition} icon={createVehicleIcon(vehicleId, true)}>
+        {/* Current Vehicle Position Marker using the Custom Icon - covers outlet, sits side-by-side if close to depot */}
+        {effectiveVehiclePos && (
+          <Marker position={effectiveVehiclePos} icon={createVehicleIcon(vehicleId, true)} zIndexOffset={600}>
             <Popup>
               <div className="font-sans font-semibold text-stone-900">
                 {vehicleId} · {statusLabel}

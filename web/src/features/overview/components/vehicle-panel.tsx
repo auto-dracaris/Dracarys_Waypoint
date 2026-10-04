@@ -1,65 +1,142 @@
-import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
-import InfoOutlined from '@mui/icons-material/InfoOutlined'
-import truck from '@/assets/overview/truck.png'
-import texture from '@/assets/overview/texture.png'
-import { Button } from '@/components/ui/button'
+import { ArrowRight, Info, X } from 'lucide-react'
 import type { RoutePreview } from '../data'
 
-export function VehiclePanel({ route, onView }: { route: RoutePreview; onView: () => void }) {
+export function VehiclePanel({
+  route,
+  onView,
+  onClose,
+  isViewingRoute = false,
+}: {
+  route: RoutePreview
+  onView: () => void
+  onClose?: () => void
+  isViewingRoute?: boolean
+}) {
   const progress = Math.round((route.recorded / route.stops) * 100)
+
   return (
     <aside className="vehicle-panel" aria-label="Selected vehicle">
-      <div className="vehicle-banner">
-        <img src={texture} className="vehicle-texture" alt="" />
-        <div className="truck-crop">
-          <img src={truck} alt="WayPoint delivery truck" />
-        </div>
-        <div className="vehicle-heading">
-          <span className={`vehicle-status type-text-xs-medium vehicle-status--${route.category.toLowerCase()}`}>{route.status}</span>
-          <div>
-            <h3 className="type-display-sm-medium">{route.id}</h3>
-            <p className="type-text-sm-bold">{route.vehicleType}</p>
-          </div>
-        </div>
+      {/* Top Header */}
+      <div className="vehicle-panel-topbar">
+        <span className="text-sm font-semibold text-gray-600">Vehicle details</span>
+        {onClose && (
+          <button
+            type="button"
+            className="vehicle-panel-close-btn"
+            onClick={onClose}
+            aria-label="Close vehicle details"
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
-      <div className="vehicle-body">
-        <div>
-          <div className="trip-progress">
-            <div className="flex justify-between gap-wp-space-md type-text-sm-regular">
+
+      <div className="vehicle-panel-main">
+        {/* Title and Status */}
+        <div className="vehicle-title-section">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900">{route.id}</h2>
+            <span className={`vehicle-status-badge vehicle-status-badge--${route.category.toLowerCase()}`}>
+              <span className="vehicle-status-dot" />
+              {route.status}
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 font-medium mt-0.5">{route.vehicleType}</p>
+        </div>
+
+        {/* Progress Bar or Unallocated Notice */}
+        {route.stops > 0 ? (
+          <div className="vehicle-progress-section">
+            <div className="flex justify-between items-center text-xs text-gray-700 font-medium mb-1.5">
               <span>
                 Trip 1 · {route.recorded} of {route.stops} stops recorded
               </span>
-              <strong className="type-text-sm-semibold">{progress}%</strong>
+              <strong className="font-semibold text-gray-900">{progress}%</strong>
             </div>
-            <div className="trip-progress-track" role="progressbar" aria-label="Stops recorded" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
-              <div style={{ width: `${progress}%` }} />
+            <div
+              className="vehicle-progress-track"
+              role="progressbar"
+              aria-label="Stops recorded"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress}
+            >
+              <div className="vehicle-progress-fill" style={{ width: `${progress}%` }} />
             </div>
           </div>
-          <div className="next-stop">
-            <p className="text-wp-text-tertiary type-text-xs-medium">Next stop</p>
-            <p className="mt-wp-space-xs type-text-md-semibold">{route.nextStop}</p>
+        ) : (
+          <div className="vehicle-unallocated-card">
+            <div className="flex items-center justify-between text-xs font-semibold text-gray-700">
+              <span>Allocation: Unallocated</span>
+              <span className="text-gray-500 font-normal">0 trips</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Vehicle is available and parked at Peliyagoda Depot.
+            </p>
           </div>
+        )}
+
+        {/* Next Stop */}
+        <div className="vehicle-next-stop-section">
+          <p className="text-xs font-medium text-gray-500">Next stop</p>
+          <p className="text-sm font-bold text-gray-900 mt-0.5">
+            {route.outletId || route.nextStop}
+          </p>
         </div>
-        <div>
-          <dl className="schedule-details type-text-sm-regular">
-            {[
-              ['Delivery window', route.window],
-              ['Expected arrival', route.arrival],
-              ['Location updated', route.updated],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd className="type-text-sm-medium">{value}</dd>
-              </div>
-            ))}
-          </dl>
-          <Button variant="primary" className="w-full" onClick={onView}>
-            View route <ArrowForwardRounded fontSize="inherit" />
-          </Button>
-          <div className="tracking-note type-text-xs-regular">
-            <InfoOutlined fontSize="inherit" />
-            <p>Location freshness and delivery progress are tracked separately.</p>
+
+        {/* Key Values List */}
+        <dl className="vehicle-details-list">
+          {route.destinationOutletId && (
+            <div className="vehicle-details-row">
+              <dt className="text-xs text-gray-500 font-normal">Destination</dt>
+              <dd className="text-xs font-semibold text-gray-900">
+                {route.destinationOutletId}
+                {route.destinationDistrict && (
+                  <span className="ml-1 text-gray-500 font-normal">({route.destinationDistrict})</span>
+                )}
+              </dd>
+            </div>
+          )}
+          <div className="vehicle-details-row">
+            <dt className="text-xs text-gray-500 font-normal">Delivery window</dt>
+            <dd className="text-xs font-semibold text-gray-900">{route.window}</dd>
           </div>
+          <div className="vehicle-details-row">
+            <dt className="text-xs text-gray-500 font-normal">Expected arrival</dt>
+            <dd className="text-xs font-semibold text-gray-900">{route.arrival}</dd>
+          </div>
+          <div className="vehicle-details-row">
+            <dt className="text-xs text-gray-500 font-normal">Location status</dt>
+            <dd className="text-xs font-semibold text-gray-900">{route.updated}</dd>
+          </div>
+        </dl>
+
+        {/* Action Button */}
+        {route.stops > 0 ? (
+          <button
+            type="button"
+            className="vehicle-view-route-button"
+            onClick={onView}
+          >
+            <span>{isViewingRoute ? 'Hide route' : 'View route'}</span>
+            <ArrowRight size={16} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="vehicle-view-route-button vehicle-view-route-button--disabled"
+            disabled
+          >
+            <span>No route planned</span>
+          </button>
+        )}
+
+        {/* Footer info note */}
+        <div className="vehicle-info-note">
+          <Info size={16} className="text-gray-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-gray-600 leading-relaxed">
+            Location freshness and delivery progress are tracked separately.
+          </p>
         </div>
       </div>
     </aside>

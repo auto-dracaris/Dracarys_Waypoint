@@ -52,6 +52,10 @@ html[data-area='hub'] .route-search input:focus-visible {
     min-height: 100svh;
   }
 
+  html[data-area='hub'] {
+    scroll-behavior: smooth;
+  }
+
   html[data-area='hub'] body {
     min-width: var(--wp-spacing-80);
     background: var(--wp-warm-neutral-50);
