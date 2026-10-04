@@ -1,0 +1,21 @@
+info:
+  name: issues
+  type: folder
+  seq: 6
+
+docs:
+  content: |-
+    Reporting an issue: `POST /api/issues`, one endpoint for every reporter. What a caller may report, and what the issue has to name, follow from their role.
+
+    | Role | Types | Must name |
+    |---|---|---|
+    | loader | `load_shortfall`, `load_damage`, `other` | `tripId`, a trip of their depot that has not left yet |
+    | driver | `damaged`, `temperature_breach`, `short_delivery`, `wrong_items`, `delivery_problem`, `delay`, `vehicle_breakdown`, `other` | `tripId`, a trip assigned to them |
+    | store_manager | `receipt_shortfall`, `receipt_damage`, `other` | `orderId`, an order of their outlet that has reached it |
+
+    A dispatcher cannot report an issue (`403`); they acknowledge and resolve them.
+
+    Types about goods (`load_shortfall`, `load_damage`, `damaged`, `temperature_breach`, `short_delivery`, `wrong_items`, `receipt_shortfall`, `receipt_damage`) must also give `orderId` and `affectedCases`. The others (`delay`, `vehicle_breakdown`, `delivery_problem`, `other`) need neither.
+
+    Log in as the role first (Auth → Login stores `driverAccessToken`, `storeManagerAccessToken`, `loaderAccessToken`). Set `tripId`, `orderReference` (e.g. `ORD0000001`) and `issueId` (a fresh UUID per new issue) in the environment. The loader's version of this call is Loading → Report Shortfall.
+  type: text/markdown

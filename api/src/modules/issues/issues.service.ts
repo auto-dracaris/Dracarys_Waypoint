@@ -24,6 +24,8 @@ import {
 } from '../../common/utils/order.util';
 import { Issue } from '../../database/entities/issue.entity';
 import { ImagesService } from '../images/images.service';
+import { notice } from '../notifications/notification.catalog';
+import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersRepository } from '../orders/repositories/orders.repository';
 import { TripsService } from '../trips/trips.service';
 import { UsersRepository } from '../users/repositories/users.repository';
@@ -64,6 +66,7 @@ export class IssuesService {
     private readonly ordersRepository: OrdersRepository,
     private readonly usersRepository: UsersRepository,
     private readonly imagesService: ImagesService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -140,6 +143,9 @@ export class IssuesService {
         updatedById: user.userId,
       }),
     );
+    void this.notificationsService.notify([
+      { to: { dispatchers: true }, ...notice.issueReported(saved) },
+    ]);
 
     return new ApiResponseDto(
       HttpStatus.CREATED,
@@ -196,6 +202,12 @@ export class IssuesService {
         status: IssueStatus.ACKNOWLEDGED,
         updatedById: user.userId,
       });
+      void this.notificationsService.notify([
+        {
+          to: { userIds: [issue.reportedById] },
+          ...notice.issueAcknowledged(issue),
+        },
+      ]);
     }
 
     return new ApiResponseDto(
@@ -222,6 +234,12 @@ export class IssuesService {
       resolutionNote: dto.resolutionNote.trim(),
       updatedById: user.userId,
     });
+    void this.notificationsService.notify([
+      {
+        to: { userIds: [issue.reportedById] },
+        ...notice.issueResolved(issue, dto.resolutionNote.trim()),
+      },
+    ]);
 
     return new ApiResponseDto(
       HttpStatus.OK,

@@ -5,6 +5,7 @@ import { Trip } from '../../database/entities/trip.entity';
 import { SmsModule } from '../../common/sms/sms.module';
 import { AuthModule } from '../auth/auth.module';
 import { ImagesModule } from '../images/images.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { UsersModule } from '../users/users.module';
 import { TripRecordsRepository } from './repositories/trip-records.repository';
 import { TripsRepository } from './repositories/trips.repository';
@@ -21,6 +22,7 @@ import { TripsService } from './trips.service';
     UsersModule,
     ImagesModule,
     SmsModule,
+    NotificationsModule,
   ],
   controllers: [TripsController, TripRecordsController],
   providers: [

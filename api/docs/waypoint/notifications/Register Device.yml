@@ -1,0 +1,29 @@
+info:
+  name: Register Device
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/devices"
+  body:
+    type: json
+    data: |-
+      {
+        "token": "fcm-registration-token-from-the-handset",
+        "platform": "android"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Registers a handset's Firebase Cloud Messaging token for the caller, so their notifications are also pushed to it. `platform` is `android` or `ios`. Safe to repeat; a token moves to whoever registered it last.
+
+  `DELETE /devices/:token` removes it at sign-out.
+
+  Pushes are only sent when the API has `FIREBASE_SERVICE_ACCOUNT` set; without it they are logged.

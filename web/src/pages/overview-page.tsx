@@ -1,8 +1,7 @@
+import { NotificationsButton } from '@/features/notifications/components/notifications-button'
 import { IconButton } from '@/components/ui/icon-button'
 import { useState } from 'react'
-import NotificationsRounded from '@mui/icons-material/NotificationsRounded'
 import MenuRounded from '@mui/icons-material/MenuRounded'
-import { Button } from '@/components/ui/button'
 import { ActiveRoutes } from '@/features/overview/components/active-routes'
 import { PlanningSummary } from '@/features/overview/components/planning-summary'
 
@@ -21,9 +20,7 @@ export function OverviewPage({ onNavigate, onOpenNavigation, navigationOpen }: {
           </div>
           <p className="mt-wp-space-md text-wp-text-tertiary type-text-sm-regular">Planning for {planningDate}</p>
         </div>
-        <Button variant="danger" size="md" className="decision-button" onClick={() => onNavigate('Order notifications')}>
-          <NotificationsRounded fontSize="inherit" />3 orders need a decision
-        </Button>
+        <NotificationsButton />
       </header>
       <ActiveRoutes onNavigate={onNavigate} />
       <PlanningSummary date={date} onDateChange={setDate} onNavigate={onNavigate} />

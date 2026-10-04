@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { initialLoadingException, confirmLoadingDecision, type LoadingAction } from '@/features/operations/data'
 import { createPublishedPlan, resendNotification, type PublishedPlan } from '@/features/planning/publication'
 import { reviewedPlan } from '@/features/planning/data'
-import { initialNotifications, markNotificationsRead, type NotificationItem } from '@/features/notifications/data'
+import { toNotificationItem, type NotificationItem } from '@/features/notifications/data'
+import { useNotifications } from '@/features/notifications/use-notifications'
 import { loadSidebarCollapsed, saveSidebarCollapsed } from '@/lib/sidebar-preferences'
 import { useUser } from '@/features/auth/user-context'
 
@@ -16,7 +17,8 @@ export function useHubController() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(loadSidebarCollapsed)
   const [notice, setNotice] = useState<string | null>(null)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
-  const [notifications, setNotifications] = useState(initialNotifications)
+  const feed = useNotifications()
+  const notifications = useMemo(() => feed.items.map(toNotificationItem), [feed.items])
   const isVehicles = path === '/vehicles'
   const isOutlets = path === '/outlets'
   const isTeam = path === '/team'
@@ -52,6 +54,7 @@ export function useHubController() {
     }
     if (page === 'Order notifications' || page === 'Notifications') {
       setNotice(null)
+      feed.refresh()
       setNotificationsOpen(true)
       return
     }
@@ -105,12 +108,10 @@ export function useHubController() {
     if (!result.error) setLoadingException(result.exception)
     return result.error
   }
-  function readNotifications(id?: string) {
-    setNotifications((previous) => markNotificationsRead(previous, id))
-  }
+  const readNotifications = feed.read
   function openNotification(item: NotificationItem) {
     readNotifications(item.id)
-    navigate(item.target.page, item.target.orderId)
+    if (item.target) navigate(item.target.page, item.target.orderId)
   }
   const pageProps = { onNavigate: navigate, onOpenNavigation: () => setNavigationOpen(true), navigationOpen }
   return {
@@ -125,6 +126,7 @@ export function useHubController() {
     notificationsOpen,
     setNotificationsOpen,
     notifications,
+    unreadNotifications: feed.unreadCount,
     readNotifications,
     openNotification,
     publication,

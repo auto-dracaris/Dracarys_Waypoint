@@ -49,3 +49,6 @@ export const smsQueue = (configService: ConfigService): string =>
 
 export const locationQueue = (configService: ConfigService): string =>
   configService.get<string>('LOCATION_QUEUE', 'vehicle_location_queue');
+
+export const notificationQueue = (configService: ConfigService): string =>
+  configService.get<string>('NOTIFICATION_QUEUE', 'notification_queue');
