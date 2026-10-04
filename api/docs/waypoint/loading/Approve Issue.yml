@@ -1,0 +1,24 @@
+info:
+  name: Approve Issue
+  type: http
+  seq: 8
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/issues/{{issueId}}/resolve"
+  auth:
+    type: bearer
+    token: "{{dispatcherAccessToken}}"
+  body:
+    type: json
+    data: |-
+      {
+        "resolutionNote": "Approved to dispatch short. Invoice adjusted."
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
