@@ -50,9 +50,10 @@ export const placeOrderSchema = z.object({
   notes: z.string().max(500, 'Notes cannot exceed 500 characters.').optional().default(''), // Give it a default empty string so it never yields undefined
 })
 
+// Mirrors api/src/modules/issues/dto/create-issue.dto.ts; the accepted count goes into its note.
 export const reportIssueSchema = z.object({
-  issueType: z.string().min(1, 'Please select an issue type'),
-  acceptedCases: z.number().min(0, 'Cannot be negative'),
-  damagedCases: z.number().min(1, 'You must report at least 1 case'),
-  notes: z.string().optional(),
+  issueType: z.enum(['receipt_damage', 'receipt_shortfall', 'other']),
+  acceptedCases: z.number().int('Must be a whole number').min(0, 'Cannot be negative'),
+  damagedCases: z.number().int('Must be a whole number').min(1, 'You must report at least 1 case'),
+  notes: z.string().max(400, 'Notes cannot exceed 400 characters.').optional(),
 })

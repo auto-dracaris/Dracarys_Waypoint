@@ -8,5 +8,6 @@ import { RoutingService } from './routing.service';
   imports: [AuthModule, VehiclesModule],
   controllers: [RoutingController],
   providers: [RoutingService],
+  exports: [RoutingService],
 })
 export class RoutingModule {}

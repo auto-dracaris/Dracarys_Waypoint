@@ -13,6 +13,11 @@ import { RouteRequestDto } from './dto/route-request.dto';
 // How long to wait for the routing engine before giving up.
 const TIMEOUT_MS = 8000;
 
+interface Waypoint {
+  lat: number;
+  lng: number;
+}
+
 interface OsrmResponse {
   code: string;
   message?: string;
@@ -40,8 +45,33 @@ export class RoutingService {
       dto.profile ??
       (await this.vehiclesRepository.findByDriver(userId))?.type ??
       VehicleType.TRUCK;
+    const route = await this.calculate(dto.waypoints, profile);
+
+    return new ApiResponseDto(HttpStatus.OK, 'Route calculated', {
+      profile,
+      // [lng, lat] pairs, as GeoJSON orders them.
+      geometry: route.geometry.coordinates,
+      distanceMeters: route.distance,
+      durationSeconds: route.duration,
+      legs: route.legs.map((leg) => ({
+        distanceMeters: leg.distance,
+        durationSeconds: leg.duration,
+      })),
+    });
+  }
+
+  /** The road path through `waypoints`, as [lat, lng] pairs. */
+  async roadPath(
+    waypoints: Waypoint[],
+    profile: VehicleType,
+  ): Promise<[number, number][]> {
+    const route = await this.calculate(waypoints, profile);
+    return route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+  }
+
+  private async calculate(waypoints: Waypoint[], profile: VehicleType) {
     // OSRM takes longitude first.
-    const path = dto.waypoints
+    const path = waypoints
       .map((point) => `${point.lng},${point.lat}`)
       .join(';');
     const base = this.configService.get<string>(
@@ -65,17 +95,6 @@ export class RoutingService {
         body.message ?? 'No road route was found between those points',
       );
     }
-
-    return new ApiResponseDto(HttpStatus.OK, 'Route calculated', {
-      profile,
-      // [lng, lat] pairs, as GeoJSON orders them.
-      geometry: route.geometry.coordinates,
-      distanceMeters: route.distance,
-      durationSeconds: route.duration,
-      legs: route.legs.map((leg) => ({
-        distanceMeters: leg.distance,
-        durationSeconds: leg.duration,
-      })),
-    });
+    return route;
   }
 }

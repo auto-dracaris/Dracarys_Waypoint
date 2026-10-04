@@ -22,14 +22,14 @@ export interface DeliveryDetails {
   vehicleId: string
   vehicleType: string
   status: string
-  plannedArrival: string
-  receivingWindow: string
-  locationName: string
-  deliveryTitle: string
-  demoId: string
-  date: string
+  statusVariant: 'green' | 'yellow' | 'blue' | 'red'
   quantity: string
   timeline: TimelineStep[]
+  depot: { name: string; position: [number, number] | null }
+  outletPosition: [number, number] | null
+  // Null when where the vehicle is is not known.
+  vehiclePosition: [number, number] | null
+  route: [number, number][]
 }
 
 export interface DeliverySummaryMetrics {
@@ -55,6 +55,8 @@ export interface DeliveryTimelineStep {
 }
 
 export interface DeliveryDetailsData extends DeliveryHistoryItem {
+  // Cases the driver recorded handing over; null until they do.
+  deliveredUnits: number | null
   subtitle: string
   vehicle: string
   orderedQuantity: string

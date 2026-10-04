@@ -16,9 +16,11 @@ import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { ConfirmReceiptDto } from './dto/confirm-receipt.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { DeferOrderDto } from './dto/defer-order.dto';
 import { OrderDateQueryDto } from './dto/order-date-query.dto';
+import { QueryMyDeliveryDto } from './dto/query-my-delivery.dto';
 import { QueryMyOrderDto } from './dto/query-my-order.dto';
 import { QueryOrderDto } from './dto/query-order.dto';
 import { OrdersService } from './orders.service';
@@ -64,6 +66,21 @@ export class OrdersController {
     return this.ordersService.findMine(query, userId);
   }
 
+  @Get('my/deliveries')
+  @Roles(UserRole.STORE_MANAGER)
+  myDeliveries(
+    @Query() query: QueryMyDeliveryDto,
+    @CurrentUser('userId') userId: number,
+  ): Promise<ApiResponseDto> {
+    return this.ordersService.myDeliveries(query, userId);
+  }
+
+  @Get('my/overview')
+  @Roles(UserRole.STORE_MANAGER)
+  myOverview(@CurrentUser('userId') userId: number): Promise<ApiResponseDto> {
+    return this.ordersService.overview(userId);
+  }
+
   @Get('summary')
   @Roles(UserRole.DISPATCHER)
   summary(@Query() query: OrderDateQueryDto): Promise<ApiResponseDto> {
@@ -77,6 +94,25 @@ export class OrdersController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ApiResponseDto> {
     return this.ordersService.findOne(id, user);
+  }
+
+  @Get(':id/delivery')
+  @Roles(UserRole.STORE_MANAGER, UserRole.DISPATCHER)
+  delivery(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ApiResponseDto> {
+    return this.ordersService.delivery(id, user);
+  }
+
+  @Patch(':id/receipt')
+  @Roles(UserRole.STORE_MANAGER)
+  confirmReceipt(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ConfirmReceiptDto,
+    @CurrentUser('userId') userId: number,
+  ): Promise<ApiResponseDto> {
+    return this.ordersService.confirmReceipt(id, dto, userId);
   }
 
   @Patch(':id/cancel')
