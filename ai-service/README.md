@@ -4,6 +4,12 @@
 
 Phase 1 [guardrails](docs/guardrails.md) cover credential checks, model-context
 redaction, output citations and safe replies across all chat workflows.
+
+[Delivery issue drafts](docs/issue-drafts.md) support the store-manager form's
+sparkle button, with authenticated review-only notes and quantity validation.
+
+[Order delivery notes](docs/order-drafts.md) use the same sparkle control to draft
+notes from an unsubmitted order form, without placing or confirming the order.
 Follow the [document management guide](docs/document-management.md) for setup,
 upload APIs and worker operation. Dispatcher UI and NestJS changes are deferred.
 See [business tools](docs/business-tools.md) for authenticated `business_qa` chat,
@@ -17,6 +23,9 @@ rejects this bypass. All four profiles support knowledge Q&A. Older secured defe
 setup below remains available for later business integration.
 
 Separate Python/FastAPI service for the WayPoint agentic RAG assistant.
+Production uses the existing Lightsail/PM2 deployment pattern; follow the
+[deployment guide](docs/deployment.md) for one-time server settings, Nginx routing
+and verification before enabling the updated deployment workflow.
 Implemented: a read-only deferral Q&A graph, authenticated NestJS adapter,
 scoped PostgreSQL memory, Qdrant retrieval adapter, optional Gemini policy
 explanation, deadlines and step limits. Tests use synthetic fixtures.

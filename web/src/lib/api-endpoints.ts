@@ -35,6 +35,12 @@ export const API_ENDPOINTS = {
     run: '/planning/run',
     publish: '/planning/publish',
   },
+  issues: {
+    list: '/issues',
+    detail: (id: string) => `/issues/${encodeURIComponent(id)}`,
+    acknowledge: (id: string) => `/issues/${encodeURIComponent(id)}/acknowledge`,
+    resolve: (id: string) => `/issues/${encodeURIComponent(id)}/resolve`,
+  },
   outlets: {
     list: '/outlets',
     summary: '/outlets/summary',

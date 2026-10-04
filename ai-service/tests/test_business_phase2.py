@@ -435,7 +435,7 @@ def test_role_answers_receive_clean_style_and_keep_checked_citations(monkeypatch
     instruction = seen["config"].system_instruction
     assert PROFILES[role].instructions in instruction
     assert "Lead with the direct answer" in instruction
-    assert "Do not use Markdown headings" in instruction
+    assert "Format the reply as Markdown" in instruction
     assert "Never hide missing evidence" in instruction
     assert "[api:orders:42]" in answer and "[policy:terms]" in answer
     assert "\n\nGuidance\n" in answer

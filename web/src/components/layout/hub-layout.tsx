@@ -26,7 +26,7 @@ export function HubLayout() {
           onClose={() => hub.setNavigationOpen(false)}
           onNavigate={hub.navigate}
           activePage={
-            hub.isVehicles
+            hub.isIssues ? 'Issues' : hub.isVehicles
               ? 'Vehicles'
               : hub.isOutlets
                 ? 'Outlets'

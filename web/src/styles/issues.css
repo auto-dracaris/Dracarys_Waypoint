@@ -1,0 +1,65 @@
+@reference "../index.css";
+
+.issues-canvas { background: white; min-height: calc(100svh - var(--wp-space-xl)); }
+.issues-refresh { min-width: var(--wp-spacing-48); }
+.issues-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--wp-space-lg); }
+.issue-stat { display: flex; flex-direction: column; align-items: flex-end; gap: var(--wp-space-xs); padding: var(--wp-space-md) var(--wp-space-xl); border: 1px solid var(--wp-neutral-200); border-radius: var(--wp-radius-sm); }
+.issue-stat > div { display: flex; align-items: center; justify-content: space-between; gap: var(--wp-space-md); width: 100%; color: var(--wp-text-secondary); }
+.issue-stat svg { width: var(--wp-space-3xl); height: var(--wp-space-3xl); flex-shrink: 0; }
+.issue-stat-value { @apply type-display-xl-semibold; line-height: 1; }
+.issue-stat--error { background: var(--wp-red-50); }
+.issue-stat--error svg { color: var(--wp-red-600); }
+.issue-stat--warning { background: var(--wp-yellow-50); }
+.issue-stat--warning svg { color: var(--wp-yellow-600); }
+.issue-stat--success { background: var(--wp-lime-50); }
+.issue-stat--success svg { color: var(--wp-lime-600); }
+.reported-issues { border: 1px solid var(--wp-neutral-300); border-radius: var(--wp-radius-md); overflow: hidden; }
+.issues-section-header { display: flex; flex-direction: column; gap: var(--wp-space-lg); padding: var(--wp-space-xl); }
+.issues-toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--wp-space-xl); padding: var(--wp-space-xl) var(--wp-space-md) var(--wp-space-lg); }
+.issues-search .wp-form-control { padding: 0; min-height: 0; border: 0; background: transparent; box-shadow: none; }
+.issues-search kbd { border: 1px solid var(--wp-neutral-300); background: var(--wp-neutral-100); border-radius: var(--wp-radius-xs); padding: var(--wp-space-xxs) var(--wp-space-sm); color: var(--wp-text-tertiary); }
+.issues-table-scroll { overflow-x: auto; }
+.issues-table { width: 100%; min-width: 1100px; table-layout: fixed; border-collapse: collapse; }
+.issue-col-subject { width: 29%; }
+.issue-col-reporter { width: 20%; }
+.issue-col-received { width: 18%; }
+.issue-col-action { width: 12%; }
+.issues-table th, .issues-table td { border: 1px solid var(--wp-neutral-200); padding: var(--wp-space-xl); text-align: left; }
+.issues-table th { background: var(--wp-neutral-100); height: var(--wp-space-5xl); padding-block: var(--wp-space-md); color: var(--wp-text-secondary); }
+.issues-table th button { display: flex; align-items: center; gap: var(--wp-space-xs); cursor: pointer; }
+.issues-table th svg { width: var(--wp-space-2xl); height: var(--wp-space-2xl); }
+.issues-table td { height: var(--wp-space-8xl); }
+.issues-table td strong { display: block; }
+.issues-table td p { margin-top: var(--wp-space-xs); }
+.issues-table td:last-child { text-align: center; }
+.issue-review-button { min-width: var(--wp-spacing-24); }
+.issue-reporter { display: flex; align-items: center; gap: var(--wp-space-lg); }
+.issue-reporter > div { min-width: 0; }
+.issue-avatar { display: grid; place-items: center; width: var(--wp-space-6xl); height: var(--wp-space-6xl); flex-shrink: 0; border-radius: var(--wp-radius-full); background: var(--wp-neutral-100); }
+.issues-empty, .issues-error { padding: var(--wp-space-xl); }
+.issues-error { background: var(--wp-red-50); border-radius: var(--wp-radius-md); display: flex; justify-content: space-between; align-items: center; gap: var(--wp-space-xl); }
+.issues-pagination { display: flex; align-items: center; justify-content: flex-end; gap: var(--wp-space-xl); padding: var(--wp-space-xl); }
+.issue-review { width: min(var(--wp-spacing-160), calc(100vw - var(--wp-space-4xl))); max-height: calc(100svh - var(--wp-space-4xl)); margin: auto; padding: var(--wp-space-3xl); border: 1px solid var(--wp-neutral-300); border-radius: var(--wp-radius-2xl); background: white; color: var(--wp-text-primary); overflow-y: auto; }
+.issue-review[open] { display: flex; flex-direction: column; gap: var(--wp-space-xl); }
+.issue-review::backdrop { background: rgb(0 0 0 / 40%); }
+.issue-review-header, .issue-review-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--wp-space-lg); }
+.issue-review-actions { justify-content: flex-end; margin-top: var(--wp-space-xl); flex-wrap: wrap; }
+.issue-review-facts { display: grid; gap: var(--wp-space-lg); }
+.issue-review-facts > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: var(--wp-space-xl); }
+.issue-review-facts dt { color: var(--wp-text-tertiary); }
+.issue-note { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: var(--wp-space-md); }
+.issue-photo { max-width: 100%; max-height: var(--wp-spacing-80); object-fit: contain; border-radius: var(--wp-radius-md); }
+.issue-resolution-label { display: block; margin-bottom: var(--wp-space-md); }
+@media (max-width: 1100px) {
+  .issues-toolbar { flex-wrap: wrap; }
+  .issues-search { width: 100%; }
+  .issue-stat > div { align-items: flex-start; }
+  .issue-stat > div span { text-align: right; }
+}
+@media (max-width: 640px) {
+  .issues-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .issues-canvas .overview-header { flex-wrap: wrap; }
+  .issues-toolbar .route-filters { width: 100%; flex-wrap: wrap; }
+  .issues-pagination { justify-content: space-between; gap: var(--wp-space-md); }
+  .issue-avatar { width: var(--wp-space-5xl); height: var(--wp-space-5xl); }
+}

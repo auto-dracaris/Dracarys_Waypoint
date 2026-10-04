@@ -51,7 +51,7 @@ export async function sendChat(token: string, message: string, conversationId: s
 }
 
 export function readableCitations(answer: string, sources: ChatSource[]): string {
-  return answer.replace(/\[((?:api:|policy:|identity:|runtime:)[^\]]+)\]/g, (original, group: string) => {
+  return answer.replace(/\[((?:api:|policy:|identity:|runtime:|order:)[^\]]+)\]/g, (original, group: string) => {
     const indices = group.split(',').map((id) => sources.findIndex((source) => source.id === id.trim()) + 1)
     return indices.every((index) => index > 0) ? `[${indices.join(', ')}]` : original
   })

@@ -23,6 +23,7 @@ export function useHubController() {
   const isProfile = path === '/profile'
   const isKnowledge = path === '/knowledge'
   const isOrders = path === '/orders'
+  const isIssues = path === '/issues'
   const isPlanning = path === '/planning'
   const isPublished = path === '/planning/published'
   const isOperations = path === '/operations' || path === '/operations/loading-exception'
@@ -38,8 +39,8 @@ export function useHubController() {
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
   useEffect(() => {
-    document.title = `WayPoint — ${isProfile ? 'My Profile' : isKnowledge ? 'Knowledge base' : isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isOrders ? 'Confirmed Orders' : isPlanning ? 'Final Plan Review' : isPublished ? 'Plan Published' : isOperations ? 'Loading Exception Review' : 'Delivery Overview'}`
-  }, [isProfile, isKnowledge, isVehicles, isOutlets, isTeam, isOrders, isPlanning, isPublished, isOperations])
+    document.title = `WayPoint — ${isProfile ? 'My Profile' : isKnowledge ? 'Knowledge base' : isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isIssues ? 'Issues' : isOrders ? 'Confirmed Orders' : isPlanning ? 'Final Plan Review' : isPublished ? 'Plan Published' : isOperations ? 'Loading Exception Review' : 'Delivery Overview'}`
+  }, [isProfile, isKnowledge, isVehicles, isOutlets, isTeam, isIssues, isOrders, isPlanning, isPublished, isOperations])
   useEffect(() => {
     saveSidebarCollapsed(sidebarCollapsed)
   }, [sidebarCollapsed])
@@ -66,6 +67,7 @@ export function useHubController() {
       Profile: '/profile',
       'Knowledge base': '/knowledge',
       Orders: '/orders',
+      Issues: '/issues',
       Planning: '/planning',
       'Delivery planning': '/planning',
       'Publish plan confirmation': '/planning/published',
@@ -136,6 +138,7 @@ export function useHubController() {
     isOutlets,
     isTeam,
     isOrders,
+    isIssues,
     isPlanning,
     isPublished,
     isOperations,

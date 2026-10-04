@@ -35,6 +35,7 @@ def test_oversized_answer_keeps_evidence_without_clipping_facts(answer):
 @pytest.mark.parametrize("workflow", ["business_qa", "knowledge_qa", "deferral_qa"])
 def test_limit_applies_to_all_workflows_before_answer_is_saved(client, workflow):
     client.app.state.settings.auth_enabled = True
+
     class LongModel:
         async def combine(self, *args, **kwargs):
             return "Long fact. " * 150
