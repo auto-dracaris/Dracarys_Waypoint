@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import 'dart:async';
+
+import '../../../core/api/api_providers.dart';
 import '../../../core/clock.dart';
 import '../../../core/format.dart';
 import '../../../core/router/routes.dart';
@@ -11,6 +14,7 @@ import '../../../core/theme/app_text.dart';
 import '../../../core/widgets/async_value_view.dart';
 import '../../../core/widgets/online_status_pill.dart';
 import '../../../core/widgets/segmented_control.dart';
+import '../data/http_notifications_repository.dart';
 import '../data/notifications_providers.dart';
 import '../domain/app_notification.dart';
 import 'widgets/notification_card.dart';
@@ -96,6 +100,15 @@ class _TopBar extends StatelessWidget {
 }
 
 void _open(BuildContext context, AppNotification n) {
+  // A server notification opened counts as read.
+  if (n.type != null && !n.read) {
+    final container = ProviderScope.containerOf(context);
+    unawaited(
+      HttpNotificationsRepository(container.read(apiClientProvider))
+          .markRead(n.id)
+          .then((_) => container.invalidate(notificationsProvider)),
+    );
+  }
   final tripId = n.tripId;
   if (tripId == null) return;
   context.go(n.kind == NotificationKind.stopSequenceChanged
