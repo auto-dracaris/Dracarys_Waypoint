@@ -14,6 +14,9 @@
   font-family: var(--font-waypoint);
   @apply type-text-sm-regular;
 }
+.delivery-map .leaflet-tile-pane {
+  filter: contrast(0.96) saturate(0.85) brightness(1.02);
+}
 .delivery-map .delivery-route-path {
   stroke: var(--wp-lime-700);
   stroke-width: var(--wp-space-xs);
@@ -73,6 +76,11 @@
   border-bottom-left-radius: var(--wp-radius-md);
   border-bottom-right-radius: var(--wp-radius-md);
 }
+.delivery-map .leaflet-bottom.leaflet-right .leaflet-control-zoom {
+  margin-bottom: var(--wp-space-lg);
+  margin-right: var(--wp-space-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
 .delivery-map .leaflet-popup-content-wrapper,
 .delivery-map .leaflet-popup-tip {
   background: var(--wp-neutral-50);
@@ -98,4 +106,513 @@
 .delivery-map .leaflet-marker-icon:focus-visible {
   outline: 2px solid var(--wp-yellow-500);
   outline-offset: var(--wp-space-xxs);
+}
+
+/* ==========================================================================
+   Waypoint Map Custom Markers (Image 2 Design)
+   ========================================================================== */
+
+.wp-map-marker-container {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* --- Depot Marker --- */
+.wp-depot-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+  transform: translate(-16px, -16px);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.wp-depot-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #facc15;
+  color: #171717;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  flex-shrink: 0;
+}
+
+.wp-depot-label {
+  background: #ffffff;
+  color: #1f2937;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+  border: 1px solid var(--wp-neutral-200);
+}
+
+/* --- Destination Outlet Marker (shown when vehicle is selected) --- */
+.wp-outlet-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wp-space-sm);
+  transform: translate(-16px, -16px);
+  pointer-events: auto;
+  cursor: pointer;
+  animation: wp-fade-in 0.2s ease-out;
+}
+
+.wp-outlet-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #15803d;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(21, 128, 61, 0.35);
+  flex-shrink: 0;
+  border: 2px solid #ffffff;
+  transition: transform 0.15s ease;
+}
+
+.wp-outlet-marker:hover .wp-outlet-icon {
+  transform: scale(1.08);
+}
+
+.wp-outlet-label {
+  background: #ffffff;
+  color: #1f2937;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--wp-neutral-200);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.wp-outlet-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.wp-outlet-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #15803d;
+  line-height: 1.1;
+}
+
+.wp-outlet-id-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #1f2937;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1.1;
+}
+
+.wp-outlet-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.2;
+}
+
+/* --- Unselected Vehicle Pill (Image 2) --- */
+.wp-vehicle-marker--default {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  padding: 4px 9px;
+  border-radius: 8px;
+  border: 1.5px solid #65a30d;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1f2937;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.wp-vehicle-marker--default:hover {
+  transform: translate(-50%, -54%) scale(1.04);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.wp-vehicle-marker--default .wp-vehicle-icon {
+  color: #374151;
+  display: flex;
+  align-items: center;
+}
+
+/* --- Compact Vehicle Icon (Zoomed out, no text label) --- */
+.wp-vehicle-marker--compact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #ffffff;
+  border-radius: 50%;
+  border: 1.5px solid #65a30d;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+  color: #374151;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.wp-vehicle-marker--compact:hover {
+  transform: translate(-50%, -50%) scale(1.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.22);
+}
+
+.wp-vehicle-marker--compact .wp-vehicle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Selected Vehicle Marker (Image 2 Yellow Pin & Tag) --- */
+.wp-vehicle-marker--selected {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-16px, -34px);
+  cursor: pointer;
+  z-index: 1000 !important;
+}
+
+.wp-vehicle-marker--selected .wp-vehicle-pin {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  background: #facc15;
+  color: #111827;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.wp-vehicle-marker--selected .wp-vehicle-pointer {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #facc15;
+}
+
+.wp-vehicle-marker--selected .wp-vehicle-label {
+  background: #facc15;
+  color: #111827;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  white-space: nowrap;
+}
+
+/* --- Clustered Vehicles Badge (e.g. 9 Vehicles) --- */
+.wp-cluster-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  padding: 5px 10px;
+  border-radius: 9999px;
+  border: 1.5px solid #0284c7;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.wp-cluster-marker:hover {
+  transform: translate(-50%, -54%) scale(1.05);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.25);
+}
+
+.wp-cluster-marker--compact {
+  padding: 3px 8px;
+  gap: 4px;
+}
+
+.wp-cluster-marker--selected {
+  background: #facc15;
+  border-color: #eab308;
+  color: #111827;
+}
+
+.wp-cluster-marker .wp-cluster-icon {
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+}
+
+.wp-cluster-marker--selected .wp-cluster-icon {
+  color: #111827;
+}
+
+/* --- Cluster Hover Popover / Tooltip --- */
+.leaflet-tooltip.wp-cluster-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 0 16px 0 !important;
+  pointer-events: auto !important;
+}
+
+.leaflet-tooltip.wp-cluster-tooltip::before {
+  display: none !important;
+}
+
+.wp-cluster-popover {
+  position: relative;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25), 0 4px 10px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--wp-neutral-200);
+  width: 260px;
+  max-height: 280px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: wp-fade-in 0.15s ease-out;
+  pointer-events: auto;
+}
+
+/* Invisible bridge spanning down to the cluster badge so moving cursor into popover never triggers mouseout */
+.wp-cluster-popover::after {
+  content: "";
+  position: absolute;
+  bottom: -20px;
+  left: -20px;
+  right: -20px;
+  height: 24px;
+  background: transparent;
+  pointer-events: auto;
+}
+
+@keyframes wp-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wp-cluster-popover-header {
+  padding: 8px 12px;
+  background: var(--wp-neutral-50);
+  border-bottom: 1px solid var(--wp-neutral-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wp-cluster-popover-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--wp-text-primary);
+}
+
+.wp-cluster-popover-subtitle {
+  font-size: 10px;
+  color: var(--wp-text-tertiary);
+  font-weight: 500;
+}
+
+.wp-cluster-popover-list {
+  padding: 6px;
+  overflow-y: auto;
+  max-height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wp-cluster-popover-item {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+  font-family: inherit;
+}
+
+.wp-cluster-popover-item:hover {
+  background: var(--wp-neutral-100);
+}
+
+.wp-cluster-popover-item--selected {
+  background: #fef08a !important;
+}
+
+.wp-cluster-item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wp-cluster-item-icon {
+  color: var(--wp-text-secondary);
+  display: flex;
+  align-items: center;
+}
+
+.wp-cluster-item-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.wp-cluster-item-id {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--wp-text-primary);
+}
+
+.wp-cluster-item-sub {
+  font-size: 10px;
+  color: var(--wp-text-tertiary);
+}
+
+.wp-cluster-item-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--wp-neutral-100);
+  color: var(--wp-text-secondary);
+}
+
+.wp-status-en-route {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.wp-status-needs-attention {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.wp-status-scheduled,
+.wp-status-available,
+.wp-status-unallocated {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* --- Single Vehicle Tooltip --- */
+.leaflet-tooltip.wp-vehicle-tooltip {
+  background: #1e293b !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 4px 8px !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25) !important;
+}
+
+.leaflet-tooltip.wp-vehicle-tooltip::before {
+  border-top-color: #1e293b !important;
+}
+
+/* --- Route Stop Markers (1..6) --- */
+.wp-stop-marker-wrapper {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transform: translate(-12px, -12px);
+  user-select: none;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.wp-stop-marker {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.wp-stop-outlet-id {
+  font-size: 9px;
+  font-weight: 700;
+  color: #1f2937;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  padding: 1px 4px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+.wp-stop-marker--completed {
+  background: #2e7d32;
+  color: #ffffff;
+}
+
+.wp-stop-check {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #65a30d;
+  border: 1.5px solid #ffffff;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wp-stop-marker--pending {
+  background: #ffffff;
+  border: 2px solid #2e7d32;
+  color: #2e7d32;
 }

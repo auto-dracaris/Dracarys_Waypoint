@@ -6,7 +6,7 @@
   "scripts": {
     "tokens:generate": "node scripts/generate-tokens.mjs",
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js build",
     "lint": "eslint .",
     "check:ui": "node scripts/check-ui-foundations.mjs",
     "preview": "vite preview"

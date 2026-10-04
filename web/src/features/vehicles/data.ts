@@ -21,6 +21,11 @@ export interface FleetVehicle {
   kmPerL: number
   weeklyFuelQuota: number
   temperature: string
+  lastLat?: number | null
+  lastLng?: number | null
+  lastLocationAt?: string | null
+  depotLat?: number | null
+  depotLng?: number | null
 }
 
 export interface TripTimelineStop {

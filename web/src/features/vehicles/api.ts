@@ -18,7 +18,10 @@ interface ApiVehicle {
   kmPerL: number
   weeklyFuelQuotaL: number
   status: ApiStatus
-  depot?: { name: string }
+  depot?: { name: string; lat?: number | null; lng?: number | null }
+  lastLat?: number | null
+  lastLng?: number | null
+  lastLocationAt?: string | null
   plannedTrips?: number
 }
 
@@ -90,6 +93,11 @@ function toVehicle(vehicle: ApiVehicle): FleetVehicle {
     kmPerL: vehicle.kmPerL,
     weeklyFuelQuota: vehicle.weeklyFuelQuotaL,
     temperature: vehicle.isRefrigerated ? 'Chilled capable' : 'Ambient only',
+    lastLat: vehicle.lastLat != null ? Number(vehicle.lastLat) : null,
+    lastLng: vehicle.lastLng != null ? Number(vehicle.lastLng) : null,
+    lastLocationAt: vehicle.lastLocationAt ?? null,
+    depotLat: vehicle.depot?.lat != null ? Number(vehicle.depot.lat) : null,
+    depotLng: vehicle.depot?.lng != null ? Number(vehicle.depot.lng) : null,
   }
 }
 
