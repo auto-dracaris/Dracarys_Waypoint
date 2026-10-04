@@ -1,0 +1,30 @@
+meta {
+  name: Chat: Deferred order explanation
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/v1/chat
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "Why was my order deferred?",
+    "workflow": "deferral_qa",
+    "order_id": {{order_id}}
+  }
+}
+
+docs {
+  Optional future business integration. Disabled in local authentication-bypass mode (503).
+  Requires AI_AUTH_ENABLED=true, a permitted user access token and configured deferral adapter.
+  No success assertion here: this request is not part of the document smoke test.
+}
+

@@ -1,0 +1,23 @@
+meta {
+  name: WayPoint AI Service
+}
+
+script:pre-request {
+  const name = req.getName();
+  const documentRequest = name.startsWith("Document:");
+  const chatRequest = name.startsWith("Chat:");
+  const readSetting = (key) => bru.getEnvVar(key) || bru.getVar(key);
+  const token = documentRequest ? readSetting("admin_token") : chatRequest ? readSetting("chat_token") : "";
+  if (token && token.trim()) {
+    req.setHeader("Authorization", "Bearer " + token.trim());
+  }
+  if (name === "Document: Upload draft" || name === "Document: Replace version") {
+    const override = readSetting("idempotency_key");
+    const key = override || "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+      const r = Math.floor(Math.random() * 16);
+      return (c === "x" ? r : (r & 3) | 8).toString(16);
+    });
+    bru.setVar("request_key", key);
+    req.setHeader("Idempotency-Key", key);
+  }
+}

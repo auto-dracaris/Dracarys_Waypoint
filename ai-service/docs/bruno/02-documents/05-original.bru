@@ -1,0 +1,16 @@
+meta {
+  name: Document: Download original version
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/api/v1/documents/{{document_id}}/file?version={{document_version}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+

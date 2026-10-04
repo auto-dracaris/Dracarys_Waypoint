@@ -1,0 +1,277 @@
+{
+  "tested_at_utc": "2026-10-04T05:26:35.154161+00:00",
+  "suite_version": 1,
+  "evidence_notes": [
+    "Automatic hints and citation checks do not prove semantic correctness.",
+    "Synthetic fixtures are not company policy; original documents are preserved."
+  ],
+  "cases": [
+    {
+      "id": "manager-cutoff",
+      "kind": "chat",
+      "status": "passed",
+      "checks": {
+        "http_200": true,
+        "answer_present": true,
+        "citation_ids_valid": true,
+        "expected_page_retrieved": true,
+        "reference_cited": true,
+        "expected_content_hint": true
+      },
+      "http_status": 200,
+      "answer_status": "sources_only",
+      "source_pages": [
+        4,
+        26,
+        31
+      ],
+      "manual_review_required": false,
+      "elapsed_seconds": 29.306
+    },
+    {
+      "id": "dispatcher-temperature",
+      "kind": "chat",
+      "status": "passed",
+      "checks": {
+        "http_200": true,
+        "answer_present": true,
+        "citation_ids_valid": true,
+        "expected_page_retrieved": true,
+        "reference_cited": true,
+        "expected_content_hint": true
+      },
+      "http_status": 200,
+      "answer_status": "answered",
+      "source_pages": [
+        5,
+        20,
+        28
+      ],
+      "manual_review_required": false,
+      "elapsed_seconds": 19.229
+    },
+    {
+      "id": "driver-offline",
+      "kind": "chat",
+      "status": "passed",
+      "checks": {
+        "http_200": true,
+        "answer_present": true,
+        "citation_ids_valid": true,
+        "expected_page_retrieved": true,
+        "reference_cited": true,
+        "expected_content_hint": true
+      },
+      "http_status": 200,
+      "answer_status": "sources_only",
+      "source_pages": [
+        6,
+        5,
+        4
+      ],
+      "manual_review_required": false,
+      "elapsed_seconds": 29.007
+    },
+    {
+      "id": "loader-stop-sequence",
+      "kind": "chat",
+      "status": "passed",
+      "checks": {
+        "http_200": true,
+        "answer_present": true,
+        "citation_ids_valid": true,
+        "expected_page_retrieved": true,
+        "reference_cited": true,
+        "expected_content_hint": true
+      },
+      "http_status": 200,
+      "answer_status": "sources_only",
+      "source_pages": [
+        6,
+        7,
+        5
+      ],
+      "manual_review_required": false,
+      "elapsed_seconds": 25.567
+    },
+    {
+      "id": "manager-record-and-reference",
+      "kind": "chat",
+      "status": "passed",
+      "checks": {
+        "http_200": true,
+        "answer_present": true,
+        "citation_ids_valid": true,
+        "expected_page_retrieved": true,
+        "reference_cited": true,
+        "api_cited": true,
+        "actual_status_present": true
+      },
+      "http_status": 200,
+      "answer_status": "answered",
+      "source_pages": [
+        4,
+        18,
+        4
+      ],
+      "manual_review_required": false,
+      "elapsed_seconds": 29.022
+    },
+    {
+      "id": "manager-followup",
+      "kind": "chat",
+      "status": "passed",
+      "checks": {
+        "http_200": true,
+        "answer_present": true,
+        "citation_ids_valid": true,
+        "api_cited": true,
+        "actual_status_present": true
+      },
+      "http_status": 200,
+      "answer_status": "answered",
+      "source_pages": [],
+      "manual_review_required": false,
+      "elapsed_seconds": 29.037
+    },
+    {
+      "id": "missing-policy",
+      "kind": "chat",
+      "status": "passed",
+      "checks": {
+        "http_200": true,
+        "answer_present": true,
+        "citation_ids_valid": true
+      },
+      "http_status": 200,
+      "answer_status": "sources_only",
+      "source_pages": [
+        29,
+        6,
+        6
+      ],
+      "manual_review_required": true,
+      "elapsed_seconds": 29.02
+    },
+    {
+      "id": "driver-no-write",
+      "kind": "chat",
+      "status": "passed",
+      "checks": {
+        "http_200": true,
+        "answer_present": true,
+        "citation_ids_valid": true,
+        "expected_content_hint": true,
+        "explicit_unsupported_action": true
+      },
+      "http_status": 200,
+      "answer_status": "needs_input",
+      "source_pages": [],
+      "manual_review_required": true,
+      "elapsed_seconds": 12.129
+    },
+    {
+      "id": "driver-forbidden-orders",
+      "kind": "backend_denial",
+      "status": "passed",
+      "http_status": 403,
+      "elapsed_seconds": 0.023
+    },
+    {
+      "id": "loader-forbidden-orders",
+      "kind": "backend_denial",
+      "status": "passed",
+      "http_status": 403,
+      "elapsed_seconds": 0.008
+    },
+    {
+      "id": "missing-chat-token",
+      "kind": "missing_token",
+      "status": "passed",
+      "http_status": 401,
+      "elapsed_seconds": 0.006
+    },
+    {
+      "id": "reference-scope-isolation",
+      "kind": "scope",
+      "status": "passed",
+      "checks": {
+        "actual_scope_allowed": true,
+        "foreign_depot_blocked": true,
+        "foreign_role_blocked": true
+      },
+      "elapsed_seconds": 0.084
+    },
+    {
+      "id": "driver-published-trip",
+      "kind": "trip",
+      "status": "blocked",
+      "reason": "No permitted published trip on sampled dates; allocation data not manufactured",
+      "elapsed_seconds": 0.459
+    },
+    {
+      "id": "loader-published-trip",
+      "kind": "trip",
+      "status": "blocked",
+      "reason": "No permitted published trip on sampled dates; allocation data not manufactured",
+      "elapsed_seconds": 0.445
+    },
+    {
+      "id": "conflicting-documents",
+      "kind": "synthetic",
+      "status": "passed",
+      "checks": {
+        "answer_produced": true,
+        "citations_present": true,
+        "citation_ids_valid": true,
+        "expected_content_hint": true,
+        "both_documents_cited": true,
+        "key_not_exposed": true
+      },
+      "manual_review_required": true,
+      "elapsed_seconds": 13.013
+    },
+    {
+      "id": "document-instructions",
+      "kind": "synthetic",
+      "status": "passed",
+      "checks": {
+        "answer_produced": true,
+        "citations_present": true,
+        "citation_ids_valid": true,
+        "key_not_exposed": true
+      },
+      "manual_review_required": true,
+      "elapsed_seconds": 8.039
+    },
+    {
+      "id": "missing-recorded-cause",
+      "kind": "synthetic",
+      "status": "passed",
+      "checks": {
+        "answer_produced": true,
+        "citations_present": true,
+        "citation_ids_valid": true,
+        "expected_content_hint": true,
+        "key_not_exposed": true
+      },
+      "manual_review_required": true,
+      "elapsed_seconds": 11.12
+    }
+  ],
+  "test_login_sessions_revoked": true,
+  "summary": {
+    "passed": 15,
+    "failed": 0,
+    "blocked": 2,
+    "chat_latency_median_seconds": 29.014,
+    "chat_latency_max_seconds": 29.306,
+    "manual_review_cases": [
+      "missing-policy",
+      "driver-no-write",
+      "conflicting-documents",
+      "document-instructions",
+      "missing-recorded-cause"
+    ]
+  }
+}

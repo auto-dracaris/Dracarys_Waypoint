@@ -1,0 +1,33 @@
+meta {
+  name: Document: Delete source
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{base_url}}/api/v1/documents/{{document_id}}
+  body: none
+  auth: none
+}
+
+script:post-response {
+  if (res.getStatus() === 202) {
+    const data = res.getBody();
+    bru.setVar("document_id", data.document_id);
+    bru.setVar("document_version", data.version);
+    bru.setVar("job_id", data.job_id);
+  }
+}
+
+assert {
+  res.status: eq 202
+  res.body.document_id: isDefined
+  res.body.version: isDefined
+  res.body.job_id: isDefined
+}
+
+docs {
+  Revokes the selected source immediately and queues deletion of its originals and vectors.
+  Run intentionally after testing. Poll Processing job to check cleanup completion.
+}
+

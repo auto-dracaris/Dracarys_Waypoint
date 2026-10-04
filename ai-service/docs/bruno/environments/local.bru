@@ -1,0 +1,15 @@
+vars {
+  base_url: http://localhost:8000
+  question: what is the deadline
+  follow_up_question: what it means
+  order_id: 1
+  trip_id:
+  document_file: fixtures/ordering-terms.txt
+  replacement_file: fixtures/ordering-terms-v2.txt
+  document_metadata: {"title":"Synthetic ordering terms","allowed_roles":["store_manager","dispatcher","driver","loader"],"depot_ids":[1]}
+  idempotency_key: 
+}
+vars:secret [
+  chat_token,
+  admin_token
+]
