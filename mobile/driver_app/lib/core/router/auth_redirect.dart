@@ -2,7 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/domain/driver.dart';
 
-const _publicRoutes = {'/splash', '/login', '/signup'};
+const _publicRoutes = {
+  '/splash',
+  '/login',
+  '/signup',
+  '/verify-otp',
+  '/forgot-password',
+  '/reset-password',
+};
 
 /// Pure routing rule: where should [auth] send a user who is at [location]?
 /// Returns null to stay put. Kept free of Flutter/router types so it is

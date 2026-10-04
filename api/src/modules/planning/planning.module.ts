@@ -3,12 +3,18 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Trip } from '../../database/entities/trip.entity';
 import { AuthModule } from '../auth/auth.module';
 import { OrdersModule } from '../orders/orders.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PlanningController } from './planning.controller';
 import { PlanningService } from './planning.service';
 import { PlanningRepository } from './repositories/planning.repository';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Trip]), AuthModule, OrdersModule],
+  imports: [
+    TypeOrmModule.forFeature([Trip]),
+    AuthModule,
+    OrdersModule,
+    NotificationsModule,
+  ],
   controllers: [PlanningController],
   providers: [PlanningService, PlanningRepository],
   exports: [PlanningService],

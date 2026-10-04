@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
     refresh: '/auth/refresh',
     logout: '/auth/logout',
     me: '/auth/me',
+    changePassword: '/auth/change-password',
   },
   users: {
     list: '/users',
@@ -23,9 +24,13 @@ export const API_ENDPOINTS = {
   orders: {
     list: '/orders',
     mine: '/orders/my',
+    myOverview: '/orders/my/overview',
+    myDeliveries: '/orders/my/deliveries',
     placementOptions: '/orders/placement-options',
     summary: '/orders/summary',
     detail: (id: number) => `/orders/${id}`,
+    delivery: (id: number) => `/orders/${id}/delivery`,
+    receipt: (id: number) => `/orders/${id}/receipt`,
     cancel: (id: number) => `/orders/${id}/cancel`,
     defer: (id: number) => `/orders/${id}/defer`,
   },
@@ -33,6 +38,12 @@ export const API_ENDPOINTS = {
     plan: '/planning',
     run: '/planning/run',
     publish: '/planning/publish',
+  },
+  issues: {
+    list: '/issues',
+    detail: (id: string) => `/issues/${encodeURIComponent(id)}`,
+    acknowledge: (id: string) => `/issues/${encodeURIComponent(id)}/acknowledge`,
+    resolve: (id: string) => `/issues/${encodeURIComponent(id)}/resolve`,
   },
   outlets: {
     list: '/outlets',
@@ -48,5 +59,10 @@ export const API_ENDPOINTS = {
     detail: (id: number) => `/vehicles/${id}`,
     status: (id: number) => `/vehicles/${id}/status`,
     driver: (id: number) => `/vehicles/${id}/driver`,
+  },
+  notifications: {
+    list: '/notifications',
+    read: (id: string) => `/notifications/${id}/read`,
+    readAll: '/notifications/read-all',
   },
 } as const

@@ -4,6 +4,7 @@ import {
   HttpStatus,
   Injectable,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
@@ -11,17 +12,25 @@ import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { Brand } from '../../common/enums/brand.enum';
 import { OrderStatus } from '../../common/enums/order-status.enum';
 import { TempRequirement } from '../../common/enums/temp-requirement.enum';
+import { TripStatus } from '../../common/enums/trip-status.enum';
+import { TripStopStatus } from '../../common/enums/trip-stop-status.enum';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { cutoffOn, today } from '../../common/utils/date.util';
 import { orderReference } from '../../common/utils/order.util';
 import { OrderDeferral } from '../../database/entities/order-deferral.entity';
 import { Order } from '../../database/entities/order.entity';
 import { Outlet } from '../../database/entities/outlet.entity';
+import { TripStop } from '../../database/entities/trip-stop.entity';
+import { notice } from '../notifications/notification.catalog';
+import { NotificationsService } from '../notifications/notifications.service';
 import { OutletsRepository } from '../outlets/repositories/outlets.repository';
+import { RoutingService } from '../routing/routing.service';
 import { UsersRepository } from '../users/repositories/users.repository';
+import { ConfirmReceiptDto } from './dto/confirm-receipt.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { DeferOrderDto } from './dto/defer-order.dto';
 import { OrderDateQueryDto } from './dto/order-date-query.dto';
+import { QueryMyDeliveryDto } from './dto/query-my-delivery.dto';
 import { QueryMyOrderDto } from './dto/query-my-order.dto';
 import { QueryOrderDto } from './dto/query-order.dto';
 import { OrdersRepository } from './repositories/orders.repository';
@@ -31,6 +40,9 @@ const UNIQUE_VIOLATION = '23505';
 
 // How many open delivery days the order form offers.
 const DELIVERY_DAYS_OFFERED = 6;
+
+// How many of the outlet's latest orders the dashboard lists.
+const RECENT_ORDERS = 10;
 
 interface DeliveryDay {
   date: string;
@@ -43,7 +55,9 @@ export class OrdersService {
     private readonly ordersRepository: OrdersRepository,
     private readonly outletsRepository: OutletsRepository,
     private readonly usersRepository: UsersRepository,
+    private readonly routingService: RoutingService,
     private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /** What the order form needs: the caller's outlet and the days still open. */
@@ -139,6 +153,141 @@ export class OrdersService {
     });
   }
 
+  /**
+   * The store manager's dashboard: today's deliveries to their outlet, what
+   * needs their attention, the next run they can order for, and their latest
+   * orders.
+   */
+  async overview(userId: number): Promise<ApiResponseDto> {
+    const outlet = await this.outletOfOrThrow(userId);
+    const date = today();
+    const [
+      onTrips,
+      awaitingReceipt,
+      [deferred, deferredCount],
+      [recent],
+      deliveryDays,
+    ] = await Promise.all([
+      this.ordersRepository.findOnTripsFor(outlet.id, date),
+      this.ordersRepository.countAwaitingReceipt(outlet.id),
+      this.ordersRepository.findForOutlet(outlet.id, {
+        status: OrderStatus.DEFERRED,
+        limit: 1,
+      }),
+      this.ordersRepository.findForOutlet(outlet.id, {
+        limit: RECENT_ORDERS,
+      }),
+      this.openDeliveryDays(),
+    ]);
+    const [todayViews, deferredViews, recentViews] = await Promise.all([
+      this.toViews(onTrips),
+      this.toViews(deferred),
+      this.toViews(recent),
+    ]);
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'Overview retrieved successfully',
+      {
+        date,
+        metrics: {
+          expectedToday: todayViews.length,
+          awaitingReceipt,
+          deferred: deferredCount,
+        },
+        todayDeliveries: todayViews.sort(
+          (a, b) =>
+            a.assignment!.plannedArrivalAt.getTime() -
+            b.assignment!.plannedArrivalAt.getTime(),
+        ),
+        nextRun: deliveryDays[0] ?? null,
+        latestDeferred: deferredViews[0] ?? null,
+        recentOrders: recentViews,
+      },
+    );
+  }
+
+  /**
+   * A page of the outlet's deliveries (orders on a published trip), with how
+   * many are in each stage and the store manager's dashboard counts.
+   */
+  async myDeliveries(
+    query: QueryMyDeliveryDto,
+    userId: number,
+  ): Promise<ApiResponseDto> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const outlet = await this.outletOfOrThrow(userId);
+    const [[orders, total], counts, issuesOpen] = await Promise.all([
+      this.ordersRepository.findDeliveriesFor(outlet.id, query),
+      this.ordersRepository.countDeliveries(outlet.id, today()),
+      this.ordersRepository.countOpenIssuesBy(userId),
+    ]);
+    const { onDate, ...stages } = counts;
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'Deliveries retrieved successfully',
+      {
+        items: await this.toViews(orders),
+        meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+        counts: stages,
+        metrics: {
+          expectedToday: onDate,
+          awaitingConfirmation: stages.awaiting,
+          issuesOpen,
+        },
+      },
+    );
+  }
+
+  /**
+   * The store confirms what arrived from a delivery the driver recorded. A
+   * problem with it is reported as an issue instead.
+   */
+  async confirmReceipt(
+    orderId: number,
+    dto: ConfirmReceiptDto,
+    userId: number,
+  ): Promise<ApiResponseDto> {
+    const outlet = await this.outletOfOrThrow(userId);
+    await this.findOrThrow(orderId, outlet.id);
+    const stop = await this.ordersRepository.findDeliveryStop(orderId);
+
+    if (
+      !stop ||
+      (stop.status !== TripStopStatus.DELIVERED &&
+        stop.status !== TripStopStatus.PARTIAL)
+    ) {
+      throw new UnprocessableEntityException(
+        'A receipt can be confirmed once the driver has recorded the delivery',
+      );
+    }
+    if (stop.receiptConfirmedAt) {
+      throw new ConflictException('This receipt is already confirmed');
+    }
+    if (dto.receivedUnits > (stop.deliveredUnits ?? 0)) {
+      throw new UnprocessableEntityException(
+        `The driver recorded ${stop.deliveredUnits ?? 0} cases, so at most that many can be received`,
+      );
+    }
+    if (
+      !(await this.ordersRepository.confirmReceipt(
+        stop.id,
+        dto.receivedUnits,
+        userId,
+      ))
+    ) {
+      throw new ConflictException('This receipt is already confirmed');
+    }
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'Receipt confirmed',
+      await this.buildDetail(orderId),
+    );
+  }
+
   /** The dispatcher's queue; see `OrdersRepository.findQueue`. */
   async findAll(query: QueryOrderDto): Promise<ApiResponseDto> {
     const page = query.page ?? 1;
@@ -185,6 +334,118 @@ export class OrdersService {
       'Order retrieved successfully',
       await this.buildDetail(orderId, outletId),
     );
+  }
+
+  /**
+   * Where an order's delivery is: its trip, vehicle, stop and the route the
+   * vehicle takes to the outlet. `trip` is null until a plan carrying it is
+   * published.
+   */
+  async delivery(
+    orderId: number,
+    user: AuthenticatedUser,
+  ): Promise<ApiResponseDto> {
+    const outletId =
+      user.role === UserRole.STORE_MANAGER
+        ? (await this.outletOfOrThrow(user.userId)).id
+        : undefined;
+    const order = await this.buildDetail(orderId, outletId);
+    const stop = await this.ordersRepository.findDeliveryStop(orderId);
+    if (!stop) {
+      return new ApiResponseDto(
+        HttpStatus.OK,
+        'Delivery retrieved successfully',
+        {
+          order,
+          trip: null,
+          stop: null,
+          route: { path: [], followsRoads: false },
+        },
+      );
+    }
+
+    const { vehicle, depot, ...trip } = stop.trip!;
+    // The vehicle's position is only shared while it is out on this trip.
+    const enRoute =
+      trip.status === TripStatus.DISPATCHED &&
+      vehicle!.lastLat !== null &&
+      vehicle!.lastLng !== null;
+
+    return new ApiResponseDto(
+      HttpStatus.OK,
+      'Delivery retrieved successfully',
+      {
+        order,
+        trip: {
+          tripNo: trip.tripNo,
+          serviceDate: trip.serviceDate,
+          status: trip.status,
+          plannedDepartAt: trip.plannedDepartAt,
+          actualDepartAt: trip.actualDepartAt,
+          completedAt: trip.completedAt,
+          vehicle: {
+            uniqueId: vehicle!.uniqueId,
+            type: vehicle!.type,
+            isRefrigerated: vehicle!.isRefrigerated,
+            location: enRoute
+              ? {
+                  lat: vehicle!.lastLat,
+                  lng: vehicle!.lastLng,
+                  at: vehicle!.lastLocationAt,
+                }
+              : null,
+          },
+          depot: { name: depot!.name, lat: depot!.lat, lng: depot!.lng },
+        },
+        stop: {
+          seq: stop.seq,
+          status: stop.status,
+          plannedArrivalAt: stop.plannedArrivalAt,
+          actualArrivalAt: stop.actualArrivalAt,
+          completedAt: stop.completedAt,
+          deliveredUnits: stop.deliveredUnits,
+          failureReason: stop.failureReason,
+          receivedUnits: stop.receivedUnits,
+          receiptConfirmedAt: stop.receiptConfirmedAt,
+        },
+        route: await this.routeTo(stop),
+      },
+    );
+  }
+
+  /**
+   * The road path from the depot through the trip's earlier stops to this
+   * one, as [lat, lng] pairs. Straight lines between the stops when the
+   * routing engine is unavailable.
+   */
+  private async routeTo(
+    stop: TripStop,
+  ): Promise<{ path: [number, number][]; followsRoads: boolean }> {
+    const { depot, vehicle } = stop.trip!;
+    const points = [
+      ...(depot!.lat !== null && depot!.lng !== null
+        ? [{ lat: depot!.lat, lng: depot!.lng }]
+        : []),
+      ...(await this.ordersRepository.findStopPoints(stop.tripId, stop.seq)),
+    ].filter(
+      // Orders to the same outlet are separate stops at one place.
+      (point, i, all) =>
+        i === 0 || point.lat !== all[i - 1].lat || point.lng !== all[i - 1].lng,
+    );
+    if (points.length < 2) {
+      return { path: [], followsRoads: false };
+    }
+    try {
+      return {
+        path: await this.routingService.roadPath(points, vehicle!.type),
+        followsRoads: true,
+      };
+    } catch {
+      return {
+        path: points.map((point) => [point.lat, point.lng]),
+        followsRoads: false,
+      };
+    }
   }
 
   /** A store manager may withdraw a confirmed order until its day closes. */
@@ -267,6 +528,12 @@ export class OrdersService {
     } finally {
       await queryRunner.release();
     }
+    void this.notificationsService.notify([
+      {
+        to: { storeManagersOfOutlets: [order.outletId] },
+        ...notice.orderDeferred(order.id, dto.reason, deferredToDate),
+      },
+    ]);
 
     return new ApiResponseDto(
       HttpStatus.OK,
@@ -404,6 +671,8 @@ export class OrdersService {
       depot: outlet.depot?.name ?? null,
       dockType: outlet.dockType,
       parkingConstraint: outlet.parkingConstraint,
+      lat: outlet.lat,
+      lng: outlet.lng,
       windowOpenTime: outlet.windowOpenTime,
       windowCloseTime: outlet.windowCloseTime,
       mallWindowOpen: outlet.mallWindowOpen,

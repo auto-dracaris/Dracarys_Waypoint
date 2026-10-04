@@ -1,0 +1,44 @@
+meta {
+  name: Chat: Combined order follow-up
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/api/v1/chat
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{chat_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {"message": "What is the current status of that order?", "workflow": "business_qa", "conversation_id": "{{conversation_id}}"}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("conversation_id", res.getBody().conversation_id);
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.answer: isDefined
+  res.body.sources: isDefined
+}
+
+docs {
+  Use a store-manager token; the known-order request also supports a dispatcher token.
+  Latest-order lookup follows the manager API's newest-placement-first ordering.
+  Set order_id to a real permitted record. Follow-up requires a previous successful detail read.
+  Matching policy guidance needs an approved document for this user's role and depot.
+  Missing reasons or documents are stated explicitly, not replaced with guessed causes.
+  Maximum three planning rounds, six tool calls, three document excerpts, and the configured request deadline.
+}

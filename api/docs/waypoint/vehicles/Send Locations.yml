@@ -1,0 +1,50 @@
+info:
+  name: Send Locations
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/vehicles/{{vehicleId}}/locations"
+  body:
+    type: json
+    data: |-
+      {
+        "points": [
+          {
+            "clientId": "3f0c6c1e-6f0b-4c0e-9d53-2b8a4a0f8c11",
+            "lat": 6.9301,
+            "lng": 79.8612,
+            "heading": 90,
+            "speedKmh": 32.5,
+            "recordedAt": "2026-10-05T09:12:00+05:30"
+          },
+          {
+            "clientId": "a2a9b0f4-58c1-4f0e-8a0f-7d0f6f1f2b22",
+            "lat": 6.9305,
+            "lng": 79.8620,
+            "recordedAt": "2026-10-05T09:12:05+05:30"
+          }
+        ]
+      }
+  auth:
+    type: bearer
+    token: "{{driverAccessToken}}"
+
+runtime:
+  variables:
+    - name: vehicleId
+      value: "1"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Position fixes from the driver's handset, 1–500 per call. Driver only, and only the driver assigned to `{{vehicleId}}` (403 otherwise). Uses `{{driverAccessToken}}`, set by Auth → Login when a driver logs in.
+
+  Answers `202` with `{ received }` once the batch is on the RabbitMQ queue; a consumer stores it moments later and moves the vehicle's last known position. `503` means the queue could not be reached — send the same batch again.
+
+  `clientId` is a UUID minted on the handset and becomes the row id, so a point sent twice is stored once. `recordedAt` is the handset's time when the fix was taken; fixes collected offline are sent later and are still filed under the trip that was on the road at that time.

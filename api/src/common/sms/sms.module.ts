@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule } from '@nestjs/microservices';
-import { buildSmsRmqOptions } from './rmq.options';
+import { buildRmqOptions, smsQueue } from '../rmq/rmq.options';
 import { SMS_CLIENT } from './sms.constants';
 import { SmsConsumer } from './sms.consumer';
 import { SmsGatewayService } from './sms-gateway.service';
@@ -14,7 +14,8 @@ import { SmsService } from './sms.service';
         name: SMS_CLIENT,
         imports: [ConfigModule],
         inject: [ConfigService],
-        useFactory: buildSmsRmqOptions,
+        useFactory: (configService: ConfigService) =>
+          buildRmqOptions(configService, smsQueue(configService)),
       },
     ]),
   ],

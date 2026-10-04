@@ -1,6 +1,6 @@
+import { NotificationsButton } from '@/features/notifications/components/notifications-button'
 import { IconButton } from '@/components/ui/icon-button'
 import { useEffect, useRef, useState } from 'react'
-import NotificationsRounded from '@mui/icons-material/NotificationsRounded'
 import MenuRounded from '@mui/icons-material/MenuRounded'
 import AddRounded from '@mui/icons-material/AddRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
@@ -194,9 +194,7 @@ export function OutletsPage({ onNavigate, onOpenNavigation, navigationOpen }: { 
           <h1 className="type-display-lg-medium">Outlets</h1>
         </div>
         <div className="fleet-header-actions">
-          <Button variant="danger" size="md" className="decision-button" onClick={() => onNavigate('Order notifications')}>
-            <NotificationsRounded fontSize="inherit" />3 orders need a decision
-          </Button>
+          <NotificationsButton />
         </div>
       </header>
       <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">

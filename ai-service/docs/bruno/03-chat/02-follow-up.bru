@@ -1,0 +1,37 @@
+meta {
+  name: Chat: Follow-up in same conversation
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/v1/chat
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "{{follow_up_question}}",
+    "workflow": "knowledge_qa",
+    "conversation_id": "{{conversation_id}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("conversation_id", res.getBody().conversation_id);
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.conversation_id: isDefined
+  res.body.answer: isDefined
+  res.body.status: isDefined
+}
+

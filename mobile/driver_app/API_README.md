@@ -377,22 +377,72 @@ reached yet. That raises the trip's `planVersion`, so an arrive or complete sent
 with the old one gets `409` and the app should fetch the route change, show the
 Route update screen, acknowledge, then retry with the new `planVersion`.
 
-## 5. Notifications and push ⏳
+## 5. Notifications and push ✅
 
-Not built. `GET /notifications`, `POST /notifications/:id/read` and
-`POST /devices` do not exist yet. Until they do, poll `GET /trips` and
-`GET /trips/:id/route-change` every 30–60 s while the app is open, and keep
-`NotificationsRepository` on its mock.
+The server keeps a list of notifications per user and also pushes each one to
+the user's registered handsets. The list is the source of truth; a push is only
+a nudge to refresh it. Replaces `NotificationsRepository`'s mock.
+
+| Method & path | Body | Notes |
+|---|---|---|
+| `GET /notifications?page=&limit=&unread=true` | — | → `{ items, meta, unreadCount }`, newest first. `unread=true` leaves out what has been read. `unreadCount` is always the total unread, for the badge |
+| `POST /notifications/:id/read` | — | Marks one read; safe to repeat. `404` for an id that is not yours |
+| `POST /notifications/read-all` | — | Marks everything read |
+| `POST /devices` | `{ token, platform }` | Registers this handset's Firebase Cloud Messaging token. `platform`: `android \| ios`. Call after every sign-in and whenever Firebase hands out a new token; safe to repeat |
+| `DELETE /devices/:token` | — | Call at sign-out, before the session is revoked, so the handset stops getting this user's pushes |
+
+A notification:
+
+```json
+{
+  "id": "8e4c717f-c79f-4169-8c3f-8786b4611ee0",
+  "type": "route_changed",
+  "severity": "error",
+  "title": "Trip 1 stop order changed",
+  "body": "Road closure on Kandy Road. Review the new sequence before you continue.",
+  "data": { "tripId": "5b0e…" },
+  "read": false,
+  "createdAt": "2026-10-05T03:12:00.000Z"
+}
+```
+
+- `severity`: `error | warning | info | success`, for the card's colours.
+- `data` holds the ids needed to open what it is about (`tripId`, `orderId`,
+  `issueId`, `date`); every value is a string.
+- A push carries the same `title` and `body`, and the same `data` plus `type`.
+  On a push, refetch the list (and the trip, for the types below).
+
+What a driver receives:
+
+| `type` | When | Open |
+|---|---|---|
+| `trip_assigned` | The dispatcher publishes the plan | The trip (`data.tripId`) |
+| `trip_ready` | The loader marks the trip loaded | The trip; ask the loader for the start code |
+| `route_changed` | The dispatcher reorders the stops | The route change (§4), which must be acknowledged |
+| `issue_acknowledged` | The dispatcher has seen an issue you reported | The issue (`data.issueId`) |
+| `issue_resolved` | The dispatcher resolved it; `body` has their note | The issue |
+
+Other roles get their own types (`trips_to_load`, `order_scheduled`,
+`order_deferred`, `order_out_for_delivery`, `delivery_recorded`,
+`delivery_problem`, `plan_draft_ready`, `plan_run_failed`, `issue_reported`).
+Show an unknown `type` with its `title` and `body` and no action.
+
+Pushes are sent only once the server has a Firebase key; until then the list
+still fills, so keep refreshing it when the app opens and on pull-to-refresh.
 
 ## 6. Live location & routing ✅
 
 | Method & path | Body | Notes |
 |---|---|---|
-| `POST /vehicles/:id/locations` | `{ "points": [{ "clientId", "lat", "lng", "heading?", "speedKmh?", "recordedAt" }] }` | 1–50 fixes per call, about every 5 s while a trip is `in_progress`. `:id` is `driver.vehicle.id`. Only that vehicle's driver may send. Replaces `SimulatedLocationSource` |
+| `POST /vehicles/:id/locations` | `{ "points": [{ "clientId", "lat", "lng", "heading?", "speedKmh?", "recordedAt" }] }` | 1–500 fixes per call, about every 5 s while a trip is `in_progress`. `:id` is `driver.vehicle.id`. Only that vehicle's driver may send. Answers `202` with `{ received }`: the fixes are queued and stored moments later. Replaces `SimulatedLocationSource` |
 | `POST /routing/route` | `{ "waypoints": [{ "lat", "lng" }, …], "profile?": "van" \| "truck" }` | 2–25 points → `{ profile, geometry: [[lng,lat],…], distanceMeters, durationSeconds, legs: [{ distanceMeters, durationSeconds }] }`. `profile` defaults to the driver's own vehicle type |
 
 `heading` is whole degrees (0–360). Points captured offline can be sent later
-in batches; a point sent twice is stored once.
+in batches, oldest first; a point sent twice is stored once. Delete a batch
+from the handset only on `202`. On `503` (the queue is unreachable) or no
+answer, keep it and send it again. Each point is filed under the trip that was
+on the road at its `recordedAt`, so one sent after its trip ended still lands
+on that trip.
 
 `/routing/route` proxies the team's self-hosted OSRM (`osrm_setup/`), which has
 separate van and truck road profiles. Replace the public OSRM URL in

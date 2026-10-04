@@ -1,0 +1,77 @@
+{
+  "tested_at_utc": "2026-10-04T05:20:02.445617+00:00",
+  "suite_version": 1,
+  "evidence_notes": [
+    "Automatic hints and citation checks do not prove semantic correctness.",
+    "Synthetic fixtures are not company policy; original documents are preserved."
+  ],
+  "cases": [
+    {
+      "id": "loader-stop-sequence",
+      "kind": "chat",
+      "status": "passed",
+      "checks": {
+        "http_200": true,
+        "answer_present": true,
+        "citation_ids_valid": true,
+        "expected_page_retrieved": true,
+        "reference_cited": true,
+        "expected_content_hint": true
+      },
+      "http_status": 200,
+      "answer_status": "answered",
+      "source_pages": [
+        6,
+        7,
+        5
+      ],
+      "manual_review_required": false,
+      "elapsed_seconds": 18.16
+    },
+    {
+      "id": "manager-record-and-reference",
+      "kind": "chat",
+      "status": "failed",
+      "checks": {
+        "http_200": true,
+        "answer_present": true,
+        "citation_ids_valid": true,
+        "expected_page_retrieved": false,
+        "reference_cited": false,
+        "api_cited": true,
+        "actual_status_present": true
+      },
+      "http_status": 200,
+      "answer_status": "answered",
+      "source_pages": [],
+      "manual_review_required": false,
+      "elapsed_seconds": 21.111
+    },
+    {
+      "id": "manager-followup",
+      "kind": "chat",
+      "status": "passed",
+      "checks": {
+        "http_200": true,
+        "answer_present": true,
+        "citation_ids_valid": true,
+        "api_cited": true,
+        "actual_status_present": true
+      },
+      "http_status": 200,
+      "answer_status": "answered",
+      "source_pages": [],
+      "manual_review_required": false,
+      "elapsed_seconds": 16.573
+    }
+  ],
+  "test_login_sessions_revoked": true,
+  "summary": {
+    "passed": 2,
+    "failed": 1,
+    "blocked": 0,
+    "chat_latency_median_seconds": 18.16,
+    "chat_latency_max_seconds": 21.111,
+    "manual_review_cases": []
+  }
+}

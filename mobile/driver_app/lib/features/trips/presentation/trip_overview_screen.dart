@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/api/error_message.dart';
 import '../../../core/clock.dart';
+import '../../../core/connectivity/online_provider.dart';
 import '../../../core/format.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
@@ -18,6 +20,7 @@ import '../domain/shortfall_report.dart';
 import '../domain/stop.dart';
 import '../domain/trip.dart';
 import 'widgets/loading_banner.dart';
+import 'widgets/start_code_dialog.dart';
 import 'widgets/temperature_chip.dart';
 
 const _interLabel = TextStyle(fontFamily: 'Inter', fontSize: 11);
@@ -37,15 +40,33 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
   bool _busy = false;
 
   Future<void> _depart(Trip trip) async {
+    String? otp;
+    if (ref.read(tripsRepositoryProvider).usesCodes) {
+      // The start code is checked by the server, and it is when the trip
+      // starts that each outlet is texted its delivery code and the phone is
+      // given what it needs to check those codes without a signal.
+      if (!ref.read(onlineProvider)) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("You need a connection to start the trip. Once it "
+                "has started, the rest works without one.")));
+        return;
+      }
+      otp = await askStartCode(context);
+      if (otp == null || !mounted) return;
+    }
     setState(() => _busy = true);
     try {
-      await ref.read(tripActionsProvider).startTrip(widget.tripId);
+      await ref.read(tripActionsProvider).startTrip(widget.tripId, otp: otp);
       final updated = await ref.read(tripProvider(widget.tripId).future);
       final stop = updated.activeStop;
       if (!mounted) return;
-      context.go(stop == null
-          ? AppRoutes.trip(widget.tripId)
-          : AppRoutes.stop(widget.tripId, stop.id));
+      context.go(
+        stop == null
+            ? AppRoutes.trip(widget.tripId)
+            : AppRoutes.stop(widget.tripId, stop.id),
+      );
+    } catch (e) {
+      if (mounted) showErrorSnack(context, e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -62,8 +83,9 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
       body: Column(
         children: [
           _Header(
-              plate: vehicle?.plate ?? '',
-              onBack: () => context.go(AppRoutes.trips)),
+            plate: vehicle?.plate ?? '',
+            onBack: () => context.go(AppRoutes.trips),
+          ),
           Expanded(
             child: AsyncValueView(
               value: data,
@@ -71,29 +93,40 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
               data: (trip) => Column(
                 children: [
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _SummaryCard(
+                    child: RefreshIndicator(
+                      onRefresh: () async {
+                        ref.invalidate(tripProvider(widget.tripId));
+                        await ref.read(tripProvider(widget.tripId).future);
+                      },
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _SummaryCard(
                               trip: trip,
                               vehicleType: vehicle?.type ?? '',
-                              now: now),
-                          const SizedBox(height: 16),
-                          _LoadingSection(
-                            trip: trip,
-                            onSimulateLoaded: () => ref
-                                .read(tripActionsProvider)
-                                .simulateLoadingComplete(trip.id),
-                          ),
-                          const SizedBox(height: 16),
-                          _Sequence(
-                            trip: trip,
-                            onOpen: (s) =>
-                                context.go(AppRoutes.stop(trip.id, s.id)),
-                          ),
-                        ],
+                              now: now,
+                            ),
+                            const SizedBox(height: 16),
+                            _LoadingSection(
+                              trip: trip,
+                              onSimulateLoaded:
+                                  ref.read(tripsRepositoryProvider).usesCodes
+                                  ? null
+                                  : () => ref
+                                        .read(tripActionsProvider)
+                                        .simulateLoadingComplete(trip.id),
+                            ),
+                            const SizedBox(height: 16),
+                            _Sequence(
+                              trip: trip,
+                              onOpen: (s) =>
+                                  context.go(AppRoutes.stop(trip.id, s.id)),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -147,36 +180,47 @@ class _Header extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SvgPicture.asset('assets/images/back_arrow.svg',
-                        width: 18, height: 14),
+                    SvgPicture.asset(
+                      'assets/images/back_arrow.svg',
+                      width: 18,
+                      height: 14,
+                    ),
                     const SizedBox(width: 8),
-                    Text('My trips',
-                        style:
-                            AppText.outfit(15, AppColors.ink, weight: 600)),
+                    Text(
+                      'My trips',
+                      style: AppText.outfit(15, AppColors.ink, weight: 600),
+                    ),
                   ],
                 ),
               ),
               Row(
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.background,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.local_shipping_rounded,
-                            size: 16, color: AppColors.ink),
+                        const Icon(
+                          Icons.local_shipping_rounded,
+                          size: 16,
+                          color: AppColors.ink,
+                        ),
                         const SizedBox(width: 4),
-                        Text(plate,
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.ink,
-                            )),
+                        Text(
+                          plate,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.ink,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -193,8 +237,11 @@ class _Header extends StatelessWidget {
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard(
-      {required this.trip, required this.vehicleType, required this.now});
+  const _SummaryCard({
+    required this.trip,
+    required this.vehicleType,
+    required this.now,
+  });
 
   final Trip trip;
   final String vehicleType;
@@ -219,22 +266,31 @@ class _SummaryCard extends StatelessWidget {
               Text(trip.name, style: AppText.displayXs),
               if (vehicleType.isNotEmpty)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.yellow100,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(vehicleType,
-                      style: _interLabel.copyWith(
-                          fontWeight: FontWeight.w600, color: AppColors.ink)),
+                  child: Text(
+                    vehicleType,
+                    style: _interLabel.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                    ),
+                  ),
                 ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(trip.subtitle,
-              style: AppText.textSmRegular
-                  .copyWith(color: AppColors.inkSecondary)),
+          Text(
+            trip.subtitle,
+            style: AppText.textSmRegular.copyWith(
+              color: AppColors.inkSecondary,
+            ),
+          ),
           const SizedBox(height: 12),
           const Divider(height: 1, thickness: 1, color: AppColors.border),
           const SizedBox(height: 12),
@@ -248,18 +304,23 @@ class _SummaryCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('PLAN VERSION',
-                      style: _interLabel.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.inkMuted)),
+                  Text(
+                    'PLAN VERSION',
+                    style: _interLabel.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.inkMuted,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text('Plan v${trip.planVersion}',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.blue700,
-                      )),
+                  Text(
+                    'Plan v${trip.planVersion}',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.blue700,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -274,8 +335,11 @@ class _SummaryCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  SvgPicture.asset('assets/images/refresh_cw.svg',
-                      width: 14, height: 14),
+                  SvgPicture.asset(
+                    'assets/images/refresh_cw.svg',
+                    width: 14,
+                    height: 14,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -308,9 +372,13 @@ class _Stat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: _interLabel.copyWith(
-                fontWeight: FontWeight.w500, color: AppColors.inkMuted)),
+        Text(
+          label,
+          style: _interLabel.copyWith(
+            fontWeight: FontWeight.w500,
+            color: AppColors.inkMuted,
+          ),
+        ),
         const SizedBox(height: 4),
         Text(value, style: AppText.textLgSemibold),
       ],
@@ -330,7 +398,7 @@ class _LoadingSection extends StatelessWidget {
   const _LoadingSection({required this.trip, required this.onSimulateLoaded});
 
   final Trip trip;
-  final VoidCallback onSimulateLoaded;
+  final VoidCallback? onSimulateLoaded;
 
   bool get _loaded =>
       trip.status != TripStatus.loading && trip.status != TripStatus.assigned;
@@ -361,22 +429,26 @@ class _LoadingSection extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  SvgPicture.asset('assets/images/loading_complete.svg',
-                      width: 24, height: 24),
+                  SvgPicture.asset(
+                    'assets/images/loading_complete.svg',
+                    width: 24,
+                    height: 24,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Loading complete',
-                            style: AppText.textSmSemibold),
+                        Text('Loading complete', style: AppText.textSmSemibold),
                         const SizedBox(height: 2),
-                        const Text('All cargo palletized and loaded',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              color: AppColors.inkSecondary,
-                            )),
+                        const Text(
+                          'All cargo palletized and loaded',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            color: AppColors.inkSecondary,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -416,27 +488,40 @@ class _ShortfallBlock extends StatelessWidget {
         children: [
           Row(
             children: [
-              SvgPicture.asset('assets/images/alert_triangle.svg',
-                  width: 16, height: 16),
+              SvgPicture.asset(
+                'assets/images/alert_triangle.svg',
+                width: 16,
+                height: 16,
+              ),
               const SizedBox(width: 8),
-              const Text('SHORTFALL REPORTED',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.red700,
-                  )),
+              const Text(
+                'SHORTFALL REPORTED',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.red700,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text.rich(TextSpan(style: base, children: [
-            TextSpan(text: '${shortfall.orderId} (${shortfall.storeName}): '),
+          Text.rich(
             TextSpan(
-                text:
-                    '${shortfall.shortCases} of ${shortfall.plannedCases} cases short',
-                style: base.copyWith(fontWeight: FontWeight.w700)),
-            const TextSpan(text: '.'),
-          ])),
+              style: base,
+              children: [
+                TextSpan(
+                  text: '${shortfall.orderId} (${shortfall.storeName}): ',
+                ),
+                TextSpan(
+                  text:
+                      '${shortfall.shortCases} of ${shortfall.plannedCases} cases short',
+                  style: base.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const TextSpan(text: '.'),
+              ],
+            ),
+          ),
           const SizedBox(height: 8),
           Container(
             width: double.infinity,
@@ -448,14 +533,20 @@ class _ShortfallBlock extends StatelessWidget {
             ),
             child: Row(
               children: [
-                SvgPicture.asset('assets/images/user_square.svg',
-                    width: 12, height: 12),
+                SvgPicture.asset(
+                  'assets/images/user_square.svg',
+                  width: 12,
+                  height: 12,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text('Dispatcher: ${shortfall.dispatcherNote}',
-                      style: _interLabel.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.inkSecondary)),
+                  child: Text(
+                    'Dispatcher: ${shortfall.dispatcherNote}',
+                    style: _interLabel.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.inkSecondary,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -477,13 +568,15 @@ class _Sequence extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('UNLOADING SEQUENCE (${trip.stops.length} STOPS)',
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppColors.inkMuted,
-            )),
+        Text(
+          'UNLOADING SEQUENCE (${trip.stops.length} STOPS)',
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: AppColors.inkMuted,
+          ),
+        ),
         const SizedBox(height: 10),
         for (var i = 0; i < trip.stops.length; i++) ...[
           if (i > 0) const SizedBox(height: 10),
@@ -504,7 +597,9 @@ class _StopCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final temperatures = <Temperature>[];
     for (final o in stop.orders) {
-      if (!temperatures.contains(o.temperature)) temperatures.add(o.temperature);
+      if (!temperatures.contains(o.temperature)) {
+        temperatures.add(o.temperature);
+      }
     }
     final done = stop.status == StopStatus.completed;
     return Material(
@@ -530,15 +625,20 @@ class _StopCard extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: done
-                    ? const Icon(Icons.check_rounded,
-                        size: 16, color: AppColors.lime700)
-                    : Text('${stop.sequence}',
+                    ? const Icon(
+                        Icons.check_rounded,
+                        size: 16,
+                        color: AppColors.lime700,
+                      )
+                    : Text(
+                        '${stop.sequence}',
                         style: const TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: AppColors.ink,
-                        )),
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -551,13 +651,18 @@ class _StopCard extends StatelessWidget {
                       spacing: 12,
                       children: [
                         Text(
-                            'Window: ${stop.deliveryWindow.replaceAll('-', '–')}',
-                            style: _interLabel.copyWith(
-                                color: AppColors.inkMuted)),
-                        Text('Arrival: ${formatTime(stop.plannedArrival)}',
-                            style: _interLabel.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.lime700)),
+                          'Window: ${stop.deliveryWindow.replaceAll('-', '–')}',
+                          style: _interLabel.copyWith(
+                            color: AppColors.inkMuted,
+                          ),
+                        ),
+                        Text(
+                          'Arrival: ${formatTime(stop.plannedArrival)}',
+                          style: _interLabel.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.lime700,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -573,10 +678,12 @@ class _StopCard extends StatelessWidget {
                           ],
                         ),
                         Text(
-                            '${stop.orders.length} ${stop.orders.length == 1 ? 'order' : 'orders'}',
-                            style: _interLabel.copyWith(
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.inkSecondary)),
+                          '${stop.orders.length} ${stop.orders.length == 1 ? 'order' : 'orders'}',
+                          style: _interLabel.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.inkSecondary,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -591,8 +698,11 @@ class _StopCard extends StatelessWidget {
 }
 
 class _ActionArea extends StatelessWidget {
-  const _ActionArea(
-      {required this.trip, required this.busy, required this.onPressed});
+  const _ActionArea({
+    required this.trip,
+    required this.busy,
+    required this.onPressed,
+  });
 
   final Trip trip;
   final bool busy;
@@ -609,8 +719,8 @@ class _ActionArea extends StatelessWidget {
     final caption = loading
         ? 'Waiting for the loading team to finish'
         : underway
-            ? 'Trip in progress · Plan v${trip.planVersion}'
-            : 'Load confirmed · Plan v${trip.planVersion} acknowledged';
+        ? 'Trip in progress · Plan v${trip.planVersion}'
+        : 'Load confirmed · Plan v${trip.planVersion} acknowledged';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -633,10 +743,14 @@ class _ActionArea extends StatelessWidget {
             onPressed: loading ? null : onPressed,
           ),
           const SizedBox(height: 8),
-          Text(caption,
-              textAlign: TextAlign.center,
-              style: _interLabel.copyWith(
-                  fontWeight: FontWeight.w500, color: AppColors.inkSecondary)),
+          Text(
+            caption,
+            textAlign: TextAlign.center,
+            style: _interLabel.copyWith(
+              fontWeight: FontWeight.w500,
+              color: AppColors.inkSecondary,
+            ),
+          ),
         ],
       ),
     );

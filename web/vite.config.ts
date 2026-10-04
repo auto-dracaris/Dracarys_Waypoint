@@ -12,6 +12,9 @@ export default defineConfig({
     },
   },
   server: {
-    proxy: { "/api": "http://localhost:5000" },
+    proxy: {
+      "/ai-api": { target: "http://localhost:8000", rewrite: (url) => url.replace(/^\/ai-api/, "") },
+      "/api": "http://localhost:5000",
+    },
   },
 });

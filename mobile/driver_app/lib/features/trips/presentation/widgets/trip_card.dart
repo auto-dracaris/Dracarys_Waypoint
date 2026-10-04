@@ -8,8 +8,8 @@ import 'loading_banner.dart';
 
 /// One trip in the My Trips list (Figma "trip1-card").
 ///
-/// The [highlighted] trip (the driver's current one) gets the illustration and
-/// the filled yellow button; other trips get an outlined button.
+/// Every trip shows a status illustration. The [highlighted] trip (the driver's
+/// current one) gets the filled yellow button; other trips get an outlined one.
 class TripCard extends StatelessWidget {
   const TripCard({
     super.key,
@@ -73,7 +73,7 @@ class TripCard extends StatelessWidget {
               ),
             ),
           ),
-          if (highlighted) const _Illustration(),
+          _Illustration(status: trip.status),
           if (trip.status == TripStatus.loading) const LoadingBanner(),
           Padding(
             padding: const EdgeInsets.all(12),
@@ -114,8 +114,20 @@ class _Stat extends StatelessWidget {
   }
 }
 
+/// Illustration per trip status. Every status uses the worker image for now;
+/// swap an entry here when the real artwork for that status arrives.
+const _statusImages = <TripStatus, String>{
+  TripStatus.assigned: 'assets/images/worker.png',
+  TripStatus.loading: 'assets/images/worker.png',
+  TripStatus.ready: 'assets/images/worker.png',
+  TripStatus.inProgress: 'assets/images/worker.png',
+  TripStatus.completed: 'assets/images/worker.png',
+};
+
 class _Illustration extends StatelessWidget {
-  const _Illustration();
+  const _Illustration({required this.status});
+
+  final TripStatus status;
 
   // Crop of the source image; fractions come from Figma.
   static const _w = 144.0, _h = 118.0;
@@ -134,7 +146,7 @@ class _Illustration extends StatelessWidget {
               top: -0.0004 * _h,
               width: 1.23 * _w,
               height: 1.0008 * _h,
-              child: Image.asset('assets/images/worker.png', fit: BoxFit.fill),
+              child: Image.asset(_statusImages[status]!, fit: BoxFit.fill),
             ),
           ],
         ),

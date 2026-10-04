@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { initialLoadingException, confirmLoadingDecision, type LoadingAction } from '@/features/operations/data'
 import { createPublishedPlan, resendNotification, type PublishedPlan } from '@/features/planning/publication'
 import { reviewedPlan } from '@/features/planning/data'
-import { initialNotifications, markNotificationsRead, type NotificationItem } from '@/features/notifications/data'
+import { toNotificationItem, type NotificationItem } from '@/features/notifications/data'
+import { useNotifications } from '@/features/notifications/use-notifications'
 import { loadSidebarCollapsed, saveSidebarCollapsed } from '@/lib/sidebar-preferences'
 import { useUser } from '@/features/auth/user-context'
 
@@ -16,11 +17,15 @@ export function useHubController() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(loadSidebarCollapsed)
   const [notice, setNotice] = useState<string | null>(null)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
-  const [notifications, setNotifications] = useState(initialNotifications)
+  const feed = useNotifications()
+  const notifications = useMemo(() => feed.items.map(toNotificationItem), [feed.items])
   const isVehicles = path === '/vehicles'
   const isOutlets = path === '/outlets'
   const isTeam = path === '/team'
+  const isProfile = path === '/profile'
+  const isKnowledge = path === '/knowledge'
   const isOrders = path === '/orders'
+  const isIssues = path === '/issues'
   const isPlanning = path === '/planning'
   const isPublished = path === '/planning/published'
   const isOperations = path === '/operations' || path === '/operations/loading-exception'
@@ -36,8 +41,8 @@ export function useHubController() {
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
   useEffect(() => {
-    document.title = `WayPoint — ${isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isOrders ? 'Confirmed Orders' : isPlanning ? 'Final Plan Review' : isPublished ? 'Plan Published' : isOperations ? 'Loading Exception Review' : 'Delivery Overview'}`
-  }, [isVehicles, isOutlets, isTeam, isOrders, isPlanning, isPublished, isOperations])
+    document.title = `WayPoint — ${isProfile ? 'My Profile' : isKnowledge ? 'Knowledge base' : isVehicles ? 'Vehicles' : isOutlets ? 'Outlets' : isTeam ? 'Team' : isIssues ? 'Issues' : isOrders ? 'Confirmed Orders' : isPlanning ? 'Final Plan Review' : isPublished ? 'Plan Published' : isOperations ? 'Loading Exception Review' : 'Delivery Overview'}`
+  }, [isProfile, isKnowledge, isVehicles, isOutlets, isTeam, isIssues, isOrders, isPlanning, isPublished, isOperations])
   useEffect(() => {
     saveSidebarCollapsed(sidebarCollapsed)
   }, [sidebarCollapsed])
@@ -50,6 +55,7 @@ export function useHubController() {
     }
     if (page === 'Order notifications' || page === 'Notifications') {
       setNotice(null)
+      feed.refresh()
       setNotificationsOpen(true)
       return
     }
@@ -61,7 +67,10 @@ export function useHubController() {
       Vehicles: '/vehicles',
       Outlets: '/outlets',
       Team: '/team',
+      Profile: '/profile',
+      'Knowledge base': '/knowledge',
       Orders: '/orders',
+      Issues: '/issues',
       Planning: '/planning',
       'Delivery planning': '/planning',
       'Publish plan confirmation': '/planning/published',
@@ -101,12 +110,10 @@ export function useHubController() {
     if (!result.error) setLoadingException(result.exception)
     return result.error
   }
-  function readNotifications(id?: string) {
-    setNotifications((previous) => markNotificationsRead(previous, id))
-  }
+  const readNotifications = feed.read
   function openNotification(item: NotificationItem) {
     readNotifications(item.id)
-    navigate(item.target.page, item.target.orderId)
+    if (item.target) navigate(item.target.page, item.target.orderId)
   }
   const pageProps = { onNavigate: navigate, onOpenNavigation: () => setNavigationOpen(true), navigationOpen }
   return {
@@ -121,6 +128,7 @@ export function useHubController() {
     notificationsOpen,
     setNotificationsOpen,
     notifications,
+    unreadNotifications: feed.unreadCount,
     readNotifications,
     openNotification,
     publication,
@@ -132,6 +140,7 @@ export function useHubController() {
     isOutlets,
     isTeam,
     isOrders,
+    isIssues,
     isPlanning,
     isPublished,
     isOperations,

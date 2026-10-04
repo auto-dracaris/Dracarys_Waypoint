@@ -53,7 +53,7 @@ export function StoreManagerLayout() {
   if (!user) return null
 
   return (
-    <div className="w-full min-h-screen bg-stone-50 flex justify-start items-start">
+    <div className={`w-full min-h-screen bg-stone-50 flex justify-start items-start ${location.pathname === '/store-manager/profile' ? 'store-profile-shell' : ''}`}>
       {/* Fixed Sidebar */}
       <Sidebar
         outletName={outletName}
@@ -71,6 +71,7 @@ export function StoreManagerLayout() {
           if (target) navigate(target.path)
         }}
         onLogout={logout}
+        onViewProfile={() => navigate('/store-manager/profile')}
       />
 
       {/* Dynamic Page Content */}

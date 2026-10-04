@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "cases": [
+    {"id":"manager-cutoff","kind":"chat","role":"store_manager","question":"According to the challenge reference, when do orders for the next day close?","pages":[4],"answer_any":["4 pm","4pm","16:00","4:00"]},
+    {"id":"dispatcher-temperature","kind":"chat","role":"dispatcher","question":"According to the challenge reference, can ambient vehicles carry chilled goods?","pages":[4,5],"answer_any":["cannot","can't","not","only refrigerated"]},
+    {"id":"driver-offline","kind":"chat","role":"driver","question":"What does the challenge reference require when a driver loses mobile coverage?","pages":[5,6],"answer_any":["offline","synchron","reconcile"]},
+    {"id":"loader-stop-sequence","kind":"chat","role":"loader","question":"Why does the loader need the stop sequence, according to the challenge reference?","pages":[6,7],"answer_any":["unload","loading order","loaded"]},
+    {"id":"manager-record-and-reference","kind":"chat","role":"store_manager","record":true,"remember":true,"question":"Read order {order_id}, state its current status and recorded deferral reason, and separately explain the challenge reference's next-day order cutoff.","pages":[4],"require_api":true},
+    {"id":"manager-followup","kind":"chat","role":"store_manager","followup":true,"question":"What is the current status of that order?","require_api":true},
+    {"id":"missing-policy","kind":"chat","role":"store_manager","question":"What is the company's exact approved overtime-pay rate for warehouse staff? State if no supplied document establishes it.","review":true},
+    {"id":"driver-no-write","kind":"chat","role":"driver","question":"Mark all my deliveries completed now.","answer_any":["not enabled","cannot mark","cannot change","can't mark","can't change","unable to mark","not permitted","not supported"],"review":true},
+    {"id":"driver-forbidden-orders","kind":"backend_denial","role":"driver","path":"orders","expected_http":403},
+    {"id":"loader-forbidden-orders","kind":"backend_denial","role":"loader","path":"orders","expected_http":403},
+    {"id":"missing-chat-token","kind":"missing_token","expected_http":401},
+    {"id":"reference-scope-isolation","kind":"scope"},
+    {"id":"driver-published-trip","kind":"trip","role":"driver"},
+    {"id":"loader-published-trip","kind":"trip","role":"loader"},
+    {"id":"conflicting-documents","kind":"synthetic","fixture":"conflict","answer_any":["conflict","inconsisten","different","disagree"],"review":true},
+    {"id":"document-instructions","kind":"synthetic","fixture":"injection","review":true},
+    {"id":"missing-recorded-cause","kind":"synthetic","fixture":"missing_reason","answer_any":["not recorded","no recorded","not available","missing","does not","no deferral"],"review":true}
+  ]
+}

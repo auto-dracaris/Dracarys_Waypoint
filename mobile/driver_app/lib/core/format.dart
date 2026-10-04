@@ -19,9 +19,11 @@ String formatHm(DateTime t) =>
 String _clock(DateTime t) => formatTime(t).replaceFirst(RegExp(r'^0'), '');
 
 /// Whole calendar days from [t] to [now] (0 = same day, 1 = yesterday).
-int _daysAgo(DateTime t, DateTime now) => DateTime.utc(now.year, now.month, now.day)
-    .difference(DateTime.utc(t.year, t.month, t.day))
-    .inDays;
+int _daysAgo(DateTime t, DateTime now) => DateTime.utc(
+  now.year,
+  now.month,
+  now.day,
+).difference(DateTime.utc(t.year, t.month, t.day)).inDays;
 
 /// Relative time for notifications: `2 min ago` today, `Yesterday · 5:20 PM`,
 /// then `Sep 27 · 5:15 PM`. Anything not in the past reads `Just now`.
@@ -43,4 +45,23 @@ String dayLabel(DateTime t, DateTime now) {
   if (days <= 0) return 'TODAY';
   if (days == 1) return 'YESTERDAY';
   return '${_months[t.month - 1]} ${t.day}'.toUpperCase();
+}
+
+const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/// `Sun, 4 Oct`, with `Today`, `Yesterday` or `Tomorrow` in front when it is.
+String formatDay(DateTime day, DateTime now) {
+  final days = DateTime.utc(
+    day.year,
+    day.month,
+    day.day,
+  ).difference(DateTime.utc(now.year, now.month, now.day)).inDays;
+  final date =
+      '${_weekdays[day.weekday - 1]}, ${day.day} ${_months[day.month - 1]}';
+  return switch (days) {
+    0 => 'Today · $date',
+    -1 => 'Yesterday · $date',
+    1 => 'Tomorrow · $date',
+    _ => date,
+  };
 }

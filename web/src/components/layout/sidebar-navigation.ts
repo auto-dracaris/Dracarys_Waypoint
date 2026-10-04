@@ -1,4 +1,5 @@
 import HomeOutlined from '@mui/icons-material/HomeOutlined'
+import ErrorRounded from '@mui/icons-material/ErrorRounded'
 import FormatListBulletedRounded from '@mui/icons-material/FormatListBulletedRounded'
 import MoreTimeRounded from '@mui/icons-material/MoreTimeRounded'
 import BrushOutlined from '@mui/icons-material/BrushOutlined'
@@ -14,6 +15,7 @@ export const sidebarNavigation = {
     primary: [
       { label: 'Overview', Icon: HomeOutlined },
       { label: 'Orders', Icon: FormatListBulletedRounded },
+      { label: 'Issues', Icon: ErrorRounded },
       { label: 'Planning', Icon: MoreTimeRounded },
       { label: 'Operations', Icon: BrushOutlined },
     ],

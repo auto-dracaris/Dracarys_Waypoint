@@ -1,0 +1,40 @@
+meta {
+  name: Document: Upload draft
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/v1/documents
+  body: multipartForm
+  auth: none
+}
+
+headers {
+  Idempotency-Key: {{request_key}}
+}
+
+body:multipart-form {
+  file: @file({{document_file}})
+  metadata: {{document_metadata}}
+}
+
+vars:pre-request {
+  base_url: http://127.0.0.1:8000
+}
+
+assert {
+  res.status: eq 202
+  res.body.document_id: isDefined
+  res.body.version: isDefined
+  res.body.job_id: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 202) {
+    const data = res.getBody();
+    bru.setVar("document_id", data.document_id);
+    bru.setVar("document_version", data.version);
+    bru.setVar("job_id", data.job_id);
+  }
+}

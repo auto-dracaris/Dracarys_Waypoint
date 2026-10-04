@@ -1,6 +1,6 @@
+import { NotificationsButton } from '@/features/notifications/components/notifications-button'
 import { IconButton } from '@/components/ui/icon-button'
 import { useEffect, useRef, useState } from 'react'
-import NotificationsRounded from '@mui/icons-material/NotificationsRounded'
 import MenuRounded from '@mui/icons-material/MenuRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import GroupsRounded from '@mui/icons-material/GroupsRounded'
@@ -8,7 +8,6 @@ import LocalShippingRounded from '@mui/icons-material/LocalShippingRounded'
 import Inventory2Rounded from '@mui/icons-material/Inventory2Rounded'
 import SupportAgentRounded from '@mui/icons-material/SupportAgentRounded'
 import StorefrontRounded from '@mui/icons-material/StorefrontRounded'
-import { Button } from '@/components/ui/button'
 import { TeamTable } from '@/features/team/components/team-table'
 import { TeamDetails } from '@/features/team/components/team-details'
 import { useDetailPanel } from '@/components/ui/use-detail-panel'
@@ -126,9 +125,7 @@ export function TeamPage({
           <h1 className="type-display-lg-medium">Team</h1>
         </div>
         <div className="fleet-header-actions">
-          <Button variant="danger" size="md" className="decision-button" onClick={() => onNavigate('Order notifications')}>
-            <NotificationsRounded fontSize="inherit" />3 orders need a decision
-          </Button>
+          <NotificationsButton />
         </div>
       </header>
       <nav aria-label="Breadcrumb" className="fleet-breadcrumb type-text-sm-medium">
