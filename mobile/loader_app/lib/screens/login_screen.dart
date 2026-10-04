@@ -182,6 +182,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: _isLoading ? null : _register,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.black,
+                      ),
                       child: const Text('Don’t have an account? Register'),
                     ),
                   ],
